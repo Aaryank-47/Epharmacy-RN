@@ -5,63 +5,24 @@
  * @format
  */
 
-import { StatusBar, StyleSheet, Text, useColorScheme } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import React from 'react';
+import { StatusBar, Text, View, useColorScheme } from 'react-native';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
+  const bgClass = isDarkMode ? 'bg-slate-950' : 'bg-slate-100';
+  const textClass = isDarkMode ? 'text-slate-100' : 'text-slate-900';
 
   return (
-    <SafeAreaProvider>
+    <>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent isDarkMode={isDarkMode} />
-    </SafeAreaProvider>
+      <View className={`flex-1 justify-center items-center ${bgClass}`}>
+        <Text className={`text-3xl font-semibold ${textClass}`}>
+          Hello, World!
+        </Text>
+      </View>
+    </>
   );
 }
-
-function AppContent({ isDarkMode }: { isDarkMode: boolean }) {
-  return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        isDarkMode ? styles.containerDark : styles.containerLight,
-      ]}
-      edges={['top', 'bottom', 'left', 'right']}
-    >
-      <Text
-        style={[
-          styles.message,
-          isDarkMode ? styles.messageDark : styles.messageLight,
-        ]}
-      >
-        Hello, World!
-      </Text>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  containerDark: {
-    backgroundColor: '#030712',
-  },
-  containerLight: {
-    backgroundColor: '#F9FAFB',
-  },
-  message: {
-    fontSize: 28,
-    fontWeight: '600',
-  },
-  messageDark: {
-    color: '#F9FAFB',
-  },
-  messageLight: {
-    color: '#030712',
-  },
-});
 
 export default App;
