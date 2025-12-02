@@ -1,0 +1,97 @@
+
+import React, { memo } from "react";
+import { createStackNavigator } from "@react-navigation/stack";
+import type { ComponentType } from "react";
+import { ActivityIndicator, View } from "react-native";
+
+import { useAuth } from "./src/context/AuthContext";
+
+// PUBLIC / AUTH SCREENS
+import SignInScreen from "./src/authencation/SignInScreen";
+import SignUpScreen from "./src/authencation/SignUpScreen";
+import ForgetPasswordScreen from "./src/authencation/ForgetPassword";
+
+// INTRO FLOWS
+import WelcomePage from "./src/components/WelcomePage";
+import StartPage from "./src/components/StartPage";
+
+// PRIVATE SCREENS
+import HomePage from "./src/components/home/HomePage";
+import ProfilePage from "./src/authencation/user/ProfilePage";
+import EditProfileScreen from "./src/authencation/user/EditProfileScreen";
+import SearchScreen from "./src/components/commonPage/SearchScreen";
+import ProductDetail from "./src/components/pages/ProductDetail";
+import ShoppingBagScreen from "./src/components/pages/ShoppingBagScreen";
+import CheckoutPage from "./src/components/pages/CheckoutPage";
+import PaymentScreen from "./src/components/commonPage/PaymentScreen";
+
+export type RootStackParamList = {
+  HomeTabs: undefined;
+  ProfilePage: undefined;
+  EditProfile: undefined;
+  Search: undefined;
+  ProductDetail: { productId?: string } | undefined;
+  ShoppingBagScreen: undefined;
+  CheckoutPage: undefined;
+  PaymentScreen: undefined;
+  Welcome: undefined;
+  Start: undefined;
+  SignIn: undefined;
+  SignUp: undefined;
+  ForgotPassword: undefined;
+};
+
+type ScreenConfig = {
+  name: keyof RootStackParamList;
+  component: ComponentType<any>;
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
+
+const AUTHENTICATED_SCREENS: ScreenConfig[] = [
+  { name: "HomeTabs", component: HomePage },
+  { name: "ProfilePage", component: ProfilePage },
+  { name: "EditProfile", component: EditProfileScreen },
+  { name: "Search", component: SearchScreen },
+  { name: "ProductDetail", component: ProductDetail },
+  { name: "ShoppingBagScreen", component: ShoppingBagScreen },
+  { name: "CheckoutPage", component: CheckoutPage },
+  { name: "PaymentScreen", component: PaymentScreen },
+];
+
+const PUBLIC_SCREENS: ScreenConfig[] = [
+  { name: "Welcome", component: WelcomePage },
+  { name: "Start", component: StartPage },
+  { name: "SignIn", component: SignInScreen },
+  { name: "SignUp", component: SignUpScreen },
+  { name: "ForgotPassword", component: ForgetPasswordScreen },
+];
+
+const AppNavigator: React.FC = () => {
+  const { isAuthenticated, isInitialized } = useAuth();
+
+  // Show loading while initializing
+  if (!isInitialized) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  const screensToRender = isAuthenticated ? AUTHENTICATED_SCREENS : PUBLIC_SCREENS;
+
+  return (
+    <Stack.Navigator
+      id={undefined}
+      initialRouteName={isAuthenticated ? "HomeTabs" : "Welcome"}
+      screenOptions={{ headerShown: false }}
+    >
+      {screensToRender.map(({ name, component }) => (
+        <Stack.Screen key={name} name={name} component={component} />
+      ))}
+    </Stack.Navigator>
+  );
+};
+
+export default memo(AppNavigator);
