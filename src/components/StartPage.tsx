@@ -127,7 +127,7 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
         </View>
 
         <Animated.Image
-          source={require("../assets/registration.png")}
+          source={require("../assets/images/registration.png")}
           resizeMode="cover"
           style={heroAnimatedStyle}
         />
