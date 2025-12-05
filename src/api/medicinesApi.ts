@@ -18,6 +18,7 @@ interface Medicine {
   price?: number;
   originalPrice?: number;
   discount?: number;
+  rating?: number;
   description?: string;
   category?: string;
 }

@@ -11,9 +11,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Dimensions,
   Platform,
   Image,
+  useWindowDimensions,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -44,8 +45,6 @@ interface AsyncStorageError {
   readonly code: string;
   readonly message: string;
 }
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Query keys for React Query
 const QUERY_KEYS = {
@@ -215,6 +214,7 @@ interface TabBarProps {
   readonly userData: UserData;
   readonly onNavigate: (screenName: string) => void;
   readonly isLoading?: boolean;
+  readonly translateY?: Animated.Value | Animated.AnimatedInterpolation<string | number>;
 }
 
 const TabBar = memo<TabBarProps>(({
@@ -225,14 +225,13 @@ const TabBar = memo<TabBarProps>(({
   userData,
   onNavigate,
   isLoading = false,
+  translateY = new Animated.Value(0),
 }) => {
-  const { isDark, surfaceColor, accentColor } = useThemePalette();
+  const { isDark, accentColor } = useThemePalette();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  const bottomSafeHeight = useMemo(
-    () => (Platform.OS === 'android' ? Math.max(insets.bottom, 10) : insets.bottom),
-    [insets.bottom]
-  );
+  const bottomInset = insets.bottom;
 
   const isTabActive = useCallback(
     (tab: TabConfig): boolean => activeTab === tab.name,
@@ -260,13 +259,14 @@ const TabBar = memo<TabBarProps>(({
     [setActiveTab, onNavigate, isLoading]
   );
 
-  const tabBarHeight = useMemo(
-    () =>
-      Platform.OS === 'android'
-        ? Math.max(screenHeight * 0.02, 20) + bottomSafeHeight
-        : Math.max(screenHeight * 0.08, 65) + bottomSafeHeight,
-    [bottomSafeHeight]
-  );
+  // If we have a bottom inset (Gesture Nav), use standard height.
+  // If no inset (Button Nav), reduce height to be more compact.
+  const isGestureNav = bottomInset > 45;
+  const TAB_CONTENT_HEIGHT = isGestureNav ? 20 : 69; 
+  
+  const effectiveBottomPadding = isGestureNav ? bottomInset : 4;
+  
+  const tabBarHeight = TAB_CONTENT_HEIGHT + effectiveBottomPadding;
 
   const borderColor = isDark ? '#374151' : '#E5E7EB';
 
@@ -279,23 +279,33 @@ const TabBar = memo<TabBarProps>(({
   }, [isDark]);
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
+    <Animated.View
       style={{
-        borderTopColor: borderColor,
-        borderTopWidth: 0.3,
-        paddingBottom:2 ,
-        paddingTop: 8,
-        paddingHorizontal: screenWidth * 0.02,
-        height: tabBarHeight,
-        flexDirection: 'row',
-        shadowOpacity: 0.06,
-        shadowRadius: 3,
-        
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        transform: [{ translateY }],
+        zIndex: 100,
       }}
     >
+      <LinearGradient
+        colors={gradientColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{
+          borderTopColor: borderColor,
+          borderTopWidth: 0.3,
+          paddingBottom: effectiveBottomPadding,
+          paddingTop: 8,
+          paddingHorizontal: screenWidth * 0.02,
+          height: tabBarHeight,
+          flexDirection: 'row',
+          shadowOpacity: 0.06,
+          shadowRadius: 3,
+          elevation: 8,
+        }}
+      >
       {state.routes.map((route, index) => {
         const currentTab = tabs.find((tab) => tab.name === route.name);
         if (!currentTab) return null;
@@ -326,7 +336,7 @@ const TabBar = memo<TabBarProps>(({
             ) : (
               <Icon
                 name={iconName || 'circle'}
-                size={Math.min(screenWidth * 0.060, 26)}
+                size={Math.min(screenWidth * 0.064, 26)}
                 color={activeColor}
               />
             )}
@@ -346,7 +356,8 @@ const TabBar = memo<TabBarProps>(({
           </TouchableOpacity>
         );
       })}
-    </LinearGradient>
+      </LinearGradient>
+    </Animated.View>
   );
 });
 
@@ -360,6 +371,7 @@ interface TabsProps {
   readonly currentActiveTab?: string;
   readonly onNavigate?: (screenName: string) => void;
   readonly onError?: (error: Error) => void;
+  readonly translateY?: Animated.Value | Animated.AnimatedInterpolation<string | number>;
 }
 
 const Tabs = memo<TabsProps>(({
@@ -400,9 +412,9 @@ const Tabs = memo<TabsProps>(({
   currentActiveTab = 'Home',
   onNavigate = () => {},
   onError = () => {},
+  translateY,
 }) => {
-  const { isDark, surfaceColor } = useThemePalette();
-  const insets = useSafeAreaInsets();
+  const { surfaceColor } = useThemePalette();
 
   const [activeTab, setActiveTab] = useState(currentActiveTab);
   const [userData, setUserData] = useState<UserData>({ name: 'User', profileImage: null });
@@ -432,19 +444,6 @@ const Tabs = memo<TabsProps>(({
   }, [queryResult.error, onError]);
 
   const isLoadingUserData = queryResult.isLoading;
-
-  const bottomSafeHeight = useMemo(
-    () => (Platform.OS === 'android' ? Math.max(insets.bottom, 10) : insets.bottom),
-    [insets.bottom]
-  );
-
-  const tabBarHeight = useMemo(
-    () =>
-      Platform.OS === 'android'
-        ? Math.max(screenHeight * 0.075, 60) + bottomSafeHeight
-        : Math.max(screenHeight * 0.08, 65) + bottomSafeHeight,
-    [bottomSafeHeight]
-  );
 
   const state = useMemo(
     () => ({
@@ -497,6 +496,7 @@ const Tabs = memo<TabsProps>(({
         userData={userData}
         onNavigate={handleNavigate}
         isLoading={isLoadingUserData}
+        translateY={translateY}
       />
     </View>
   );

@@ -16,7 +16,8 @@ import {
   Linking,
   ToastAndroid,
 } from 'react-native';
-import LocationService from '../../../services/LocationService';
+import Geolocation from 'react-native-geolocation-service';
+import { promptForEnableLocationIfNeeded } from 'react-native-android-location-enabler';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
@@ -27,7 +28,6 @@ import {
   trackAdvertisementClick,
   updateUserProfile,
 } from '../../../api/medicinesApi';
-
 
 // ============================================================================
 // TYPES
@@ -354,60 +354,77 @@ const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, accentColo
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={() => onPress(ad._id, ad.title)}>
       <LinearGradient
-        colors={isDark ? ['#1A1A1A', '#2A2D35'] : ['#FF6B6B', '#FF8A95']}
+        colors={isDark ? ['#1E2026', '#2A2D35'] : ['#FFFFFF', '#F9FAFB']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
           width: screenWidth * 0.9,
-          borderRadius: 16,
-          padding: 15,
-          marginVertical: 10,
-          marginHorizontal: 6.5,
+          borderRadius: 24,
+          padding: getResponsiveSize(16),
+          marginVertical: getResponsiveSize(8),
+          marginHorizontal: 6, // Standardized for perfect snap alignment
           flexDirection: 'row',
-          borderWidth: isDark ? 1 : 0,
-          borderColor: isDark ? '#374151' : 'transparent',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0,0,0,0.05)',
+
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.4 : 0.1,
+          shadowRadius: 12,
+          elevation: isDark ? 4 : 2,
         }}
       >
-        <View style={{ flex: 1, paddingRight: 8 }}>
+        {/* Left Content */}
+        <View style={{ flex: 1, paddingRight: 10 }}>
           <Text
             style={{
-              fontSize: 22,
-              fontWeight: '800',
-              color: isDark ? accentColor : '#FFFFFF',
+              fontSize: 13,
+              fontWeight: '700',
+              color: isDark ? '#9CA3AF' : '#6B7280',
               letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              marginBottom: 6,
             }}
           >
             {ad.title}
-            {ad.offerText ? ` ${ad.offerText}% OFF` : ''}
+          </Text>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: '900',
+              color: isDark ? '#FFFFFF' : '#111827',
+              letterSpacing: -0.5,
+              lineHeight: 34,
+            }}
+          >
+            {ad.offerText || '50'}% OFF
           </Text>
           <Text
             style={{
               marginTop: 6,
               fontSize: 14,
-              color: isDark ? '#D1D5DB' : '#FFFFFF',
+              color: isDark ? '#D1D5DB' : '#4B5563',
               opacity: 0.9,
+              fontWeight: '500',
             }}
           >
-            {ad.description}
+            {formatDate(ad.endDate)}
           </Text>
-          <Text
-            style={{
-              marginTop: 8,
-              fontSize: 11,
-              color: isDark ? '#9CA3AF' : 'rgba(255,255,255,0.8)',
-              fontStyle: 'italic',
-            }}
-          >
-            {formatDate(ad.startDate)} - {formatDate(ad.endDate)}
-          </Text>
+
           <TouchableOpacity
             style={{
-              marginTop: 10,
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 8,
-              backgroundColor: isDark ? accentColor : '#FFFFFF',
+              marginTop: 18,
+              paddingVertical: 10,
+              paddingHorizontal: 24,
+              borderRadius: 30,
+              backgroundColor: '#22C55E',
               alignSelf: 'flex-start',
+              shadowColor: '#22C55E',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.4,
+              shadowRadius: 8,
+              elevation: 2,
             }}
             onPress={() => onPress(ad._id, ad.title)}
           >
@@ -415,23 +432,35 @@ const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, accentColo
               style={{
                 fontSize: 14,
                 fontWeight: '700',
-                color: isDark ? '#FFFFFF' : accentColor,
+                color: '#FFFFFF',
               }}
             >
-              Order Now →
+              Get Now
             </Text>
           </TouchableOpacity>
         </View>
-        <Image
-          source={{ uri: ad.imageUrl }}
+
+        {/* Right Image */}
+        <View
           style={{
-            width: 120,
-            height: 120,
+            width: 140,
+            height: 130,
             borderRadius: 15,
-            backgroundColor: '#FFF',
-            marginLeft: 8,
+            overflow: 'hidden',
+            backgroundColor: isDark ? '#374151' : '#F3F4F6',
+            borderWidth: 0.4,
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
           }}
-        />
+        >
+          <Image
+            source={{ uri: ad.imageUrl }}
+            style={{
+              width: '100%',
+              height: '100%',
+              resizeMode: 'cover',
+            }}
+          />
+        </View>
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -606,6 +635,8 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     retry: 1,
     retryDelay: 1000,
     enabled: true,
+    // Auto-poll if no ads found, as requested by user ("har kuch time interval me api call hota rhna cahiye")
+    refetchInterval: (query) => (!query.state.data?.length ? 3000 : false),
   });
 
   // Memoized data extraction - only recalculate when data changes
@@ -629,61 +660,92 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     setLocationLoading(true);
 
     try {
-      const location = await LocationService.getCurrentLocation();
-      
-      // Fetch Address (Reverse Geocoding)
-      const addressString = await LocationService.getAddressFromCoordinates(
-        location.latitude,
-        location.longitude
-      );
+      // Step 1: Request permission (runtime permission dialog will show)
+      if (Platform.OS === 'android') {
+        const permission = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
 
-      // Store location data
-      const locationData: LocationData = {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        address: addressString,
-        city: addressString.split(',')[0], // Simple approximation
-        state: 'India',
-      };
+        if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
+          ToastAndroid.show('Location permission denied', ToastAndroid.SHORT);
+          setLocationLoading(false);
+          return;
+        }
 
-      setUserLocation(locationData);
-
-      // Update profile with location (Wrapped in try-catch to prevent crash)
-      try {
-        const addressData = {
-          address: {
-            street: addressString,
-            city: locationData.city || 'Current City',
-            state: 'Current State',
-            zip: 'PIN',
-            country: 'India',
-            location: { latitude: location.latitude, longitude: location.longitude },
-          },
-        };
-        await updateUserProfile(addressData, false);
-      } catch (profileError) {
-        console.warn('[HeroSection] Profile update failed (non-fatal):', profileError);
-        // Continue execution - don't crash the app
+        // Step 2: Prompt to Enable GPS (System Dialog)
+        try {
+          await promptForEnableLocationIfNeeded({
+            interval: 10000,
+          });
+        } catch (error) {
+          console.log('Location enable denied or error', error);
+          ToastAndroid.show('Location is required to proceed', ToastAndroid.SHORT);
+          setLocationLoading(false);
+          return;
+        }
       }
 
-      // Show success toast
-      ToastAndroid.show(
-        `✓ Location Updated: ${addressString}`,
-        ToastAndroid.LONG
-      );
+      // Step 3: Get current location using Geolocation API
+      Geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
 
-      setLocationLoading(false);
+            // Store location data
+            const locationData: LocationData = {
+              latitude,
+              longitude,
+              address: 'Current Location',
+              city: 'Current City',
+              state: 'India',
+            };
+
+            setUserLocation(locationData);
+
+            // Update profile with location
+            const addressData = {
+              address: {
+                street: 'Current Location',
+                city: 'Current City',
+                state: 'Current State',
+                zip: 'PIN',
+                country: 'India',
+                location: { latitude, longitude },
+              },
+            };
+
+            await updateUserProfile(addressData, false);
+
+            // Show success toast
+            ToastAndroid.show(
+              `✓ Location Updated: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+              ToastAndroid.LONG
+            );
+
+            setLocationLoading(false);
+          } catch (error: any) {
+            console.error('[HeroSection] Error:', error);
+            ToastAndroid.show('Error updating location', ToastAndroid.SHORT);
+            setLocationLoading(false);
+          }
+        },
+        (error) => {
+          console.error('[HeroSection] Geolocation error:', error);
+          setLocationLoading(false);
+          ToastAndroid.show('Error getting location: ' + error.message, ToastAndroid.SHORT);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000,
+          forceRequestLocation: true,
+          showLocationDialog: true,
+        }
+      );
     } catch (error: any) {
-      console.error('[HeroSection] Location Error:', error.message);
+      console.error('[HeroSection] Exception:', error);
       setLocationLoading(false);
-
-      if (error.message === 'PERMISSION_DENIED') {
-        ToastAndroid.show('Location permission denied', ToastAndroid.SHORT);
-      } else if (error.message === 'GPS_DISABLED') {
-        ToastAndroid.show('Location is required to proceed', ToastAndroid.SHORT);
-      } else {
-        ToastAndroid.show('Error getting location', ToastAndroid.SHORT);
-      }
+      ToastAndroid.show('Error: ' + error.message, ToastAndroid.SHORT);
     }
   }, []);
 
@@ -719,7 +781,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     const interval = setInterval(() => {
       setCurrentScrollIndex((prev) => {
         const next = prev + 1;
-        
+
         // Only scroll if the index is valid
         if (next < infiniteOffers.length && flatListRef.current) {
           flatListRef.current.scrollToIndex({
@@ -727,7 +789,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
             animated: true,
           });
         }
-        
+
         // Update offer indicator
         setCurrentOffer((next - startIndex) % Math.max(advertisements.length, 1));
         return next;
@@ -740,7 +802,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   // Initialize scroll position - only if we have data
   useEffect(() => {
     if (advertisements.length === 0 || infiniteOffers.length === 0) return;
-    
+
     if (flatListRef.current && startIndex > 0 && startIndex < infiniteOffers.length) {
       setTimeout(() => {
         try {
@@ -756,6 +818,25 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     }
   }, [advertisements.length, infiniteOffers.length, startIndex]);
 
+  // ========== SCROLL HANDLER FOR DOTS SYNC ==========
+  const handleScroll = useCallback((event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const itemWidth = screenWidth * 0.9 + 16; // Card width (0.9w) + margin (8*2)
+    const index = Math.round(offsetX / itemWidth);
+
+    setCurrentScrollIndex(index);
+
+    // Sync dots
+    if (advertisements.length > 0) {
+      // Since we use infinite data, we map the large index back to the 0...N range
+      // We offset by startIndex so the "middle" set is our reference
+      let relativeIndex = (index - startIndex) % advertisements.length;
+      if (relativeIndex < 0) relativeIndex += advertisements.length;
+
+      setCurrentOffer(relativeIndex);
+    }
+  }, [advertisements.length, startIndex]);
+
   // Show skeleton only on first load
   if (medicinesLoading && adsLoading && medicinesData === undefined && adsData === undefined) {
     return <HeroSectionSkeleton isDark={isDark} />;
@@ -768,8 +849,11 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-      <View
-        style={{ width: '100%', paddingHorizontal: getResponsiveSize(16) }}
+      <ScrollView
+        style={{ flex: 1, paddingHorizontal: getResponsiveSize(16) }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        scrollEventThrottle={16}
       >
         {/* Featured Title */}
         <View style={{ marginVertical: 16 }}>
@@ -782,24 +866,36 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
                 letterSpacing: 0.5,
               }}
             >
-              {userLocation ? `📍 ${userLocation.address}` : 'Featured Medicines'}
+              {userLocation ? ` ${userLocation.address}` : 'Featured Medicines'}
             </Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
               {/* QR Button */}
               <TouchableOpacity
                 onPress={handleQRScannerToggle}
                 disabled={qrScannerVisible}
                 style={{
-                  width: 48,
-                  height: 48,
+                  shadowColor: isDark ? '' : '#1F2937',
                   borderRadius: 24,
-                  backgroundColor: isDark ? '#3A3A3A' : '#E5E7EB',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  opacity: qrScannerVisible ? 0.5 : 1,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
                 }}
               >
-                <Icon name="qr-code-outline" size={25} color={isDark ? '#FFFFFF' : '#1F2937'} />
+                <LinearGradient
+                  colors={isDark ? ['#3A3A3A', '#2A2D35'] : ['#ffffff', '#f8fafc']}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 24,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <Icon name="qr-code-outline" size={22} color={isDark ? '#FFF' : '#333'} />
+                </LinearGradient>
               </TouchableOpacity>
 
               {/* Location Button */}
@@ -807,20 +903,32 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
                 onPress={handleLocationPress}
                 disabled={locationLoading}
                 style={{
-                  width: 48,
-                  height: 48,
+                  shadowColor: isDark ? '' : '#1F2937',
                   borderRadius: 24,
-                  backgroundColor: isDark ? '#3A3A3A' : '#E5E7EB',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  opacity: locationLoading ? 0.5 : 1,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
                 }}
               >
-                {locationLoading ? (
-                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#1F2937'} />
-                ) : (
-                  <Icon name="location-outline" size={25} color={isDark ? '#FFFFFF' : '#1F2937'} />
-                )}
+                <LinearGradient
+                  colors={isDark ? ['#3A3A3A', '#2A2D35'] : ['#ffffff', '#f8fafc']}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 24,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                  }}
+                >
+                  {locationLoading ? (
+                    <ActivityIndicator size="small" color={accentColor} />
+                  ) : (
+                    <Icon name="location-outline" size={24} color={isDark ? '#FFF' : '#333'} />
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -901,47 +1009,58 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
           </LinearGradient>
         )}
 
-        {/* Categories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
-          {medicines.slice(0, 5).map((medicine) => (
+        {/* Categories (Featured Medicines as Circles) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginVertical: 8 }}
+          contentContainerStyle={{ paddingHorizontal: 2 }}
+        >
+          {medicines.map((medicine) => (
             <TouchableOpacity
               key={medicine._id}
               style={{
-                marginRight: 15,
                 alignItems: 'center',
+                width: (screenWidth - 32) / 4, // Exact width to fit 4 visible items
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
               onPress={() => handleMedicinePress(medicine)}
             >
               <View
                 style={{
                   width: 65,
                   height: 65,
-                  borderRadius: 32,
+                  borderRadius: 32.5,
                   backgroundColor: isDark ? '#3A3A3A' : '#F0F0F0',
                   borderWidth: 1,
                   borderColor: isDark ? '#374151' : '#E5E7EB',
                   justifyContent: 'center',
                   alignItems: 'center',
                   overflow: 'hidden',
+                  elevation: 2,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
                 }}
               >
                 <Image
                   source={{ uri: medicine.imageUrl }}
-                  style={{ width: 60, height: 60, borderRadius: 30 }}
+                  style={{ width: 65, height: 65, borderRadius: 32.5 }}
+                  resizeMode="cover"
                 />
               </View>
               <Text
                 style={{
-                  marginTop: 8,
-                  fontSize: 12,
-                  color: isDark ? '#FFFFFF' : '#1F2937',
+                  marginTop: 6,
+                  fontSize: 11,
+                  fontWeight: '600',
+                  color: isDark ? '#E5E7EB' : '#4B5563',
                   textAlign: 'center',
-                  width: 65,
                 }}
                 numberOfLines={1}
               >
-                {medicine.title.substring(0, 10)}...
+                {medicine.title.split(' ')[0]}
               </Text>
             </TouchableOpacity>
           ))}
@@ -949,65 +1068,115 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
 
         {/* Advertisements */}
         {advertisements.length > 0 ? (
-          <FlatList
-            ref={flatListRef}
-            data={infiniteOffers}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            pagingEnabled={false}
-            decelerationRate="fast"
-            snapToInterval={screenWidth * 0.9 + 16}
-            snapToAlignment="start"
-            contentContainerStyle={{ paddingHorizontal: 5 }}
-            renderItem={({ item: ad }) => (
-              <AdvertisementCard
-                ad={ad}
-                isDark={isDark}
-                accentColor={accentColor}
-                onPress={handleAdvertisementClick}
-              />
-            )}
-            keyExtractor={(_, idx) => `ad-${idx}`}
-            scrollEventThrottle={16}
-            getItemLayout={(data, index) => ({
-              length: screenWidth * 0.9 + 16,
-              offset: (screenWidth * 0.9 + 16) * index,
-              index,
-            })}
-          />
-        ) : (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-            <Icon name="megaphone-outline" size={50} color={isDark ? '#9CA3AF' : '#D1D5DB'} />
-            <Text
-              style={{
-                marginTop: 10,
-                fontSize: 16,
-                color: isDark ? '#9CA3AF' : '#D1D5DB',
-                textAlign: 'center',
-              }}
-            >
-              No advertisements available
-            </Text>
-          </View>
-        )}
+          <View>
+            <FlatList
+              ref={flatListRef}
+              data={infiniteOffers}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled={false}
+              decelerationRate="fast"
+              snapToInterval={screenWidth * 0.9 + 16}
+              snapToAlignment="center"
+              contentContainerStyle={{ paddingHorizontal: (screenWidth - (screenWidth * 0.9)) / 2 - 8 + 5 }} // Center the first card
+              renderItem={({ item: ad }) => (
+                <AdvertisementCard
+                  ad={ad}
+                  isDark={isDark}
+                  accentColor={accentColor}
+                  onPress={handleAdvertisementClick}
+                />
+              )}
+              keyExtractor={(_, idx) => `ad-${idx}`}
+              scrollEventThrottle={16}
+              onScroll={handleScroll}
+              getItemLayout={(data, index) => ({
+                length: screenWidth * 0.9 + 16,
+                offset: (screenWidth * 0.9 + 16) * index,
+                index,
+              })}
+            />
+            {/* Premium Indicator Pill moved inside View to be kept together */}
+            <View style={{ alignItems: 'center', marginTop: -20, marginBottom: 10 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: isDark ? '#2a2d35ff' : '#FFFFFF',
+                  paddingVertical: 6,
+                  marginTop: 5,
+                  paddingHorizontal: 12,
+                  width: 110,
+                  borderRadius: 20,
+                  // borderTopLeftRadius: 10,
+                  // borderTopRightRadius: 10,
+                  gap: 7,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                    },
+                    android: {
 
-        {/* Indicator Dots */}
-        {advertisements.length > 0 && (
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginVertical: 12, gap: 6 }}>
-            {advertisements.map((_, i) => (
+                    },
+                  }),
+                  borderTopWidth: isDark ? 0.5 : 0,
+                 
+                  borderColor: isDark ? '#4B5563' : 'transparent',
+                }}
+              >
+                {advertisements.map((_, i) => {
+                  const isActive = currentOffer === i;
+                  return (
+                    <View
+                      key={i}
+                      style={{
+                        width: isActive ? 26 : 16,
+                        height: 3,
+                        marginTop: 3,
+                        borderRadius: 3,
+                        backgroundColor: isActive ? '#22C55E' : isDark ? '#4B5563' : '#D1D5DB',
+                        opacity: isActive ? 1 : 0.6,
+                      }}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        ) : (
+          /* Show Loading Skeleton if No Ads (Polling mode) */
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }}>
+            {Array.from({ length: 3 }).map((_, i) => (
               <View
                 key={i}
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: currentOffer === i ? accentColor : isDark ? '#9CA3AF' : '#D1D5DB',
+                  width: screenWidth * 0.9,
+                  marginHorizontal: 8,
+                  marginVertical: 12,
+                  padding: 16,
+                  borderRadius: 16,
+                  backgroundColor: isDark ? '#2A2D35' : '#F3F4F6',
+                  flexDirection: 'row',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                 }}
-              />
+              >
+                <View style={{ flex: 1 }}>
+                  <SkeletonShimmer width={150} height={22} borderRadius={6} isDark={isDark} />
+                  <SkeletonShimmer width={120} height={14} borderRadius={6} isDark={isDark} style={{ marginTop: 8 }} />
+                  <SkeletonShimmer width={100} height={13} borderRadius={6} isDark={isDark} style={{ marginTop: 6 }} />
+                  <SkeletonShimmer width={80} height={35} borderRadius={8} isDark={isDark} style={{ marginTop: 12 }} />
+                </View>
+                <SkeletonShimmer width={120} height={110} borderRadius={15} isDark={isDark} />
+              </View>
             ))}
-          </View>
+          </ScrollView>
         )}
-      </View>
+      </ScrollView>
 
       {/* QR Scanner Modal */}
       <QRScanner

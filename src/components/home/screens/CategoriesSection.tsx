@@ -10,6 +10,7 @@ import {
   Image,
   StyleProp,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useCategories } from '../../../hooks/useCategories';
@@ -82,12 +83,17 @@ interface Category {
 const CategoriesSection: React.FC = () => {
   const { isDark, accentColor } = useThemePalette();
   const navigation = useNavigation();
+  const { width: screenWidth } = useWindowDimensions();
 
   const { data: items, isLoading, error } = useCategories();
 
   // Show shimmer if loading OR if we have an error (retry logic handles refetching) OR if data is empty
   // The user wants to keep showing shimmer until data is found
   const showShimmer = isLoading || error || !items || items.length === 0;
+
+  // Calculate Item Width for 4 items per row
+  // Padding Horizontal = 8 (left) + 8 (right) = 16
+  const ITEM_WIDTH = (screenWidth - 16) / 4;
 
   const handleSelectCategory = (categoryName: string) => {
     // Navigate to category page or filter
@@ -100,7 +106,7 @@ const CategoriesSection: React.FC = () => {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{
-        paddingHorizontal: 12,
+        paddingHorizontal: 8,
         paddingVertical: 6,
         alignItems: 'center',
       }}
@@ -109,15 +115,18 @@ const CategoriesSection: React.FC = () => {
         <TouchableOpacity
           key={c._id || c.name || i}
           onPress={() => handleSelectCategory(c.name)}
-          className="items-center mr-3.5"
-          style={{ width: screenWidth * 0.18 }}
+          style={{ 
+            width: ITEM_WIDTH,
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+          }}
         >
           <LinearGradient
             colors={isDark ? ['#2A2A2A', '#3A3A3A'] : ['#FFF', '#F4F4F6']}
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
+              width: ITEM_WIDTH * 0.8,
+              height: ITEM_WIDTH * 0.8,
+              borderRadius: (ITEM_WIDTH * 0.8) / 2,
               justifyContent: 'center',
               alignItems: 'center',
               overflow: 'hidden',
@@ -127,14 +136,18 @@ const CategoriesSection: React.FC = () => {
           >
             <Image
               source={{ uri: c.imageUrl || c.image }}
-              style={{ width: 64, height: 64, borderRadius: 32 }}
+              style={{ width: '100%', height: '100%', borderRadius: (ITEM_WIDTH * 0.8) / 2 }}
               resizeMode="cover"
             />
           </LinearGradient>
           <Text
             numberOfLines={1}
             className="mt-1.5 text-xs text-center font-medium"
-            style={{ color: isDark ? '#E5E7EB' : '#1F2937' }}
+            style={{ 
+              color: isDark ? '#E5E7EB' : '#1F2937',
+              width: '100%',
+              paddingHorizontal: 4,
+            }}
           >
             {c.name}
           </Text>
@@ -148,7 +161,7 @@ const CategoriesSection: React.FC = () => {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{
-        paddingHorizontal: 12,
+        paddingHorizontal: 8,
         paddingVertical: 6,
         alignItems: 'center',
       }}
@@ -156,12 +169,18 @@ const CategoriesSection: React.FC = () => {
       {Array.from({ length: 5 }).map((_, i) => (
         <View
           key={i}
-          className="items-center mr-3.5"
-          style={{ width: screenWidth * 0.18 }}
+          style={{ 
+            width: ITEM_WIDTH,
+            alignItems: 'center',
+          }}
         >
-          <SkeletonShimmer width={64} height={64} borderRadius={32} />
+          <SkeletonShimmer 
+            width={ITEM_WIDTH * 0.8} 
+            height={ITEM_WIDTH * 0.8} 
+            borderRadius={(ITEM_WIDTH * 0.8) / 2} 
+          />
           <SkeletonShimmer
-            width={48}
+            width={ITEM_WIDTH * 0.6}
             height={12}
             borderRadius={6}
             style={{ marginTop: 8 }}

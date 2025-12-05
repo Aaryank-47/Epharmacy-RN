@@ -10,6 +10,7 @@ import {
   ScrollViewProps,
   View,
   ViewProps,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useThemePalette from '../hooks/useThemePalette';
@@ -32,7 +33,7 @@ interface RefreshControlWrapperProps {
   enabled?: boolean;
 }
 
-export const RefreshControlWrapper: React.FC<RefreshControlWrapperProps> = ({
+export const RefreshControlWrapper = React.forwardRef<ScrollView, RefreshControlWrapperProps>(({
   isRefreshing,
   onRefresh,
   children,
@@ -41,7 +42,7 @@ export const RefreshControlWrapper: React.FC<RefreshControlWrapperProps> = ({
   viewProps,
   tintColor,
   enabled = true,
-}) => {
+}, ref) => {
   const { isDark, ctaGradient } = useThemePalette();
   const insets = useSafeAreaInsets();
 
@@ -61,7 +62,8 @@ export const RefreshControlWrapper: React.FC<RefreshControlWrapperProps> = ({
 
 
   return (
-    <ScrollView
+    <Animated.ScrollView
+      ref={ref}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -71,14 +73,14 @@ export const RefreshControlWrapper: React.FC<RefreshControlWrapperProps> = ({
           enabled={enabled}
         />
       }
-      showsVerticalScrollIndicator={true}
+      showsVerticalScrollIndicator={scrollViewProps?.showsVerticalScrollIndicator ?? true}
       scrollEventThrottle={16}
       {...scrollViewProps}
     >
       <View {...viewProps}>{children}</View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
-};
+});
 
 /**
  * Standalone RefreshControl for use with FlatList/SectionList
