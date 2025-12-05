@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { View, Animated, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import type { RootStackParamList } from '../../../AppNavigator';
 import { useRefreshControl } from '../../hooks/useRefreshControl';
 import { RefreshControlWrapper } from '../RefreshControlWrapper';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,7 +16,7 @@ import OfferBannerSection from './screens/OfferBannerSection';
 import ScrollToTopButton from '../commonPage/ScrollToTopButton';
 
 const Home: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshKey, setRefreshKey] = useState<number>(0);
@@ -91,6 +92,16 @@ const Home: React.FC = () => {
     minRefreshTime: 1500,
   });
 
+  // Handle tab navigation
+  const handleNavigate = useCallback((screenName: string) => {
+    try {
+      console.log('[HomePage] Navigating to:', screenName);
+      navigation.navigate(screenName as keyof RootStackParamList);
+    } catch (error) {
+      console.error('[HomePage] Navigation error:', error);
+    }
+  }, [navigation]);
+
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white dark:bg-[#0F1419]">
@@ -105,7 +116,7 @@ const Home: React.FC = () => {
   }
 
   return (
-    <Tabs translateY={translateY}>
+    <Tabs translateY={translateY} onNavigate={handleNavigate}>
       {/* Header */}
       <HeaderScreen />
 

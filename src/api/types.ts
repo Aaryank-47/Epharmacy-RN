@@ -35,6 +35,27 @@ export interface ResetPasswordPayload {
   readonly password: string;
 }
 
+export interface UpdateProfilePayload {
+  readonly name?: string;
+  readonly email?: string;
+  readonly phone?: string;
+  readonly age?: number;
+  readonly dob?: string;
+  readonly fcmToken?: string;
+  readonly address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    location?: {
+      latitude?: number;
+      longitude?: number;
+    };
+  };
+  readonly ProfileImage?: string | string[];
+}
+
 // ============================================================================
 // RESPONSE PAYLOADS
 // ============================================================================
@@ -48,6 +69,23 @@ export interface UserPayload {
   readonly role: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+export interface UserProfilePayload {
+  readonly id: string;
+  readonly name: string;
+  readonly email: string;
+  readonly phone: string;
+  readonly role: string;
+  readonly age: number | null;
+  readonly dob: string | null;
+  readonly lastLogin: string | null;
+  readonly fcmToken: string | null;
+  readonly address: Record<string, any>;
+  readonly wishlistCount: number;
+  readonly viewedItemsCount: number;
+  readonly itemsPurchasedCount: number;
+  readonly profileImage: string[];
 }
 
 export interface LoginResponsePayload {

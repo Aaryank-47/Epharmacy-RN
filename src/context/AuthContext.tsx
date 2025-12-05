@@ -37,6 +37,7 @@ interface AuthContextType {
   readonly logout: () => Promise<void>;
   readonly isAuthenticated: boolean;
   readonly isInitialized: boolean;
+  // readonly 
 }
 
 // ============================================================================

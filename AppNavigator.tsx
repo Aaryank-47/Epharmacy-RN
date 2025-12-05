@@ -28,7 +28,23 @@ import PaymentScreen from "./src/components/commonPage/PaymentScreen";
 export type RootStackParamList = {
   HomeTabs: undefined;
   ProfilePage: undefined;
-  EditProfile: undefined;
+  EditProfile: { 
+    userData?: {
+      name: string;
+      email: string;
+      phone: string;
+      age: number | null;
+      dob: string | null;
+      role: string;
+      address: any;
+      profileImage: string[];
+      wishlistCount: number;
+      viewedItemsCount: number;
+      itemsPurchasedCount: number;
+      lastLogin: string | null;
+    }; 
+    refreshProfile?: () => void;
+  };
   Search: undefined;
   ProductDetail: { productId?: string } | undefined;
   ShoppingBagScreen: undefined;

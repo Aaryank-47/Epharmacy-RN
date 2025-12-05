@@ -15,6 +15,8 @@ import type {
   VerifyOtpPayload,
   SignUpPayload,
   UserPayload,
+  UserProfilePayload,
+  UpdateProfilePayload,
 } from './types';
 
 // ============================================================================
@@ -169,6 +171,57 @@ export const resetPasswordRequest = async (
     return response.data;
   } catch (error) {
     console.error('[authApi] Password reset failed:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// USER PROFILE API FUNCTIONS
+// ============================================================================
+
+/**
+ * Get current user profile
+ * @throws Error if profile fetch fails
+ */
+export const getUserProfile = async (): Promise<ApiResponse<UserProfilePayload>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<UserProfilePayload>>(
+      API_ROUTES.user.profile
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[authApi] Get user profile failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update user profile
+ * @param payload - Profile data to update (can be FormData for file upload or JSON object)
+ * @param hasFile - Whether the payload contains a file upload
+ * @throws Error if profile update fails
+ */
+export const updateUserProfile = async (
+  payload: FormData | UpdateProfilePayload,
+  hasFile: boolean = false
+): Promise<ApiResponse<any>> => {
+  try {
+    const config = hasFile
+      ? {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      : undefined;
+
+    const response = await httpClient.put<ApiResponse<any>>(
+      API_ROUTES.user.updateProfile,
+      payload,
+      config
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[authApi] Update user profile failed:', error);
     throw error;
   }
 };
