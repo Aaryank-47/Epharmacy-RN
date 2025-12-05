@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   
   header: {
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 45,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + (-25) : 40,
     paddingBottom: 15,
     borderBottomWidth: 1,
   },
