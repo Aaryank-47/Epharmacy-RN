@@ -17,7 +17,6 @@ import { useCategories } from '../../../hooks/useCategories';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 
-const { width: screenWidth } = Dimensions.get('window');
 
 // Shimmer Skeleton Component
 interface SkeletonShimmerProps {

@@ -6,6 +6,7 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  Easing,
   FlatList,
   Alert,
   Animated,
@@ -358,17 +359,16 @@ const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, accentColo
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
-          width: screenWidth * 0.9,
+          width: '100%',
           borderRadius: 24,
           padding: getResponsiveSize(16),
-          marginVertical: getResponsiveSize(8),
-          marginHorizontal: 6, // Standardized for perfect snap alignment
+          marginVertical: getResponsiveSize(6),
+          // marginHorizontal removed, handled by wrapper
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           borderWidth: 1,
           borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0,0,0,0.05)',
-
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: isDark ? 0.4 : 0.1,
           shadowRadius: 12,
@@ -578,6 +578,56 @@ const QRScanner = memo<QRScannerProps>(({ visible, onClose, scanned, onScan }) =
 QRScanner.displayName = 'QRScanner';
 
 // ============================================================================
+// PROGRESS DOT COMPONENT
+// ============================================================================
+
+const ProgressDot = memo(({ isActive, isDark, duration = 3000 }: { isActive: boolean; isDark: boolean; duration?: number }) => {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      progress.setValue(0);
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: duration,
+        useNativeDriver: false,
+        easing: Easing.linear,
+      }).start();
+    } else {
+      progress.setValue(0);
+    }
+  }, [isActive, duration]);
+
+  return (
+    <View
+      style={{
+        width: isActive ? 26 : 8,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: isDark ? '#4B5563' : '#D1D5DB',
+        marginHorizontal: 3,
+        overflow: 'hidden',
+      }}
+    >
+      {isActive && (
+        <Animated.View
+          style={{
+            height: '100%',
+            backgroundColor: '#22C55E',
+            width: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '100%'],
+            }),
+          }}
+        />
+      )}
+    </View>
+  );
+});
+
+ProgressDot.displayName = 'ProgressDot';
+
+// ============================================================================
 // MAIN HERO SECTION - PRODUCTION OPTIMIZED & HIGH PERFORMANCE
 // ============================================================================
 
@@ -588,6 +638,7 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   const { isDark, accentColor } = useThemePalette();
   const flatListRef = useRef<FlatList>(null);
+  const scrollIndexRef = useRef(0); // Ref to track index for auto-scroll loop
 
   const [currentOffer, setCurrentOffer] = useState(0);
   const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
@@ -643,17 +694,17 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   const medicines: Medicine[] = useMemo(() => medicinesData || MOCK_MEDICINES, [medicinesData]);
   const advertisements: Advertisement[] = useMemo(() => adsData || MOCK_ADS, [adsData]);
 
-  // Infinite scroll optimization - only if we have ads
+  // Infinite scroll optimization - Create a large dataset for "one direction" loop illusion
   const infiniteOffers = useMemo(() => {
     if (advertisements.length === 0) return [];
-    return [...advertisements, ...advertisements, ...advertisements];
+    // Create 100 copies of the data to simulate infinite scrolling
+    // This allows smooth "left to right" transition for a very long time
+    return Array(100).fill(advertisements).flat();
   }, [advertisements]);
 
   // Safe start index calculation
-  const startIndex = useMemo(() => {
-    if (advertisements.length === 0) return 0;
-    return advertisements.length;
-  }, [advertisements.length]);
+  // We start at 0. Since we have 100 copies, user can scroll right for a long time.
+  const startIndex = 0;
 
   // ========== LOCATION HANDLER ==========
   const handleLocationPress = useCallback(async () => {
@@ -776,66 +827,48 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
 
   // ========== AUTO-SCROLL EFFECT ==========
   useEffect(() => {
-    if (advertisements.length === 0 || infiniteOffers.length === 0) return;
+    if (advertisements.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentScrollIndex((prev) => {
-        const next = prev + 1;
+      // Allow scrolling up to the very end of our "infinite" list
+      const maxIndex = infiniteOffers.length - 1;
+      const nextIndex = scrollIndexRef.current + 1;
 
-        // Only scroll if the index is valid
-        if (next < infiniteOffers.length && flatListRef.current) {
-          flatListRef.current.scrollToIndex({
-            index: next,
-            animated: true,
-          });
-        }
+      // If we somehow reach the true end (unlikely in normal usage), reset to 0
+      const targetIndex = nextIndex > maxIndex ? 0 : nextIndex;
 
-        // Update offer indicator
-        setCurrentOffer((next - startIndex) % Math.max(advertisements.length, 1));
-        return next;
-      });
+      if (flatListRef.current) {
+        flatListRef.current.scrollToIndex({
+          index: targetIndex,
+          animated: true,
+        });
+      }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [advertisements.length, infiniteOffers.length, startIndex]);
+  }, [advertisements.length, infiniteOffers.length]);
 
-  // Initialize scroll position - only if we have data
+  // Initialize scroll position
   useEffect(() => {
-    if (advertisements.length === 0 || infiniteOffers.length === 0) return;
-
-    if (flatListRef.current && startIndex > 0 && startIndex < infiniteOffers.length) {
-      setTimeout(() => {
-        try {
-          flatListRef.current?.scrollToIndex({
-            index: startIndex,
-            animated: false,
-          });
-          setCurrentScrollIndex(startIndex);
-        } catch (error) {
-          console.error('[HeroSection] Scroll initialization error:', error);
-        }
-      }, 100);
-    }
-  }, [advertisements.length, infiniteOffers.length, startIndex]);
+    if (advertisements.length === 0) return;
+    scrollIndexRef.current = 0;
+    setCurrentScrollIndex(0);
+    setCurrentOffer(0);
+  }, [advertisements.length]);
 
   // ========== SCROLL HANDLER FOR DOTS SYNC ==========
   const handleScroll = useCallback((event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const itemWidth = screenWidth * 0.9 + 16; // Card width (0.9w) + margin (8*2)
+    const itemWidth = screenWidth; // Full width
     const index = Math.round(offsetX / itemWidth);
 
+    // Update ref for auto-scroll
+    scrollIndexRef.current = index;
+
+    // Update state for dots
     setCurrentScrollIndex(index);
-
-    // Sync dots
-    if (advertisements.length > 0) {
-      // Since we use infinite data, we map the large index back to the 0...N range
-      // We offset by startIndex so the "middle" set is our reference
-      let relativeIndex = (index - startIndex) % advertisements.length;
-      if (relativeIndex < 0) relativeIndex += advertisements.length;
-
-      setCurrentOffer(relativeIndex);
-    }
-  }, [advertisements.length, startIndex]);
+    setCurrentOffer(index % Math.max(advertisements.length, 1));
+  }, [advertisements.length]);
 
   // Show skeleton only on first load
   if (medicinesLoading && adsLoading && medicinesData === undefined && adsData === undefined) {
@@ -1068,35 +1101,42 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
 
         {/* Advertisements */}
         {advertisements.length > 0 ? (
-          <View>
+          <View style={{ marginHorizontal: -getResponsiveSize(16) }}>
             <FlatList
               ref={flatListRef}
               data={infiniteOffers}
               horizontal
               showsHorizontalScrollIndicator={false}
-              pagingEnabled={false}
+              pagingEnabled={true}
+              initialNumToRender={3} // Optimization
+              maxToRenderPerBatch={3} // Optimization
+              windowSize={5} // Optimization
               decelerationRate="fast"
-              snapToInterval={screenWidth * 0.9 + 16}
+              snapToInterval={screenWidth}
               snapToAlignment="center"
-              contentContainerStyle={{ paddingHorizontal: (screenWidth - (screenWidth * 0.9)) / 2 - 8 + 5 }} // Center the first card
+              contentContainerStyle={{ paddingHorizontal: 0 }}
               renderItem={({ item: ad }) => (
-                <AdvertisementCard
-                  ad={ad}
-                  isDark={isDark}
-                  accentColor={accentColor}
-                  onPress={handleAdvertisementClick}
-                />
+                <View style={{ width: screenWidth, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: screenWidth - 32 }}>
+                    <AdvertisementCard
+                      ad={ad}
+                      isDark={isDark}
+                      accentColor={accentColor}
+                      onPress={handleAdvertisementClick}
+                    />
+                  </View>
+                </View>
               )}
               keyExtractor={(_, idx) => `ad-${idx}`}
               scrollEventThrottle={16}
               onScroll={handleScroll}
               getItemLayout={(data, index) => ({
-                length: screenWidth * 0.9 + 16,
-                offset: (screenWidth * 0.9 + 16) * index,
+                length: screenWidth,
+                offset: screenWidth * index,
                 index,
               })}
             />
-            {/* Premium Indicator Pill moved inside View to be kept together */}
+            {/* Premium Indicator Pill */}
             <View style={{ alignItems: 'center', marginTop: -20, marginBottom: 10 }}>
               <View
                 style={{
@@ -1107,10 +1147,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
                   paddingVertical: 6,
                   marginTop: 5,
                   paddingHorizontal: 12,
-                  width: 110,
                   borderRadius: 20,
-                  // borderTopLeftRadius: 10,
-                  // borderTopRightRadius: 10,
                   gap: 7,
                   ...Platform.select({
                     ios: {
@@ -1119,37 +1156,25 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
                       shadowOpacity: 0.1,
                       shadowRadius: 4,
                     },
-                    android: {
-
-                    },
                   }),
                   borderTopWidth: isDark ? 0.5 : 0,
-                 
                   borderColor: isDark ? '#4B5563' : 'transparent',
                 }}
               >
-                {advertisements.map((_, i) => {
-                  const isActive = currentOffer === i;
-                  return (
-                    <View
-                      key={i}
-                      style={{
-                        width: isActive ? 26 : 16,
-                        height: 3,
-                        marginTop: 3,
-                        borderRadius: 3,
-                        backgroundColor: isActive ? '#22C55E' : isDark ? '#4B5563' : '#D1D5DB',
-                        opacity: isActive ? 1 : 0.6,
-                      }}
-                    />
-                  );
-                })}
+                {advertisements.map((_, i) => (
+                  <ProgressDot
+                    key={i}
+                    isActive={currentOffer === i}
+                    isDark={isDark}
+                    duration={3000}
+                  />
+                ))}
               </View>
             </View>
           </View>
         ) : (
-          /* Show Loading Skeleton if No Ads (Polling mode) */
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }}>
+          /* Show Loading Skeleton */
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -8, marginVertical: 12 }}>
             {Array.from({ length: 3 }).map((_, i) => (
               <View
                 key={i}

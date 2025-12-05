@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -6,12 +6,13 @@ import {
     Dimensions,
     Image,
     FlatList,
+    Animated,
+    Easing,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -44,7 +45,7 @@ const MOCK_TRENDING_DATA: TrendingProduct[] = [
     },
     {
         _id: '3', title: 'Cerelac Baby Food', price: 899, originalPrice: 950, discount: 5, rating: 4.7,
-        imageUrl: 'https://assets.indiadesire.com/images/amazon%20pharmacy%20offers.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqyCvpaCHA8mRtH3FKaRSRPqWQHN-LoTcK2nx1PxPWA2Ra5PFId2XXlGJQGE0j-nFWDIM&usqp=CAU'
     },
     {
         _id: '4', title: 'Omron Digital Thermometer', price: 299, originalPrice: 450, discount: 33, rating: 4.4,
@@ -56,7 +57,7 @@ const MOCK_TRENDING_DATA: TrendingProduct[] = [
     },
     {
         _id: '6', title: 'Hand Sanitizer 500ml', price: 250, originalPrice: 300, discount: 16, rating: 4.3,
-        imageUrl: 'https://m.media-amazon.com/images/I/61D9+2tVbBL._AC_UL480_FMwebp_QL65_.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5vNDXiKdpsCwanXiHh89FU5JpvuYczaelDg&s'
     },
     {
         _id: '7', title: 'Vitamin C Tablets', price: 350, originalPrice: 500, discount: 30, rating: 4.6,
@@ -68,25 +69,129 @@ const MOCK_TRENDING_DATA: TrendingProduct[] = [
     },
     {
         _id: '9', title: 'First Aid Kit Box', price: 850, originalPrice: 1200, discount: 29, rating: 4.5,
-        imageUrl: 'https://m.media-amazon.com/images/I/71w+2+2+1+L._AC_UL480_FMwebp_QL65_.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5vNDXiKdpsCwanXiHh89FU5JpvuYczaelDg&s'
     },
     {
         _id: '10', title: 'Glucometer Kit', price: 1500, originalPrice: 2200, discount: 32, rating: 4.7,
-        imageUrl: 'https://m.media-amazon.com/images/I/71+2+2+1+L._AC_UL480_FMwebp_QL65_.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqyCvpaCHA8mRtH3FKaRSRPqWQHN-LoTcK2nx1PxPWA2Ra5PFId2XXlGJQGE0j-nFWDIM&usqp=CAU'
     },
     {
         _id: '11', title: 'Whey Protein 1kg', price: 299, originalPrice: 3500, discount: 28, rating: 4.9,
-        imageUrl: 'https://m.media-amazon.com/images/I/61s7s+eR+JL._AC_UL480_FMwebp_QL65_.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqyCvpaCHA8mRtH3FKaRSRPqWQHN-LoTcK2nx1PxPWA2Ra5PFId2XXlGJQGE0j-nFWDIM&usqp=CAU'
     },
     {
         _id: '12', title: 'First Aid Kit Box', price: 50, originalPrice: 1200, discount: 29, rating: 4.5,
-        imageUrl: 'https://m.media-amazon.com/images/I/71w+2+2+1+L._AC_UL480_FMwebp_QL65_.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5vNDXiKdpsCwanXiHh89FU5JpvuYczaelDg&s'
     },
     {
         _id: '13', title: 'Glucometer Kit', price: 500, originalPrice: 2200, discount: 32, rating: 4.7,
-        imageUrl: 'https://m.media-amazon.com/images/I/71+2+2+1+L._AC_UL480_FMwebp_QL65_.jpg'
+        imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqyCvpaCHA8mRtH3FKaRSRPqWQHN-LoTcK2nx1PxPWA2Ra5PFId2XXlGJQGE0j-nFWDIM&usqp=CAU'
     },
 ];
+
+// ============================================================================
+// SKELETON SHIMMER COMPONENT
+// ============================================================================
+
+interface SkeletonShimmerProps {
+    width: number | string;
+    height: number;
+    borderRadius?: number;
+    isDark: boolean;
+    style?: any;
+}
+
+const SkeletonShimmer = memo<SkeletonShimmerProps>(
+    ({ width, height, borderRadius = 8, isDark, style }) => {
+        const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+        useEffect(() => {
+            const animation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(shimmerAnim, {
+                        toValue: 1,
+                        duration: 1200,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(shimmerAnim, {
+                        toValue: 0,
+                        duration: 1200,
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+            animation.start();
+            return () => animation.stop();
+        }, [shimmerAnim]);
+
+        const opacity = shimmerAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.3, 0.8],
+        });
+
+        return (
+            <Animated.View
+                style={[
+                    {
+                        width,
+                        height,
+                        borderRadius,
+                        backgroundColor: isDark ? '#3A3A3A' : '#E5E7EB',
+                        opacity,
+                    },
+                    style,
+                ]}
+            />
+        );
+    }
+);
+
+SkeletonShimmer.displayName = 'SkeletonShimmer';
+
+// ============================================================================
+// TRENDING SKELETON CARD
+// ============================================================================
+
+const TrendingSkeletonCard = memo(({ isDark }: { isDark: boolean }) => (
+    <View
+        style={{
+            width: (screenWidth - 28) / 2,
+            borderRadius: 10,
+            backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
+            shadowColor: isDark ? '#000' : '#1F2937',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.3 : 0.08,
+            shadowRadius: 12,
+            elevation: 6,
+            marginRight: 12,
+            marginBottom: 8,
+            overflow: 'hidden'
+        }}
+    >
+        {/* Image Placeholder */}
+        <View style={{ height: 140, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#2A2D38' : '#F3F4F6' }}>
+            <SkeletonShimmer width={100} height={100} borderRadius={8} isDark={isDark} />
+        </View>
+
+        {/* Content Area */}
+        <View style={{ padding: 14 }}>
+            <SkeletonShimmer width="90%" height={14} borderRadius={4} isDark={isDark} style={{ marginBottom: 6 }} />
+            <SkeletonShimmer width="60%" height={14} borderRadius={4} isDark={isDark} style={{ marginBottom: 10 }} />
+
+            <SkeletonShimmer width={80} height={16} borderRadius={4} isDark={isDark} style={{ marginBottom: 12 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4 }}>
+                <View>
+                    <SkeletonShimmer width={60} height={20} borderRadius={4} isDark={isDark} />
+                    <SkeletonShimmer width={40} height={12} borderRadius={4} isDark={isDark} style={{ marginTop: 4 }} />
+                </View>
+                <SkeletonShimmer width={38} height={38} borderRadius={12} isDark={isDark} />
+            </View>
+        </View>
+    </View>
+));
+
+TrendingSkeletonCard.displayName = 'TrendingSkeletonCard';
 
 // ============================================================================
 // PREMIUM PRODUCT CARD
@@ -244,7 +349,7 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                             elevation: 4,
                         }}
                     >
-                        <Ionicons name="cart-outline" size={22} color="#FFFFFF" />
+                        <Icon name="cart-outline" size={22} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -261,6 +366,15 @@ TrendingProductCard.displayName = 'TrendingProductCard';
 const TrendingSection: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate loading delay
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, []);
 
 
     return (
@@ -288,30 +402,49 @@ const TrendingSection: React.FC = () => {
             </View>
 
             {/* Multiple Rows - Each Row Scrolls Independently */}
+            {/* Multiple Rows or Loading Skeleton */}
             <View>
-                {/* Split data into chunks of 8 */}
-                {Array.from({ length: Math.ceil(MOCK_TRENDING_DATA.length / 8) }, (_, rowIndex) => {
-                    const rowData = MOCK_TRENDING_DATA.slice(rowIndex * 8, (rowIndex + 1) * 8);
-                    return (
-                        <View key={`row-${rowIndex}`} className="mb-2">
+                {isLoading ? (
+                    // Render Skeletons
+                    Array.from({ length: 2 }).map((_, rowIndex) => (
+                        <View key={`skeleton-row-${rowIndex}`} className="mb-2">
                             <FlatList
                                 horizontal
-                                data={rowData}
-                                keyExtractor={(item) => item._id}
+                                data={[1, 2, 3, 4]} // 4 dummy items per row for visual filling
+                                keyExtractor={(_, idx) => `skeleton-${rowIndex}-${idx}`}
                                 showsHorizontalScrollIndicator={false}
                                 contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 10 }}
-                                renderItem={({ item }) => (
-                                    <TrendingProductCard
-                                        item={item}
-                                        accentColor={accentColor}
-                                        isDark={isDark}
-                                        onPress={() => navigation.navigate('ProductDetail', { productId: item._id, product: item })}
-                                    />
+                                renderItem={() => (
+                                    <TrendingSkeletonCard isDark={isDark} />
                                 )}
                             />
                         </View>
-                    );
-                })}
+                    ))
+                ) : (
+                    // Render Real Data chunks of 8
+                    Array.from({ length: Math.ceil(MOCK_TRENDING_DATA.length / 8) }, (_, rowIndex) => {
+                        const rowData = MOCK_TRENDING_DATA.slice(rowIndex * 8, (rowIndex + 1) * 8);
+                        return (
+                            <View key={`row-${rowIndex}`} className="mb-2">
+                                <FlatList
+                                    horizontal
+                                    data={rowData}
+                                    keyExtractor={(item) => item._id}
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 10 }}
+                                    renderItem={({ item }) => (
+                                        <TrendingProductCard
+                                            item={item}
+                                            accentColor={accentColor}
+                                            isDark={isDark}
+                                            onPress={() => navigation.navigate('ProductDetail', { productId: item._id, product: item })}
+                                        />
+                                    )}
+                                />
+                            </View>
+                        );
+                    })
+                )}
             </View>
         </LinearGradient>
     );
