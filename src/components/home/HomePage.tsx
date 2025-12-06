@@ -129,12 +129,13 @@ const Home: React.FC = () => {
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { 
               useNativeDriver: true,
-              listener: handleScroll, // Use unified listener
+              listener: handleScroll,
             }
           ),
           scrollEventThrottle: 16,
-          contentContainerStyle: { paddingBottom: 100 }, // Add padding for tab bar
-          showsVerticalScrollIndicator: false, // Hide scrollbar as requested
+          contentContainerStyle: { paddingBottom: 100 },
+          showsVerticalScrollIndicator: false,
+          removeClippedSubviews: true, // Optimize offscreen rendering
         }}
       >
         {/* Main Content */}
@@ -149,8 +150,7 @@ const Home: React.FC = () => {
       </RefreshControlWrapper>
       
       {/* Scroll To Top Button */}
-      <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} 
-      />
+      <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
     </Tabs>
   );
 };

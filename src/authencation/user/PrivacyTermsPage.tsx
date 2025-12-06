@@ -1,68 +1,48 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import React from "react";
+import { View, Text, ScrollView } from "react-native";
 
-const { width: screenWidth } = Dimensions.get('window');
-const getResponsiveSize = (size) => (screenWidth / 375) * size;
+interface Props {
+  isDark?: boolean;
+}
 
-const COLORS = {
-  white: '#FFFFFF',
-  black: '#1F2937',
-  gray: '#6B7280',
-  darkBg: '#2A2A2A',
-};
-
-const PrivacyTermsPage = ({ isDark }) => {
-  const items = [
-    { title: 'Privacy Policy', icon: 'shield-lock-outline' },
-    { title: 'Terms of Service', icon: 'file-document-outline' },
-    { title: 'About Us', icon: 'information-outline' },
-  ];
+const PrivacyTermsPage: React.FC<Props> = ({ isDark = false }) => {
+  const textColor = isDark ? "text-white" : "text-gray-800";
+  const headerColor = isDark ? "text-white" : "text-black";
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? COLORS.darkBg : COLORS.white }]}>
-      {items.map((item, index) => (
-        <TouchableOpacity key={index} style={styles.itemContainer}>
-          <MaterialCommunityIcons
-            name={item.icon}
-            size={getResponsiveSize(22)}
-            color={isDark ? COLORS.white : COLORS.gray}
-          />
-          <Text style={[styles.itemText, { color: isDark ? COLORS.white : COLORS.black }]}>
-            {item.title}
-          </Text>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={getResponsiveSize(22)}
-            color={isDark ? COLORS.white : COLORS.gray}
-          />
-        </TouchableOpacity>
-      ))}
-    </View>
+    <ScrollView className={`flex-1 px-5 py-6 ${isDark ? "bg-black" : "bg-white"}`}>
+      
+      {/* Header 1 */}
+      <Text className={`text-xl font-semibold mb-2 ${headerColor}`}>
+        Privacy Policy
+      </Text>
+
+      <Text className={`text-base leading-6 mb-4 ${textColor}`}>
+        We value your privacy and ensure that your personal data is handled securely.
+        This section explains how your information is collected and used in our app.
+      </Text>
+
+      {/* Header 2 */}
+      <Text className={`text-xl font-semibold mb-2 ${headerColor}`}>
+        Terms of Service
+      </Text>
+
+      <Text className={`text-base leading-6 mb-4 ${textColor}`}>
+        By using our app, you agree to follow our guidelines and usage terms. 
+        Please read the terms carefully before continuing.
+      </Text>
+
+      {/* Header 3 */}
+      <Text className={`text-xl font-semibold mb-2 ${headerColor}`}>
+        About Us
+      </Text>
+
+      <Text className={`text-base leading-6 mb-4 ${textColor}`}>
+        We are committed to delivering the best experience for our users and 
+        constantly improving our platform with new features.
+      </Text>
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginHorizontal: screenWidth * 0.04,
-    borderRadius: 16,
-    padding: getResponsiveSize(10),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: getResponsiveSize(15),
-  },
-  itemText: {
-    flex: 1,
-    marginLeft: getResponsiveSize(15),
-    fontSize: getResponsiveSize(16),
-  },
-});
 
 export default PrivacyTermsPage;
