@@ -1,5 +1,5 @@
 export const API_BASE_URL = "https://phrma-production-app-backend-main.onrender.com";
-export const API_TIMEOUT = 30000; // Increased timeout to 30 seconds
+export const API_TIMEOUT = 60000; // Increased timeout to 60 seconds for file uploads
 
 export const AUTH_TOKEN_STORAGE_KEY = "jwtToken";
 export const REFRESH_TOKEN_STORAGE_KEY = "refreshToken";

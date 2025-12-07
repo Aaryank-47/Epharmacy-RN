@@ -211,8 +211,11 @@ export const updateUserProfile = async (
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          timeout: 90000, // 90 seconds timeout for file uploads (longer than default)
         }
-      : undefined;
+      : {
+          timeout: 30000, // 30 seconds for regular updates
+        };
 
     const response = await httpClient.put<ApiResponse<any>>(
       API_ROUTES.user.updateProfile,
