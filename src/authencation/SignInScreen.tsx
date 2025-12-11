@@ -75,6 +75,9 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
       setLocalError(null);
       await persistSession(data);
       
+      // FCM token is already registered via login API
+      console.log('✅ Login successful with FCM token');
+      
       // Let the AppNavigator detect the auth change and navigate
       // The navigator will automatically redirect to HomeTabs
       // This avoids the RESET action warning

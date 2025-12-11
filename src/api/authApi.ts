@@ -18,6 +18,7 @@ import type {
   UserProfilePayload,
   UpdateProfilePayload,
 } from './types';
+import { notificationService } from '../services/notificationService';
 
 // ============================================================================
 // RESPONSE NORMALIZATION
@@ -73,9 +74,26 @@ export const loginRequest = async (
   payload: LoginRequestPayload
 ): Promise<LoginResponsePayload> => {
   try {
+    // Get FCM token before login
+    let fcmToken = null;
+    try {
+      fcmToken = await notificationService.getToken();
+      if (fcmToken) {
+        console.log('📱 FCM Token obtained for login:', fcmToken.substring(0, 20) + '...');
+      }
+    } catch (tokenError) {
+      console.warn('⚠️ Could not get FCM token, continuing without it:', tokenError);
+    }
+
+    // Add FCM token to login payload
+    const loginPayload = {
+      ...payload,
+      ...(fcmToken && { fcmToken })
+    };
+
     const response = await httpClient.post<ApiResponse<any>>(
       API_ROUTES.auth.login,
-      payload
+      loginPayload
     );
 
     return normalizeLoginResponse(response.data);

@@ -11,8 +11,9 @@ import { CartProvider } from "./src/context/CartContext";
 import QueryProvider from "./src/providers/QueryProvider";
 import { store } from "./src/store";
 
-import AppNavigator from "./AppNavigator"; 
+import AppNavigator from "./AppNavigator";
 import loadIconFonts from "./src/utils/loadIconFonts";
+import NotificationSetup from "./src/config/notificationSetup";
 
 enableScreens(true);
 loadIconFonts();
@@ -41,6 +42,9 @@ export default function App() {
             <QueryProvider>
               <CartProvider>
                 <AuthProvider>
+                  {/* Initialize Notification System */}
+                  <NotificationSetup />
+                  
                   <NavigationContainer>
                     <AppNavigator />
                   </NavigationContainer>

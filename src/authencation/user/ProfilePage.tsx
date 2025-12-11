@@ -23,6 +23,7 @@ import { getUserProfile } from '../../api/authApi';
 import type { UserProfilePayload } from '../../api/types';
 import ActionGrid from './ActionGrid';
 import PrivacyTermsPage from './PrivacyTermsPage';
+import { notificationService } from '../../services/notificationService';
 
 // Types
 interface Address {
@@ -223,8 +224,17 @@ const ProfilePage: React.FC = () => {
         {
           text: 'Logout Safely',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             console.log('User logged out securely');
+            
+            // Delete FCM token before logout
+            try {
+              await notificationService.deleteToken();
+              console.log('✅ FCM token deleted');
+            } catch (error) {
+              console.error('❌ Error deleting FCM token:', error);
+            }
+            
             logout();
           },
         },

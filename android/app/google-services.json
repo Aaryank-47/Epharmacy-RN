@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "297795283418",
+    "project_id": "pushnotification-57554",
+    "storage_bucket": "pushnotification-57554.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:297795283418:android:8e541c6f2aca15450cb8e3",
+        "android_client_info": {
+          "package_name": "com.epharmacynative"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "297795283418-hbcjk2cj1bo1tsggp3ltmfhe7bjs4phs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAusQGrnvY_hXG8QCHJQcyhr4vWsrRCSC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "297795283418-hbcjk2cj1bo1tsggp3ltmfhe7bjs4phs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

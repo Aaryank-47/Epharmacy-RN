@@ -1,4 +1,9 @@
+// Local backend for notifications (testing) - DEPRECATED: Now using API_BASE_URL for production
+// export const NOTIFICATION_API_BASE_URL = "http://10.0.2.2:5000";
+
+// Production backend for all features including notifications
 export const API_BASE_URL = "https://phrma-production-app-backend-main.onrender.com";
+
 export const API_TIMEOUT = 60000; // Increased timeout to 60 seconds for file uploads
 
 export const AUTH_TOKEN_STORAGE_KEY = "jwtToken";
@@ -31,6 +36,19 @@ export const API_ROUTES = {
     all: "/api/v1/items",
     dealsOfTheDay: "/api/v1/items/deals-of-the-day",
     trending: "/api/v1/items/trending",
+  },
+  notifications: {
+    registerToken: "/api/v1/notifications/register-token",
+    send: "/api/v1/notifications/send",
+    subscribeTopic: "/api/v1/notifications/subscribe-topic",
+    unsubscribeTopic: "/api/v1/notifications/unsubscribe-topic",
+    // Notification Log APIs
+    activeLogs: "/api/v1/notifications/active-logs",
+    myNotifications: "/api/v1/notifications/myNotification",
+    logById: "/api/v1/notifications/log",
+    stats: "/api/v1/notifications/stats",
+    markAsRead: "/api/v1/notifications/mark-read",
+    markMultipleAsRead: "/api/v1/notifications/mark-multiple-read",
   },
 } as const;
 
