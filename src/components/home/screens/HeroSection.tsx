@@ -710,7 +710,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   const handleAdvertisementClick = useCallback(async (adId: string, adTitle: string) => {
     try {
       await trackAdvertisementClick(adId);
-      Alert.alert('Advertisement Clicked', `You clicked on: ${adTitle}`);
     } catch (error) {
       console.error('Error tracking click:', error);
     }
