@@ -27,6 +27,10 @@ export const API_ROUTES = {
     featuredMedicines: "/api/v1/featured-medicines",
     categories: "/api/v1/categories/list",
   },
+  recentlyViewed: {
+    category: "/api/v1/categories/recently-viewed",
+    item: "/api/v1/items/AddToRecentlyViewedItems",
+  },
   advertisements: {
     running: "/api/v1/advertisements/currently-running",
     active: "/api/v1/advertisements/active",
@@ -35,7 +39,7 @@ export const API_ROUTES = {
   items: {
     all: "/api/v1/items",
     dealsOfTheDay: "/api/v1/items/deals-of-the-day",
-    trending: "/api/v1/items/trending",
+    trending: "/api/v1/items/trending/AiPersonalized",
   },
   notifications: {
     registerToken: "/api/v1/notifications/register-token",

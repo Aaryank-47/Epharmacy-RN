@@ -28,6 +28,7 @@ import {
   getRunningAdvertisements,
   trackAdvertisementClick,
   updateUserProfile,
+  addItemToRecentlyViewed,
 } from '../../../api/medicinesApi';
 import QROptionsBottomSheet from '../../qr/QROptionsBottomSheet';
 
@@ -703,8 +704,14 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     navigation.navigate('PDFUploadScreen');
   }, [navigation]);
 
-  const handleMedicinePress = useCallback((medicine: Medicine) => {
+  const handleMedicinePress = useCallback(async (medicine: Medicine) => {
     console.log('Medicine selected:', medicine.title);
+    try {
+      await addItemToRecentlyViewed(medicine._id);
+      console.log('[HeroSection] Added to recently viewed:', medicine._id);
+    } catch (error) {
+      console.error('[HeroSection] Error adding to recently viewed:', error);
+    }
   }, []);
 
   const handleAdvertisementClick = useCallback(async (adId: string, adTitle: string) => {

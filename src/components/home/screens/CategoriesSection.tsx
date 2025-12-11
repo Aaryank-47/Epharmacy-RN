@@ -16,6 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useCategories } from '../../../hooks/useCategories';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
+import { addCategoryToRecentlyViewed } from '../../../api/medicinesApi';
 
 
 // Shimmer Skeleton Component
@@ -94,9 +95,15 @@ const CategoriesSection: React.FC = () => {
   // Padding Horizontal = 8 (left) + 8 (right) = 16
   const ITEM_WIDTH = (screenWidth - 16) / 4;
 
-  const handleSelectCategory = (categoryName: string) => {
+  const handleSelectCategory = async (categoryId: string, categoryName: string) => {
     // Navigate to category page or filter
     console.log('Selected category:', categoryName);
+    try {
+      await addCategoryToRecentlyViewed(categoryId);
+      console.log('[CategoriesSection] Added to recently viewed:', categoryId);
+    } catch (error) {
+      console.error('[CategoriesSection] Error adding to recently viewed:', error);
+    }
     // navigation.navigate('Category', { name: categoryName });
   };
 
@@ -113,7 +120,7 @@ const CategoriesSection: React.FC = () => {
       {list.map((c, i) => (
         <TouchableOpacity
           key={c._id || c.name || i}
-          onPress={() => handleSelectCategory(c.name)}
+          onPress={() => handleSelectCategory(c._id, c.name)}
           style={{ 
             width: ITEM_WIDTH,
             alignItems: 'center',

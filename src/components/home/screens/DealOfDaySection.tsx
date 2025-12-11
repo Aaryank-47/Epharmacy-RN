@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { useDealsOfTheDay } from '../../../hooks/useDealsOfTheDay';
+import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -117,9 +118,21 @@ const DealOfDaySection: React.FC = () => {
     />
   );
 
-  const handleProductPress = (item: any) => {
-    console.log('Product selected:', item.title);
-    // navigation.navigate('ProductDetail', { productId: item._id, product: item });
+  const handleProductPress = async (item: any) => {
+    const itemId = item._id || item.id;
+    console.log('Product selected:', item.title || item.itemName, '| ID:', itemId);
+    
+    if (itemId) {
+      try {
+        await addItemToRecentlyViewed(itemId);
+        console.log('[DealOfDaySection] Added to recently viewed:', itemId);
+      } catch (error) {
+        console.error('[DealOfDaySection] Error adding to recently viewed:', error);
+      }
+    } else {
+      console.warn('[DealOfDaySection] Product ID is undefined for item:', item);
+    }
+    // navigation.navigate('ProductDetail', { productId: itemId, product: item });
   };
 
   return (
@@ -214,7 +227,7 @@ const DealOfDaySection: React.FC = () => {
                   {/* Add Button - Cart Icon */}
                   <TouchableOpacity
                     style={{ backgroundColor: accentColor }}
-                    className="w-10 h-10 rounded-full items-center justify-center shadow-sm"
+                    className="w-10 h-10 rounded-2xl items-center justify-center shadow-sm"
                     onPress={() => handleProductPress(item)}
                   >
                     <Ionicons name="cart-outline" size={24} color="#FFFFFF" />

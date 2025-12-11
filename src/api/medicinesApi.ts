@@ -1,7 +1,3 @@
-/**
- * MEDICINES & ADVERTISEMENTS API FUNCTIONS
- * Handles featured medicines, advertisements, and related operations
- */
 
 import httpClient from './httpClient';
 import { API_ROUTES } from './config';
@@ -54,10 +50,6 @@ interface UserProfilePayload {
 // MEDICINES API FUNCTIONS
 // ============================================================================
 
-/**
- * Get featured medicines list
- * @returns Promise with featured medicines data
- */
 export const getFeaturedMedicines = async (): Promise<
   ApiResponse<{ data: Medicine[] }>
 > => {
@@ -82,10 +74,6 @@ export const getFeaturedMedicines = async (): Promise<
   }
 };
 
-/**
- * Get running advertisements
- * @returns Promise with advertisements data
- */
 export const getRunningAdvertisements = async (): Promise<
   ApiResponse<{ data: Advertisement[] }>
 > => {
@@ -110,11 +98,7 @@ export const getRunningAdvertisements = async (): Promise<
   }
 };
 
-/**
- * Track advertisement click
- * @param advertisementId - ID of the advertisement clicked
- * @returns Promise with tracking response
- */
+
 export const trackAdvertisementClick = async (
   advertisementId: string
 ): Promise<ApiResponse<{ success: boolean }>> => {
@@ -134,12 +118,6 @@ export const trackAdvertisementClick = async (
   }
 };
 
-/**
- * Update user profile with address/location
- * @param profileData - User profile data with address
- * @param updateAll - Whether to update all profile fields
- * @returns Promise with update response
- */
 export const updateUserProfile = async (
   profileData: { address: UserAddress },
   updateAll: boolean = false
@@ -158,10 +136,6 @@ export const updateUserProfile = async (
   }
 };
 
-/**
- * Get all medicines/items
- * @returns Promise with all medicines data
- */
 export const getAllMedicines = async (): Promise<
   ApiResponse<{ data: Medicine[] }>
 > => {
@@ -176,10 +150,7 @@ export const getAllMedicines = async (): Promise<
   }
 };
 
-/**
- * Get deals of the day
- * @returns Promise with deals data
- */
+
 export const getDealsOfTheDay = async (): Promise<
   ApiResponse<{ data: Medicine[] }>
 > => {
@@ -195,27 +166,34 @@ export const getDealsOfTheDay = async (): Promise<
 };
 
 /**
- * Get trending medicines
+ * Get trending medicines (AI Personalized)
  * @returns Promise with trending medicines data
  */
 export const getTrendingMedicines = async (): Promise<
-  ApiResponse<{ data: Medicine[] }>
+  ApiResponse<{ data: any[] }>
 > => {
   try {
-    const response = await httpClient.get<ApiResponse<{ data: Medicine[] }>>(
+    const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.items.trending
     );
-    return response.data;
+    console.log('[medicinesApi] Trending medicines response:', response.data);
+    
+    // Handle response structure
+    const data = response.data;
+    const trending = data?.data || [];
+    
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'AI Trending Products',
+      data: { data: Array.isArray(trending) ? trending : [] },
+    };
   } catch (error) {
     console.error('[medicinesApi] Failed to fetch trending medicines:', error);
     throw error;
   }
 };
 
-/**
- * Get all categories
- * @returns Promise with categories data
- */
+
 export const getCategories = async (): Promise<
   ApiResponse<{ data: any[] }>
 > => {
@@ -226,6 +204,39 @@ export const getCategories = async (): Promise<
     return response.data;
   } catch (error) {
     console.error('[medicinesApi] Failed to fetch categories:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// RECENTLY VIEWED APIs
+// ============================================================================
+
+export const addCategoryToRecentlyViewed = async (
+  categoryId: string
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await httpClient.post<ApiResponse<any>>(
+      `${API_ROUTES.recentlyViewed.category}/${categoryId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[medicinesApi] Failed to add category to recently viewed:', error);
+    throw error;
+  }
+};
+
+
+export const addItemToRecentlyViewed = async (
+  itemId: string
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await httpClient.post<ApiResponse<any>>(
+      `${API_ROUTES.recentlyViewed.item}/${itemId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[medicinesApi] Failed to add item to recently viewed:', error);
     throw error;
   }
 };
