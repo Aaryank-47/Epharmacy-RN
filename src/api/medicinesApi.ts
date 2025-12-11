@@ -19,6 +19,18 @@ interface Medicine {
   category?: string;
 }
 
+export interface ItemFeedItem {
+  _id: string;
+  itemName: string;
+  code?: string;
+  image: string | null;
+  itemDescription?: string;
+  itemDiscount?: number;
+  itemRatings?: number;
+  itemFinalPrice?: number;
+  itemInitialPrice?: number;
+}
+
 interface Advertisement {
   _id: string;
   title: string;
@@ -58,11 +70,11 @@ export const getFeaturedMedicines = async (): Promise<
       API_ROUTES.catalog.featuredMedicines
     );
     console.log('[medicinesApi] Featured medicines response:', response.data);
-    
+
     // Handle different response structures from backend
     const data = response.data;
     const medicines = data?.data?.data || data?.data || data || [];
-    
+
     return {
       success: data?.success ?? true,
       message: data?.message ?? 'Success',
@@ -82,11 +94,11 @@ export const getRunningAdvertisements = async (): Promise<
       API_ROUTES.advertisements.running
     );
     console.log('[medicinesApi] Running advertisements response:', response.data);
-    
+
     // Handle different response structures from backend
     const data = response.data;
     const ads = data?.data?.data || data?.data || data || [];
-    
+
     return {
       success: data?.success ?? true,
       message: data?.message ?? 'Success',
@@ -165,10 +177,7 @@ export const getDealsOfTheDay = async (): Promise<
   }
 };
 
-/**
- * Get trending medicines (AI Personalized)
- * @returns Promise with trending medicines data
- */
+
 export const getTrendingMedicines = async (): Promise<
   ApiResponse<{ data: any[] }>
 > => {
@@ -177,11 +186,11 @@ export const getTrendingMedicines = async (): Promise<
       API_ROUTES.items.trending
     );
     console.log('[medicinesApi] Trending medicines response:', response.data);
-    
+
     // Handle response structure
     const data = response.data;
     const trending = data?.data || [];
-    
+
     return {
       success: data?.success ?? true,
       message: data?.message ?? 'AI Trending Products',
@@ -237,6 +246,34 @@ export const addItemToRecentlyViewed = async (
     return response.data;
   } catch (error) {
     console.error('[medicinesApi] Failed to add item to recently viewed:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// DYNAMIC FEED API
+// ============================================================================
+
+export const getItemFeed = async (): Promise<
+  ApiResponse<{ data: ItemFeedItem[] }>
+> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.items.itemFeed
+    );
+    console.log('[medicinesApi] GetItemFeed response:', response.data);
+
+    // Handle response structure
+    const data = response.data;
+    const items = data?.data || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Dynamic feed fetched successfully',
+      data: { data: Array.isArray(items) ? items : [] },
+    };
+  } catch (error) {
+    console.error('[medicinesApi] Failed to fetch item feed:', error);
     throw error;
   }
 };

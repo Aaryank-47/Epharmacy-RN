@@ -1,4 +1,7 @@
 import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useTrendingProducts } from '../../../hooks/useTrendingProducts';
+import { useNavigation } from '@react-navigation/native';
 import {
     View,
     Text,
@@ -9,11 +12,10 @@ import {
     Animated,
     Easing,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-import { useTrendingProducts } from '../../../hooks/useTrendingProducts';
+
 import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -283,9 +285,9 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                             )}
                         </View>
                         {item.itemInitialPrice && item.itemInitialPrice > 0 && item.itemFinalPrice >= 0 && (
-                            <Text 
-                                style={{ 
-                                    fontSize: 11, 
+                            <Text
+                                style={{
+                                    fontSize: 11,
                                     color: '#16A34A',
                                     fontWeight: '700',
                                     marginTop: 2,
@@ -330,14 +332,14 @@ TrendingProductCard.displayName = 'TrendingProductCard';
 const TrendingSection: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
-    
+
     // React Query for trending products
     const { data: trendingProducts, isLoading } = useTrendingProducts();
 
     const handleProductPress = async (item: TrendingProduct) => {
         const itemId = item._id;
         console.log('[TrendingSection] Product selected:', item.itemName, '| ID:', itemId);
-        
+
         if (itemId) {
             try {
                 await addItemToRecentlyViewed(itemId);

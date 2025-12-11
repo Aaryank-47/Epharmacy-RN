@@ -13,6 +13,7 @@ import CategoriesSection from './screens/CategoriesSection';
 import TrendingSection from './screens/TrendingSection';
 import DealOfDaySection from './screens/DealOfDaySection';
 import OfferBannerSection from './screens/OfferBannerSection';
+import ItemFeedSection from './screens/ItemFeedSection';
 import ScrollToTopButton from '../commonPage/ScrollToTopButton';
 
 const Home: React.FC = () => {
@@ -127,7 +128,7 @@ const Home: React.FC = () => {
         scrollViewProps={{
           onScroll: Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { 
+            {
               useNativeDriver: true,
               listener: handleScroll,
             }
@@ -146,9 +147,10 @@ const Home: React.FC = () => {
           <DealOfDaySection key={`deal-${refreshKey}`} />
           <OfferBannerSection key={`offer-${refreshKey}`} />
           <TrendingSection key={`trend-${refreshKey}`} />
+          <ItemFeedSection key={`feed-${refreshKey}`} />
         </View>
       </RefreshControlWrapper>
-      
+
       {/* Scroll To Top Button */}
       <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
     </Tabs>

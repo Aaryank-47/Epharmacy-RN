@@ -40,6 +40,7 @@ export const API_ROUTES = {
     all: "/api/v1/items",
     dealsOfTheDay: "/api/v1/items/deals-of-the-day",
     trending: "/api/v1/items/trending/AiPersonalized",
+    itemFeed: "/api/v1/items/GetItemFeed",
   },
   notifications: {
     registerToken: "/api/v1/notifications/register-token",
