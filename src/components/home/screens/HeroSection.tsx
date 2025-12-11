@@ -29,6 +29,7 @@ import {
   trackAdvertisementClick,
   updateUserProfile,
 } from '../../../api/medicinesApi';
+import QROptionsBottomSheet from '../../qr/QROptionsBottomSheet';
 
 // ============================================================================
 // TYPES
@@ -469,115 +470,6 @@ const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, accentColo
 AdvertisementCard.displayName = 'AdvertisementCard';
 
 // ============================================================================
-// QR SCANNER COMPONENT
-// ============================================================================
-
-interface QRScannerProps {
-  visible: boolean;
-  onClose: () => void;
-  scanned: boolean;
-  onScan?: (data: string) => void;
-}
-
-const QRScanner = memo<QRScannerProps>(({ visible, onClose, scanned, onScan }) => {
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: '#000000' }}>
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 20,
-            paddingTop: Platform.OS === 'android' ? 40 : 50,
-            paddingBottom: 20,
-            backgroundColor: 'rgba(0,0,0,0.8)',
-          }}
-        >
-          <TouchableOpacity onPress={onClose} style={{ padding: 10 }}>
-            <Icon name="close" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' }}>
-            Scan QR Code
-          </Text>
-          <View style={{ width: 50 }} />
-        </View>
-
-        {/* Instructions */}
-        <View style={{ position: 'absolute', top: Platform.OS === 'android' ? 140 : 150, left: 0, right: 0, zIndex: 1 }}>
-          <Text
-            style={{
-              color: '#FFFFFF',
-              fontSize: 16,
-              textAlign: 'center',
-              margin: 20,
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            Use a third-party QR scanner app
-          </Text>
-        </View>
-
-        {/* Content */}
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Icon name="qr-code" size={100} color="#FF6B6B" style={{ marginBottom: 20 }} />
-          <Text style={{ color: '#FFFFFF', fontSize: 16, marginTop: 16, textAlign: 'center', paddingHorizontal: 20 }}>
-            QR Code scanner requires external app. Please use built-in camera app or Google Lens.
-          </Text>
-          <TouchableOpacity
-            onPress={() => {
-              if (Platform.OS === 'android') {
-                Linking.openURL('https://play.google.com/store/apps/details?id=com.google.android.googlequicksearchbox');
-              } else {
-                Linking.openURL('https://apps.apple.com/app/google-lens/id1098986816');
-              }
-            }}
-            style={{
-              marginTop: 30,
-              backgroundColor: '#FF6B6B',
-              paddingHorizontal: 30,
-              paddingVertical: 15,
-              borderRadius: 25,
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }}>Get Scanner App</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Actions */}
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 50,
-            left: 0,
-            right: 0,
-            flexDirection: 'row',
-            justifyContent: 'center',
-          }}
-        >
-          <TouchableOpacity
-            onPress={onClose}
-            style={{
-              backgroundColor: 'rgba(255, 107, 107, 0.8)',
-              paddingHorizontal: 30,
-              paddingVertical: 15,
-              borderRadius: 25,
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-});
-
-QRScanner.displayName = 'QRScanner';
-
-// ============================================================================
 // PROGRESS DOT COMPONENT
 // ============================================================================
 
@@ -643,8 +535,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   const [currentOffer, setCurrentOffer] = useState(0);
   const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [qrScannerVisible, setQrScannerVisible] = useState(false);
-  const [scanned, setScanned] = useState(false);
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
 
   // ========== REACT QUERY - AGGRESSIVE CACHING FOR PERFORMANCE ==========
@@ -801,16 +692,16 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   }, []);
 
   const handleQRScannerToggle = useCallback(() => {
-    setQrScannerVisible(true);
-    setScanned(false);
+    setBottomSheetVisible(true);
   }, []);
 
-  const handleQRScan = useCallback((data: string) => {
-    setScanned(true);
-    Alert.alert('QR Code Data', `Data: ${data}`, [
-      { text: 'OK', onPress: () => setQrScannerVisible(false) },
-    ]);
-  }, []);
+  const handleScanQR = useCallback(() => {
+    navigation.navigate('QRScannerScreen');
+  }, [navigation]);
+
+  const handleUploadPDF = useCallback(() => {
+    navigation.navigate('PDFUploadScreen');
+  }, [navigation]);
 
   const handleMedicinePress = useCallback((medicine: Medicine) => {
     console.log('Medicine selected:', medicine.title);
@@ -905,7 +796,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
               {/* QR Button */}
               <TouchableOpacity
                 onPress={handleQRScannerToggle}
-                disabled={qrScannerVisible}
                 style={{
                   shadowColor: isDark ? '' : '#1F2937',
                   borderRadius: 24,
@@ -1203,15 +1093,12 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* QR Scanner Modal */}
-      <QRScanner
-        visible={qrScannerVisible}
-        onClose={() => {
-          setQrScannerVisible(false);
-          setScanned(false);
-        }}
-        scanned={scanned}
-        onScan={handleQRScan}
+      {/* QR Options Bottom Sheet */}
+      <QROptionsBottomSheet
+        visible={bottomSheetVisible}
+        onClose={() => setBottomSheetVisible(false)}
+        onScanQR={handleScanQR}
+        onUploadPDF={handleUploadPDF}
       />
     </LinearGradient>
   );

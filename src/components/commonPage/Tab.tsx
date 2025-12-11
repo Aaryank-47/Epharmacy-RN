@@ -11,7 +11,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Platform,
   Image,
   useWindowDimensions,
   Animated,
@@ -23,6 +22,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
+import { getUserProfile } from '../../api/authApi';
 
 
 // ============================================================================
@@ -67,32 +67,57 @@ const getInitials = (name: string): string => {
 };
 
 /**
- * Load user data from storage with fallback mechanism
+ * Load user data from localStorage first, then fetch fresh data from API
  */
 const fetchUserDataFromStorage = async (): Promise<UserData> => {
   try {
-    // Primary source: auth_user
-    const authUserData = await AsyncStorage.getItem('auth_user');
+    console.log('[UserData] Fetching from localStorage first...');
+    
+    // Try multiple localStorage sources for initial data
+    const sources = await Promise.all([
+      AsyncStorage.getItem('auth_user'),
+      AsyncStorage.getItem('jwtToken'),
+      AsyncStorage.getItem('userProfile'),
+    ]);
+
+    const [authUserData, jwtData, userProfileData] = sources;
+
+    // Check userProfile first
+    if (userProfileData) {
+      try {
+        const profile = JSON.parse(userProfileData);
+        console.log('[UserData] Initial data from userProfile');
+        return {
+          name: profile.name || 'User',
+          profileImage: Array.isArray(profile.profileImage) 
+            ? profile.profileImage[0] 
+            : profile.profileImage || profile.avatar || null,
+        };
+      } catch (parseError) {
+        console.error('[UserData] Failed to parse userProfile:', parseError);
+      }
+    }
+
+    // Check auth_user
     if (authUserData) {
       try {
         const user = JSON.parse(authUserData);
-        console.log('[UserData] Loaded from auth_user:', { name: user.name });
+        console.log('[UserData] Initial data from auth_user');
         return {
           name: user.name || 'User',
-          profileImage: user.avatar || null,
+          profileImage: user.avatar || user.profileImage?.[0] || null,
         };
       } catch (parseError) {
         console.error('[UserData] Failed to parse auth_user:', parseError);
       }
     }
 
-    // Secondary source: jwtToken
-    const jwtData = await AsyncStorage.getItem('jwtToken');
+    // Check jwtToken
     if (jwtData) {
       try {
         const parsedData = JSON.parse(jwtData);
         if (parsedData.user) {
-          console.log('[UserData] Loaded from jwtToken:', { name: parsedData.user.name });
+          console.log('[UserData] Initial data from jwtToken');
           return {
             name: parsedData.user.name || 'User',
             profileImage: parsedData.user.profileImage?.[0] || null,
@@ -103,12 +128,52 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
       }
     }
 
-    console.warn('[UserData] No user data found in storage');
+    console.warn('[UserData] No initial data found in localStorage');
     return { name: 'User', profileImage: null };
   } catch (error) {
     const err = error as AsyncStorageError;
     console.error('[UserData] Storage access error:', err.message);
     return { name: 'User', profileImage: null };
+  }
+};
+
+/**
+ * Fetch latest user data from API
+ */
+const fetchUserDataFromAPI = async (): Promise<UserData> => {
+  try {
+    console.log('[UserData] Fetching latest data from API...');
+    const response = await getUserProfile();
+    
+    if (response.success && response.data) {
+      const apiData = response.data;
+      console.log('[UserData] API data received:', { 
+        name: apiData.name,
+        hasImage: !!apiData.profileImage 
+      });
+      
+      // Save updated data to localStorage for next time
+      const updatedProfile = {
+        name: apiData.name,
+        profileImage: apiData.profileImage,
+        avatar: apiData.profileImage?.[0] || null,
+      };
+      await AsyncStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      
+      return {
+        name: apiData.name || 'User',
+        profileImage: Array.isArray(apiData.profileImage) 
+          ? apiData.profileImage[0] 
+          : apiData.profileImage || null,
+      };
+    }
+    
+    console.warn('[UserData] API response unsuccessful');
+    return { name: 'User', profileImage: null };
+  } catch (error) {
+    console.error('[UserData] API fetch error:', error);
+    // Return localStorage data as fallback
+    return fetchUserDataFromStorage();
   }
 };
 
@@ -421,38 +486,67 @@ const Tabs = memo<TabsProps>(({
   const [activeTab, setActiveTab] = useState(currentActiveTab);
   const [userData, setUserData] = useState<UserData>({ name: 'User', profileImage: null });
 
-  // React Query for user data
-  const queryResult = useQuery({
-    queryKey: QUERY_KEYS.userData,
+  // First query: Get initial data from localStorage (fast)
+  const localStorageQuery = useQuery({
+    queryKey: ['userDataLocal'],
     queryFn: fetchUserDataFromStorage,
-    staleTime: 0, // Always refetch when data is requested
-    gcTime: 10 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  // Second query: Get latest data from API (may take time)
+  const apiQuery = useQuery({
+    queryKey: QUERY_KEYS.userData,
+    queryFn: fetchUserDataFromAPI,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Refetch user data when screen is focused
+  // Refetch API data when screen is focused
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userData });
-    }, [queryClient])
+      console.log('[Tabs] Screen focused - refetching API data');
+      apiQuery.refetch();
+    }, [apiQuery])
   );
 
+  // Update userData: First show localStorage data, then update with API data when available
   useEffect(() => {
-    if (queryResult.data) {
-      setUserData(queryResult.data);
-      console.log('[Tabs] User data loaded:', { name: queryResult.data.name });
+    // Show localStorage data immediately (if available)
+    if (localStorageQuery.data) {
+      console.log('[Tabs] Setting initial localStorage data:', { 
+        name: localStorageQuery.data.name,
+        hasImage: !!localStorageQuery.data.profileImage 
+      });
+      setUserData(localStorageQuery.data);
     }
-  }, [queryResult.data]);
+  }, [localStorageQuery.data]);
 
   useEffect(() => {
-    if (queryResult.error) {
-      console.error('[Tabs] Failed to load user data:', queryResult.error);
-      onError(queryResult.error as Error);
+    // Update with API data when it arrives
+    if (apiQuery.data) {
+      console.log('[Tabs] Updating with API data:', { 
+        name: apiQuery.data.name,
+        hasImage: !!apiQuery.data.profileImage,
+        imageUrl: apiQuery.data.profileImage 
+      });
+      setUserData(apiQuery.data);
     }
-  }, [queryResult.error, onError]);
+  }, [apiQuery.data]);
 
-  const isLoadingUserData = queryResult.isLoading;
+  useEffect(() => {
+    if (apiQuery.error) {
+      console.error('[Tabs] Failed to load user data from API:', apiQuery.error);
+      onError(apiQuery.error as Error);
+    }
+  }, [apiQuery.error, onError]);
+
+  const isLoadingUserData = localStorageQuery.isLoading && apiQuery.isLoading;
 
   const state = useMemo(
     () => ({

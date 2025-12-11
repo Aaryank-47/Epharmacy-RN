@@ -24,6 +24,8 @@ import ProductDetail from "./src/components/pages/ProductDetail";
 import ShoppingBagScreen from "./src/components/pages/ShoppingBagScreen";
 import CheckoutPage from "./src/components/pages/CheckoutPage";
 import PaymentScreen from "./src/components/commonPage/PaymentScreen";
+import QRScannerScreen from "./src/components/qr/QRScannerScreen";
+import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -50,6 +52,8 @@ export type RootStackParamList = {
   ShoppingBagScreen: undefined;
   CheckoutPage: undefined;
   PaymentScreen: undefined;
+  QRScannerScreen: undefined;
+  PDFUploadScreen: undefined;
   Welcome: undefined;
   Start: undefined;
   SignIn: undefined;
@@ -73,6 +77,8 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "ShoppingBagScreen", component: ShoppingBagScreen },
   { name: "CheckoutPage", component: CheckoutPage },
   { name: "PaymentScreen", component: PaymentScreen },
+  { name: "QRScannerScreen", component: QRScannerScreen },
+  { name: "PDFUploadScreen", component: PDFUploadScreen },
 ];
 
 const PUBLIC_SCREENS: ScreenConfig[] = [
