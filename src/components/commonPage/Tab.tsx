@@ -17,7 +17,8 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
@@ -415,6 +416,7 @@ const Tabs = memo<TabsProps>(({
   translateY,
 }) => {
   const { surfaceColor } = useThemePalette();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState(currentActiveTab);
   const [userData, setUserData] = useState<UserData>({ name: 'User', profileImage: null });
@@ -423,11 +425,18 @@ const Tabs = memo<TabsProps>(({
   const queryResult = useQuery({
     queryKey: QUERY_KEYS.userData,
     queryFn: fetchUserDataFromStorage,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always refetch when data is requested
     gcTime: 10 * 60 * 1000,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Refetch user data when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.userData });
+    }, [queryClient])
+  );
 
   useEffect(() => {
     if (queryResult.data) {
