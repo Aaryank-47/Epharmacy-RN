@@ -72,37 +72,37 @@ const OfferBannerSection: React.FC = () => {
 
   // Fallback mock data
   const staticOffers = [
-    { 
+    {
       _id: 'static-1',
-      title: 'Diabetes Care', 
-      description: 'Flat 40% OFF', 
-      imageUrl: 'https://static.vecteezy.com/system/resources/previews/002/217/707/non_2x/medicine-trendy-banner-vector.jpg', 
-      bgColor: ['#FF9A9E', '#FAD0C4'] 
+      title: 'Diabetes Care',
+      description: 'Flat 40% OFF',
+      imageUrl: 'https://static.vecteezy.com/system/resources/previews/002/217/707/non_2x/medicine-trendy-banner-vector.jpg',
+      bgColor: ['#FF9A9E', '#FAD0C4']
     },
-    { 
+    {
       _id: 'static-2',
-      title: 'Multivitamins', 
-      description: 'Buy 1 Get 1 Free', 
-      imageUrl: 'https://5.imimg.com/data5/SELLER/Default/2023/5/307797715/FU/EL/RC/90163806/condom-3-500x500.jpg', 
-      bgColor: ['#A1C4FD', '#C2E9FB'] 
+      title: 'Multivitamins',
+      description: 'Buy 1 Get 1 Free',
+      imageUrl: 'https://5.imimg.com/data5/SELLER/Default/2023/5/307797715/FU/EL/RC/90163806/condom-3-500x500.jpg',
+      bgColor: ['#A1C4FD', '#C2E9FB']
     },
-    { 
+    {
       _id: 'static-3',
-      title: 'Skin Care', 
-      description: 'Up to 50% OFF', 
-      imageUrl: 'https://img.freepik.com/free-vector/beauty-skin-care-cosmetic-product-ads-flyer_1419-2256.jpg', 
-      bgColor: ['#a8edea', '#fed6e3'] 
+      title: 'Skin Care',
+      description: 'Up to 50% OFF',
+      imageUrl: 'https://img.freepik.com/free-vector/beauty-skin-care-cosmetic-product-ads-flyer_1419-2256.jpg',
+      bgColor: ['#a8edea', '#fed6e3']
     },
   ];
 
   const displayAds = (ads && (ads as any[]).length > 0) ? ads : staticOffers;
-  
+
   // Show shimmer if loading or error or no data yet (persistent shimmer)
   const showShimmer = isLoading || (!ads && !error);
 
   const renderShimmerPlaceholders = () => (
     <View className="px-4">
-      <View 
+      <View
         className="rounded-3xl p-4 flex-row justify-between items-center border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1A1C23]"
         style={{ width: screenWidth * 0.9, height: 160 }}
       >
@@ -138,7 +138,7 @@ const OfferBannerSection: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
-      
+
       {showShimmer ? (
         renderShimmerPlaceholders()
       ) : (
@@ -147,7 +147,7 @@ const OfferBannerSection: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           data={displayAds}
           keyExtractor={(item, i) => item._id || i.toString()}
-          contentContainerStyle={{ 
+          contentContainerStyle={{
             paddingHorizontal: (screenWidth - ITEM_WIDTH) / 2 - SPACING, // Center the first item
             paddingBottom: 10
           }}
@@ -161,8 +161,8 @@ const OfferBannerSection: React.FC = () => {
           scrollEventThrottle={16}
           renderItem={({ item, index }) => {
             // Determine gradient colors
-            const gradientColors = isDark 
-              ? ['#2e2c2cff', '#1a1c20ff'] 
+            const gradientColors = isDark
+              ? ['#2e2c2cff', '#1a1c20ff']
               : (item.bgColor || (index % 2 === 0 ? ['#FF9A9E', '#FAD0C4'] : ['#A1C4FD', '#C2E9FB']));
 
             // Animation Interpolation
@@ -210,20 +210,20 @@ const OfferBannerSection: React.FC = () => {
                   }}
                 >
                   <View className="flex-1 pr-2 justify-center">
-                    <Text 
+                    <Text
                       className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
                       numberOfLines={2}
                       style={{ textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}
                     >
                       {item.title}
                     </Text>
-                    <Text 
+                    <Text
                       className={`text-base font-medium mb-5 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}
                       numberOfLines={2}
                     >
                       {item.description || item.offerText || ''}
                     </Text>
-                    
+
                     <TouchableOpacity
                       className={`self-start px-6 py-3 rounded-full shadow-md ${isDark ? 'bg-[#cf7393ff]' : 'bg-[#22C55E]'}`}
                       onPress={() => console.log('Shop offer:', item.title)}
@@ -237,8 +237,8 @@ const OfferBannerSection: React.FC = () => {
 
                   <Image
                     source={{ uri: item.imageUrl }}
-                    className="w-36 h-36 rounded-2xl"
-                    resizeMode="contain"
+                    className="w-56 h-48 border-[4px] border-white rounded-[50px] mr-[-14px]"
+                    resizeMode="cover"
                   />
                 </LinearGradient>
               </Animated.View>
