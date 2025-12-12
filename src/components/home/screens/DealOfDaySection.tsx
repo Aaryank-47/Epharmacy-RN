@@ -79,7 +79,7 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
 // DEAL OF DAY SECTION
 // ============================================================================
 const DealOfDaySection: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { isDark, accentColor } = useThemePalette();
 
   const { data: deals, isLoading, error } = useDealsOfTheDay();
@@ -95,44 +95,38 @@ const DealOfDaySection: React.FC = () => {
       keyExtractor={(_, i) => `shimmer-${i}`}
       contentContainerStyle={{ paddingHorizontal: 12 }}
       renderItem={() => (
-        <View 
+        <View
           className="mr-3 bg-white dark:bg-[#1A1C23] rounded-xl p-2 border border-gray-100 dark:border-gray-800"
           style={{ width: screenWidth * 0.46 }}
         >
           {/* Image */}
           <SkeletonShimmer width="100%" height={120} borderRadius={8} />
-          
+
           {/* Title */}
           <SkeletonShimmer width="80%" height={14} borderRadius={4} style={{ marginTop: 12 }} />
-          
+
           {/* Price & Icon Row */}
           <View className="flex-row justify-between items-center mt-3">
-             <View>
-                <SkeletonShimmer width={60} height={16} borderRadius={4} />
-                <SkeletonShimmer width={40} height={10} borderRadius={4} style={{ marginTop: 4 }} />
-             </View>
-             <SkeletonShimmer width={32} height={32} borderRadius={16} />
+            <View>
+              <SkeletonShimmer width={60} height={16} borderRadius={4} />
+              <SkeletonShimmer width={40} height={10} borderRadius={4} style={{ marginTop: 4 }} />
+            </View>
+            <SkeletonShimmer width={32} height={32} borderRadius={16} />
           </View>
         </View>
       )}
     />
   );
 
-  const handleProductPress = async (item: any) => {
+  const handleProductPress = (item: any) => {
     const itemId = item._id || item.id;
     console.log('Product selected:', item.title || item.itemName, '| ID:', itemId);
-    
+
     if (itemId) {
-      try {
-        await addItemToRecentlyViewed(itemId);
-        console.log('[DealOfDaySection] Added to recently viewed:', itemId);
-      } catch (error) {
-        console.error('[DealOfDaySection] Error adding to recently viewed:', error);
-      }
+      navigation.navigate('ProductDetail', { productId: itemId });
     } else {
       console.warn('[DealOfDaySection] Product ID is undefined for item:', item);
     }
-    // navigation.navigate('ProductDetail', { productId: itemId, product: item });
   };
 
   return (
@@ -188,7 +182,7 @@ const DealOfDaySection: React.FC = () => {
                   className="w-full h-full"
                   resizeMode="contain"
                 />
-                
+
                 {/* Discount Badge - Minimalist */}
                 {item.itemDiscount && (
                   <View className="absolute top-2 left-2 bg-red-600 px-1.5 py-0.5 rounded text-center">
@@ -208,7 +202,7 @@ const DealOfDaySection: React.FC = () => {
                 >
                   {item.itemName || item.title}
                 </Text>
-                
+
                 {/* Price & Action Row */}
                 <View className="flex-row items-center justify-between mt-1">
                   <View>

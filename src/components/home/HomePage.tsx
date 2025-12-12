@@ -14,6 +14,7 @@ import TrendingSection from './screens/TrendingSection';
 import DealOfDaySection from './screens/DealOfDaySection';
 import OfferBannerSection from './screens/OfferBannerSection';
 import ItemFeedSection from './screens/ItemFeedSection';
+import RecentlyViewedSection from './screens/RecentlyViewedSection';
 import ScrollToTopButton from '../commonPage/ScrollToTopButton';
 
 const Home: React.FC = () => {
@@ -148,6 +149,7 @@ const Home: React.FC = () => {
           <OfferBannerSection key={`offer-${refreshKey}`} />
           <TrendingSection key={`trend-${refreshKey}`} />
           <ItemFeedSection key={`feed-${refreshKey}`} />
+          <RecentlyViewedSection key={`recent-${refreshKey}`} />
         </View>
       </RefreshControlWrapper>
 

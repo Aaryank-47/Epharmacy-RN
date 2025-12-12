@@ -706,13 +706,8 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
 
   const handleMedicinePress = useCallback(async (medicine: Medicine) => {
     console.log('Medicine selected:', medicine.title);
-    try {
-      await addItemToRecentlyViewed(medicine._id);
-      console.log('[HeroSection] Added to recently viewed:', medicine._id);
-    } catch (error) {
-      console.error('[HeroSection] Error adding to recently viewed:', error);
-    }
-  }, []);
+    navigation.navigate('ProductDetail', { productId: medicine._id });
+  }, [navigation]);
 
   const handleAdvertisementClick = useCallback(async (adId: string, adTitle: string) => {
     try {

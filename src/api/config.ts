@@ -30,6 +30,8 @@ export const API_ROUTES = {
   recentlyViewed: {
     category: "/api/v1/categories/recently-viewed",
     item: "/api/v1/items/AddToRecentlyViewedItems",
+    get: "/api/v1/items/GetRecentlyViewedItems",
+    getCategories: "/api/v1/categories/RecentlyViewed",
   },
   advertisements: {
     running: "/api/v1/advertisements/currently-running",
@@ -41,6 +43,7 @@ export const API_ROUTES = {
     dealsOfTheDay: "/api/v1/items/deals-of-the-day",
     trending: "/api/v1/items/trending/AiPersonalized",
     itemFeed: "/api/v1/items/GetItemFeed",
+    details: "/api/v1/items/details",
   },
   notifications: {
     registerToken: "/api/v1/notifications/register-token",

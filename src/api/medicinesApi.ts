@@ -1,7 +1,7 @@
 
 import httpClient from './httpClient';
 import { API_ROUTES } from './config';
-import type { ApiResponse } from './types';
+import type { ApiResponse, ItemFeedItem, ItemDetails } from './types';
 
 // ============================================================================
 // TYPES
@@ -19,17 +19,7 @@ interface Medicine {
   category?: string;
 }
 
-export interface ItemFeedItem {
-  _id: string;
-  itemName: string;
-  code?: string;
-  image: string | null;
-  itemDescription?: string;
-  itemDiscount?: number;
-  itemRatings?: number;
-  itemFinalPrice?: number;
-  itemInitialPrice?: number;
-}
+
 
 interface Advertisement {
   _id: string;
@@ -57,6 +47,8 @@ interface UserAddress {
 interface UserProfilePayload {
   address: UserAddress;
 }
+
+
 
 // ============================================================================
 // MEDICINES API FUNCTIONS
@@ -250,6 +242,53 @@ export const addItemToRecentlyViewed = async (
   }
 };
 
+export const getRecentlyViewedItems = async (): Promise<
+  ApiResponse<{ data: any[] }>
+> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.recentlyViewed.get
+    );
+    console.log('[medicinesApi] Recently viewed items response:', response.data);
+
+    // Handle response structure
+    const data = response.data;
+    const items = data?.data || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Recently viewed items retrieved',
+      data: { data: Array.isArray(items) ? items : [] },
+    };
+  } catch (error) {
+    console.error('[medicinesApi] Failed to fetch recently viewed items:', error);
+    throw error;
+  }
+};
+
+export const getRecentlyViewedCategories = async (): Promise<
+  ApiResponse<{ data: any[] }>
+> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.recentlyViewed.getCategories
+    );
+    console.log('[medicinesApi] Recently viewed categories response:', response.data);
+
+    const data = response.data;
+    const items = data?.data || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Recently viewed categories retrieved',
+      data: { data: Array.isArray(items) ? items : [] },
+    };
+  } catch (error) {
+    console.error('[medicinesApi] Failed to fetch recently viewed categories:', error);
+    throw error;
+  }
+};
+
 // ============================================================================
 // DYNAMIC FEED API
 // ============================================================================
@@ -274,6 +313,33 @@ export const getItemFeed = async (): Promise<
     };
   } catch (error) {
     console.error('[medicinesApi] Failed to fetch item feed:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// ITEM DETAILS API
+// ============================================================================
+
+export const getItemDetails = async (
+  itemId: string
+): Promise<ApiResponse<{ data: ItemDetails }>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      `${API_ROUTES.items.details}/${itemId}`
+    );
+    console.log('[medicinesApi] GetItemDetails response:', response.data);
+
+    const data = response.data;
+    const item = data?.data || {};
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Item details fetched successfully',
+      data: { data: item },
+    };
+  } catch (error) {
+    console.error('[medicinesApi] Failed to fetch item details:', error);
     throw error;
   }
 };

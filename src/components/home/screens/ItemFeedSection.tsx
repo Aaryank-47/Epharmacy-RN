@@ -15,7 +15,8 @@ import { useNavigation } from '@react-navigation/native';
 
 import { useItemFeed } from '../../../hooks/useItemFeed';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-import { ItemFeedItem, addItemToRecentlyViewed } from '../../../api/medicinesApi';
+import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
+import { ItemFeedItem } from '../../../api/types';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -252,7 +253,7 @@ const ItemFeedSection = () => {
 
     const handlePress = async (item: ItemFeedItem) => {
         if (item._id) {
-            addItemToRecentlyViewed(item._id).catch(err => console.log('Tracking error', err));
+            navigation.navigate('ProductDetail', { productId: item._id });
         }
     };
 
