@@ -2,7 +2,8 @@
 // export const NOTIFICATION_API_BASE_URL = "http://10.0.2.2:5000";
 
 // Production backend for all features including notifications
-export const API_BASE_URL = "https://phrma-production-app-backend-main.onrender.com";
+// export const API_BASE_URL = "https://phrma-production-app-backend-main.onrender.com";
+export const API_BASE_URL = "https://phrma-production-app-backend-main-qbt9.onrender.com";
 
 export const API_TIMEOUT = 60000; // Increased timeout to 60 seconds for file uploads
 
@@ -54,6 +55,9 @@ export const API_ROUTES = {
     stats: "/api/v1/notifications/stats",
     markAsRead: "/api/v1/notifications/mark-read",
     markMultipleAsRead: "/api/v1/notifications/mark-multiple-read",
+  },
+  prescriptions: {
+    ocrExtract: "/api/v1/prescriptions/upload",
   },
 } as const;
 
