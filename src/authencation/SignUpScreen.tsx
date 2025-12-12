@@ -28,7 +28,7 @@ import { useMutation } from '@tanstack/react-query';
 
 import { signupUser } from '../api/authApi';
 import type { SignUpPayload } from '../api/types';
-import { toHumanReadableError } from '../utils/errorHandler';
+import { mapApiError, toHumanReadableError } from '../utils/errorHandler';
 import useThemePalette from '../hooks/useThemePalette';
 import { useAuth } from '../context/AuthContext';
 
@@ -69,12 +69,31 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   const mutation = useMutation({
     mutationFn: (payload: SignUpPayload) => signupUser(payload),
     onSuccess: async data => {
-      await persistSession(data);
-      // Let the AppNavigator detect the auth change and navigate automatically
+      if (data.token && data.user) {
+        // Full login response received
+        await persistSession(data);
+      } else {
+        // Signup successful but no token (requires manual login)
+        // Show success message (using console for now or navigation params if needed)
+        console.log('Signup successful, redirecting to login');
+        navigation.navigate('SignIn');
+      }
     },
     onError: (error: any) => {
-      const message = toHumanReadableError(error?.message || 'Signup failed');
-      setFormErrors({ email: message });
+      const normalizedError = mapApiError(error);
+      const message = toHumanReadableError(normalizedError);
+
+      // Check for specific "User exists" error to assign to email field
+      if (
+        normalizedError.message?.toLowerCase().includes('already exists') ||
+        normalizedError.statusCode === 400
+      ) {
+        setFormErrors({ email: message || 'Email already registered' });
+      } else {
+        // Generic error - you might want to show a toast or a general error field
+        // For now, assigning to email if it looks like an auth error, or logging
+        setFormErrors({ email: message || 'Signup failed' });
+      }
     },
   });
 

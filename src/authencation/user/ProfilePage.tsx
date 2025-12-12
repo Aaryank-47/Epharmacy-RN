@@ -396,15 +396,16 @@ const ProfilePage: React.FC = () => {
             <Text style={{
               color: '#FFFFFF',
               fontSize: getResponsiveSize(13),
+               marginBottom: getResponsiveSize(-8),
               opacity: 0.9
             }}>{userBio}</Text>
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', gap: getResponsiveSize(15) }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+            <View style={{ flexDirection: 'row', gap: getResponsiveSize(15)}}>
               {socialIcons.map((icon) => (
                 <TouchableOpacity key={icon}>
-                  <MaterialCommunityIcons name={icon} size={getResponsiveSize(30)} color="#FFFFFF" />
+                  <MaterialCommunityIcons name={icon} size={getResponsiveSize(30)} color="#FFFFFF"  />
                 </TouchableOpacity>
               ))}
             </View>
@@ -422,6 +423,7 @@ const ProfilePage: React.FC = () => {
                 color: '#e16c61f1',
                 fontSize: getResponsiveSize(12),
                 fontWeight: 'bold'
+                
               }}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -894,7 +896,7 @@ const ProfilePage: React.FC = () => {
           marginBottom: 10,
           color: isDark ? '#666666' : '#9CA3AF'
         }}>
-          MEDICARE+ v1.0.0
+          MEDICARE+ v2.0.0
         </Text>
       </ScrollView>
     </LinearGradient >

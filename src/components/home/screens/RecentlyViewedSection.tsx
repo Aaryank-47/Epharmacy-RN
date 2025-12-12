@@ -25,6 +25,17 @@ const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewed
 
     const recentlyViewedItems = apiResponse?.data?.data || [];
 
+    // Skeleton Animation Hooks - Must be before early return!
+    const opacityValue = React.useRef(new Animated.Value(0.3)).current;
+    React.useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(opacityValue, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                Animated.timing(opacityValue, { toValue: 0.3, duration: 1000, useNativeDriver: true }),
+            ])
+        ).start();
+    }, [opacityValue]);
+
     if (recentlyViewedItems.length === 0 && !isLoading) {
         return null;
     }
@@ -113,16 +124,7 @@ const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewed
         </TouchableOpacity>
     );
 
-    // Skeleton Animation
-    const opacityValue = React.useRef(new Animated.Value(0.3)).current;
-    React.useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(opacityValue, { toValue: 1, duration: 1000, useNativeDriver: true }),
-                Animated.timing(opacityValue, { toValue: 0.3, duration: 1000, useNativeDriver: true }),
-            ])
-        ).start();
-    }, [opacityValue]);
+    // Skeleton Animation Hooks moved to top
 
     const renderSkeleton = () => (
         <View className="flex-row px-5">
@@ -180,7 +182,7 @@ const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewed
 
     return (
         <LinearGradient
-            colors={isDark ? ['#121212', '#2A2D35'] : ['#F3F4F6', '#FFFFFF']}
+            colors={isDark ? ['#121212', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             className="mb-0 py-0"

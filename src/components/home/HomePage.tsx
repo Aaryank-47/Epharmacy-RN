@@ -104,58 +104,58 @@ const Home: React.FC = () => {
     }
   }, [navigation]);
 
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white dark:bg-[#0F1419]">
-        <LottieView
-          source={require('../../assets/animations/Loading 48 _ Mortar & Pestle.json')}
-          autoPlay
-          loop
-          style={{ width: 300, height: 300 }}
-        />
-      </View>
-    );
-  }
-
   return (
-    <Tabs translateY={translateY} onNavigate={handleNavigate}>
-      {/* Header */}
-      <HeaderScreen />
-
-      <RefreshControlWrapper
-        ref={scrollViewRef}
-        isRefreshing={isRefreshing}
-        onRefresh={handleRefresh}
-        scrollViewProps={{
-          onScroll: Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            {
-              useNativeDriver: true,
-              listener: handleScroll,
-            }
-          ),
-          scrollEventThrottle: 16,
-          contentContainerStyle: { paddingBottom: 100 },
-          showsVerticalScrollIndicator: false,
-          removeClippedSubviews: true, // Optimize offscreen rendering
-        }}
-      >
-        {/* Main Content */}
-        <View className="flex-1 bg-white dark:bg-gray-900">
-          {/* Hero Section with Featured Products and Ads */}
-          <HeroSection key={`hero-${refreshKey}`} navigation={navigation} />
-          <CategoriesSection key={`cat-${refreshKey}`} />
-          <DealOfDaySection key={`deal-${refreshKey}`} />
-          <OfferBannerSection key={`offer-${refreshKey}`} />
-          <TrendingSection key={`trend-${refreshKey}`} />
-          <ItemFeedSection key={`feed-${refreshKey}`} />
-          <RecentlyViewedSection key={`recent-${refreshKey}`} />
+    <>
+      {loading ? (
+        <View className="flex-1 justify-center items-center bg-white dark:bg-[#0F1419]">
+          <LottieView
+            source={require('../../assets/animations/Loading 48 _ Mortar & Pestle.json')}
+            autoPlay
+            loop
+            style={{ width: 300, height: 300 }}
+          />
         </View>
-      </RefreshControlWrapper>
+      ) : (
+        <Tabs translateY={translateY} onNavigate={handleNavigate}>
+          {/* Header */}
+          <HeaderScreen />
 
-      {/* Scroll To Top Button */}
-      <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
-    </Tabs>
+          <RefreshControlWrapper
+            ref={scrollViewRef}
+            isRefreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            scrollViewProps={{
+              onScroll: Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                {
+                  useNativeDriver: true,
+                  listener: handleScroll,
+                }
+              ),
+              scrollEventThrottle: 16,
+              contentContainerStyle: { paddingBottom: 100 },
+              showsVerticalScrollIndicator: false,
+              removeClippedSubviews: true, // Optimize offscreen rendering
+            }}
+          >
+            {/* Main Content */}
+            <View className="flex-1 bg-white dark:bg-gray-900">
+              {/* Hero Section with Featured Products and Ads */}
+              <HeroSection key={`hero-${refreshKey}`} navigation={navigation} />
+              <CategoriesSection key={`cat-${refreshKey}`} />
+              <DealOfDaySection key={`deal-${refreshKey}`} />
+              <OfferBannerSection key={`offer-${refreshKey}`} />
+              <TrendingSection key={`trend-${refreshKey}`} />
+              <ItemFeedSection key={`feed-${refreshKey}`} />
+              <RecentlyViewedSection key={`recent-${refreshKey}`} />
+            </View>
+          </RefreshControlWrapper>
+
+          {/* Scroll To Top Button */}
+          <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
+        </Tabs>
+      )}
+    </>
   );
 };
 

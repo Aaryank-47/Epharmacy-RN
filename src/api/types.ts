@@ -89,7 +89,7 @@ export interface UserProfilePayload {
 }
 
 export interface LoginResponsePayload {
-  readonly token: string;
+  readonly token: string | null;
   readonly refreshToken: string | null;
   readonly user: UserPayload;
 }

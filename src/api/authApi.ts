@@ -49,16 +49,22 @@ const normalizeLoginResponse = (
   response: ApiResponse<any>
 ): LoginResponsePayload => {
   const { data } = response;
-  const { user, token, refreshToken } = data;
+  // Handle case where data IS the user object (direct response)
+  const user = data.user || data;
+  const token = data.token || null;
+  const refreshToken = data.refreshToken || null;
 
-  if (!token || !user) {
-    throw new Error('Invalid login response: missing token or user data');
+  if (!user) {
+    throw new Error('Invalid response: missing user data');
   }
+
+  // Ensure user has required fields before normalizing
+  const normalizedUser = normalizeUser(user);
 
   return {
     token,
-    refreshToken: refreshToken || null,
-    user: normalizeUser(user),
+    refreshToken,
+    user: normalizedUser,
   };
 };
 
@@ -226,14 +232,14 @@ export const updateUserProfile = async (
   try {
     const config = hasFile
       ? {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          timeout: 90000, // 90 seconds timeout for file uploads (longer than default)
-        }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 90000, // 90 seconds timeout for file uploads (longer than default)
+      }
       : {
-          timeout: 30000, // 30 seconds for regular updates
-        };
+        timeout: 30000, // 30 seconds for regular updates
+      };
 
     const response = await httpClient.put<ApiResponse<any>>(
       API_ROUTES.user.updateProfile,
