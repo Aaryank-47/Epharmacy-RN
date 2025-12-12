@@ -11,6 +11,7 @@ import {
   Animated,
   Easing,
   Image,
+  RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -24,7 +25,9 @@ import ActionGrid from './ActionGrid';
 import PrivacyTermsPage from './PrivacyTermsPage';
 import { notificationService } from '../../services/notificationService';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import{ RefreshControlWrapper} from '../../components/RefreshControlWrapper';
+import { RefreshControlWrapper } from '../../components/RefreshControlWrapper';
+import RecentlyViewedSection from '../../components/home/screens/RecentlyViewedSection';
+import RecentlyViewedCategory from '../../components/home/screens/RecentlyViewedCategory';
 
 // Types
 interface Address {
@@ -83,10 +86,10 @@ const initialUserData: UserData = {
 
 const ContactItem: React.FC<ContactItemProps> = React.memo(({ icon, text, isDark }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
-    <MaterialCommunityIcons 
-      name={icon} 
-      size={getResponsiveSize(20)} 
-      color={isDark ? '#d77b7bff' : '#e16c61f1'} 
+    <MaterialCommunityIcons
+      name={icon}
+      size={getResponsiveSize(20)}
+      color={isDark ? '#d77b7bff' : '#e16c61f1'}
     />
     <Text style={{
       fontSize: getResponsiveSize(14),
@@ -105,17 +108,18 @@ const ProfilePage: React.FC = () => {
   const [personalDetailsExpanded, setPersonalDetailsExpanded] = useState<boolean>(true);
   const [privacyTermsExpanded, setPrivacyTermsExpanded] = useState<boolean>(true);
   const [isManualRefreshing, setIsManualRefreshing] = useState<boolean>(false);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   // Fetch user profile data with React Query
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['userProfile'],
     queryFn: async () => {
       const response = await getUserProfile();
-      
+
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Failed to load profile');
       }
-      
+
       // Map API response to UserData interface
       const apiData: UserProfilePayload = response.data;
       const mappedUserData: UserData = {
@@ -133,7 +137,7 @@ const ProfilePage: React.FC = () => {
         lastLogin: apiData.lastLogin,
         fcmToken: apiData.fcmToken,
       };
-      
+
       return mappedUserData;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -148,14 +152,14 @@ const ProfilePage: React.FC = () => {
   React.useEffect(() => {
     if (isError && error) {
       const err = error as any;
-      const isJWTExpired = 
+      const isJWTExpired =
         (err.response?.status === 401 || err.response?.status === 500) && (
           err.response?.data?.message === 'jwt expired' ||
           err.response?.data?.message === 'Token expired' ||
           err.response?.data?.message === 'jwt malformed' ||
           err.response?.data?.message === 'invalid token' ||
-          (err.response?.data?.message?.toLowerCase?.()?.includes('jwt') && 
-           err.response?.data?.message?.toLowerCase?.()?.includes('expired'))
+          (err.response?.data?.message?.toLowerCase?.()?.includes('jwt') &&
+            err.response?.data?.message?.toLowerCase?.()?.includes('expired'))
         );
 
       if (isJWTExpired) {
@@ -174,6 +178,7 @@ const ProfilePage: React.FC = () => {
         refetch(),
         new Promise<void>((resolve) => setTimeout(() => resolve(), 2600)) // Minimum 2.6 seconds
       ]);
+      setRefreshKey(prev => prev + 1);
     } finally {
       setIsManualRefreshing(false);
     }
@@ -224,7 +229,7 @@ const ProfilePage: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             console.log('User logged out securely');
-            
+
             // Delete FCM token before logout
             try {
               await notificationService.deleteToken();
@@ -232,7 +237,7 @@ const ProfilePage: React.FC = () => {
             } catch (error) {
               console.error('❌ Error deleting FCM token:', error);
             }
-            
+
             logout();
           },
         },
@@ -257,26 +262,26 @@ const ProfilePage: React.FC = () => {
     const [cardExpanded, setCardExpanded] = useState<boolean>(false);
     const profilePicScale = React.useRef(new Animated.Value(1)).current;
     const contentTop = React.useRef(new Animated.Value(80)).current;
-  
+
     const animateCard = useCallback((expand: boolean): void => {
       const nativeAnimations = [
-        Animated.timing(profilePicScale, { 
-          toValue: expand ? 0.5 : 1, 
-          duration: 500, 
-          easing: Easing.out(Easing.ease), 
-          useNativeDriver: true 
+        Animated.timing(profilePicScale, {
+          toValue: expand ? 0.5 : 1,
+          duration: 500,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true
         }),
       ];
-      
+
       const layoutAnimations = [
-        Animated.timing(contentTop, { 
-          toValue: expand ? 60 : 80, 
-          duration: 500, 
-          easing: Easing.out(Easing.ease), 
-          useNativeDriver: false 
+        Animated.timing(contentTop, {
+          toValue: expand ? 60 : 80,
+          duration: 500,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false
         }),
       ];
-      
+
       Animated.parallel([
         Animated.parallel(nativeAnimations),
         Animated.parallel(layoutAnimations)
@@ -285,18 +290,18 @@ const ProfilePage: React.FC = () => {
     }, [profilePicScale, contentTop]);
 
     const socialIcons: string[] = useMemo(() => ['instagram', 'twitter', 'github'], []);
-    const profileImageUrl = useMemo(() => 
+    const profileImageUrl = useMemo(() =>
       userData.profileImage && userData.profileImage.length > 0 ? userData.profileImage[0] : null,
       [userData.profileImage]
     );
-    
-    const userBio = useMemo(() => 
+
+    const userBio = useMemo(() =>
       `${userData.role || 'User'} at MEDICARE+ pharmacy. Total orders: ${userData.itemsPurchasedCount || 0}`,
       [userData.role, userData.itemsPurchasedCount]
     );
-  
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => animateCard(!cardExpanded)}
         style={{
@@ -313,8 +318,8 @@ const ProfilePage: React.FC = () => {
           backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF'
         }}
       >
-        <Animated.View 
-          style={{ 
+        <Animated.View
+          style={{
             position: 'absolute',
             top: 1,
             left: 10,
@@ -344,7 +349,7 @@ const ProfilePage: React.FC = () => {
             justifyContent: 'center'
           }}>
             {profileImageUrl ? (
-              <Image 
+              <Image
                 source={{ uri: profileImageUrl }}
                 style={{
                   width: '100%',
@@ -362,8 +367,8 @@ const ProfilePage: React.FC = () => {
             )}
           </View>
         </Animated.View>
-  
-        <Animated.View 
+
+        <Animated.View
           style={{
             position: 'absolute',
             left: 3,
@@ -391,20 +396,21 @@ const ProfilePage: React.FC = () => {
             <Text style={{
               color: '#FFFFFF',
               fontSize: getResponsiveSize(13),
+               marginBottom: getResponsiveSize(-8),
               opacity: 0.9
             }}>{userBio}</Text>
           </View>
-  
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', gap: getResponsiveSize(15) }}>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+            <View style={{ flexDirection: 'row', gap: getResponsiveSize(15)}}>
               {socialIcons.map((icon) => (
                 <TouchableOpacity key={icon}>
-                  <MaterialCommunityIcons name={icon} size={getResponsiveSize(30)} color="#FFFFFF" />
+                  <MaterialCommunityIcons name={icon} size={getResponsiveSize(30)} color="#FFFFFF"  />
                 </TouchableOpacity>
               ))}
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={{
                 backgroundColor: '#FFFFFF',
                 paddingHorizontal: getResponsiveSize(15),
@@ -417,6 +423,7 @@ const ProfilePage: React.FC = () => {
                 color: '#e16c61f1',
                 fontSize: getResponsiveSize(12),
                 fontWeight: 'bold'
+                
               }}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -476,11 +483,11 @@ const ProfilePage: React.FC = () => {
       colors={isDark ? ['#1A1A1A', '#2A2A2A'] : ['#FFFFFF', '#F8F9FA']}
       style={{ flex: 1 }}
     >
-      <StatusBar 
-        backgroundColor={statusBarBackground} 
-        barStyle={statusBarStyle} 
+      <StatusBar
+        backgroundColor={statusBarBackground}
+        barStyle={statusBarStyle}
       />
-      
+
       {/* Header Skeleton */}
       <View style={{
         flexDirection: 'row',
@@ -511,9 +518,9 @@ const ProfilePage: React.FC = () => {
           shadowRadius: 8,
           elevation: 5,
         }}>
-          <SkeletonItem 
-            width={getResponsiveSize(100)} 
-            height={getResponsiveSize(100)} 
+          <SkeletonItem
+            width={getResponsiveSize(100)}
+            height={getResponsiveSize(100)}
             borderRadius={50}
             style={{ position: 'absolute', top: 10, left: 10, zIndex: 3 }}
           />
@@ -545,15 +552,15 @@ const ProfilePage: React.FC = () => {
         </View>
 
         {/* Action Grid Skeleton */}
-        <View style={{ 
-          paddingHorizontal: screenWidth * 0.04, 
+        <View style={{
+          paddingHorizontal: screenWidth * 0.04,
           paddingVertical: getResponsiveSize(12),
-          marginBottom: 10 
+          marginBottom: 10
         }}>
           {/* Header Skeleton */}
-          <View style={{ 
-            flexDirection: 'row', 
-            justifyContent: 'space-between', 
+          <View style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: getResponsiveSize(16)
           }}>
@@ -562,23 +569,23 @@ const ProfilePage: React.FC = () => {
           </View>
 
           {/* Action Items Skeleton */}
-          <View style={{ 
-            flexDirection: 'row', 
+          <View style={{
+            flexDirection: 'row',
             justifyContent: 'space-between',
             marginTop: getResponsiveSize(16)
           }}>
             {[1, 2, 3, 4].map((i) => (
               <View key={i} style={{ alignItems: 'center' }}>
-                <SkeletonItem 
-                  width={getResponsiveSize(56)} 
-                  height={getResponsiveSize(56)} 
-                  borderRadius={getResponsiveSize(28)} 
-                  style={{ marginBottom: getResponsiveSize(8) }} 
+                <SkeletonItem
+                  width={getResponsiveSize(56)}
+                  height={getResponsiveSize(56)}
+                  borderRadius={getResponsiveSize(28)}
+                  style={{ marginBottom: getResponsiveSize(8) }}
                 />
-                <SkeletonItem 
-                  width={getResponsiveSize(50)} 
-                  height={getResponsiveSize(14)} 
-                  borderRadius={4} 
+                <SkeletonItem
+                  width={getResponsiveSize(50)}
+                  height={getResponsiveSize(14)}
+                  borderRadius={4}
                 />
               </View>
             ))}
@@ -608,9 +615,9 @@ const ProfilePage: React.FC = () => {
         </View>
 
         {/* Logout Button Skeleton */}
-        <SkeletonItem 
-          width={getResponsiveSize(50)} 
-          height={getResponsiveSize(50)} 
+        <SkeletonItem
+          width={getResponsiveSize(50)}
+          height={getResponsiveSize(50)}
           borderRadius={getResponsiveSize(25)}
           style={{ marginLeft: screenWidth * 0.8, marginBottom: 20 }}
         />
@@ -630,10 +637,10 @@ const ProfilePage: React.FC = () => {
         colors={isDark ? ['#1A1A1A', '#2A2A2A'] : ['#FFFFFF', '#F8F9FA']}
         className="flex-1 items-center justify-center"
       >
-        <MaterialCommunityIcons 
-          name="alert-circle-outline" 
-          size={getResponsiveSize(64)} 
-          color={isDark ? '#EF4444' : '#DC2626'} 
+        <MaterialCommunityIcons
+          name="alert-circle-outline"
+          size={getResponsiveSize(64)}
+          color={isDark ? '#EF4444' : '#DC2626'}
         />
         <Text style={{
           fontSize: getResponsiveSize(20),
@@ -685,13 +692,13 @@ const ProfilePage: React.FC = () => {
       colors={isDark ? ['#1A1A1A', '#2A2A2A'] : ['#FFFFFF', '#F8F9FA']}
       style={{ flex: 1 }}
     >
-      <StatusBar 
-        backgroundColor={statusBarBackground} 
-        barStyle={statusBarStyle} 
+      <StatusBar
+        backgroundColor={statusBarBackground}
+        barStyle={statusBarStyle}
       />
-      
+
       {/* Header */}
-      <View 
+      <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -703,7 +710,7 @@ const ProfilePage: React.FC = () => {
           borderBottomColor: isDark ? '#3A3A3A' : '#E5E7EB',
         }}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{
             width: getResponsiveSize(40),
@@ -714,10 +721,10 @@ const ProfilePage: React.FC = () => {
             backgroundColor: isDark ? '#3A3A3A' : '#F3F4F6',
           }}
         >
-          <MaterialCommunityIcons 
-            name="arrow-left" 
-            size={getResponsiveSize(24)} 
-            color={isDark ? '#FFFFFF' : '#1F2937'} 
+          <MaterialCommunityIcons
+            name="arrow-left"
+            size={getResponsiveSize(24)}
+            color={isDark ? '#FFFFFF' : '#1F2937'}
           />
         </TouchableOpacity>
         <Text style={{
@@ -732,24 +739,25 @@ const ProfilePage: React.FC = () => {
         <View style={{ width: getResponsiveSize(40), height: getResponsiveSize(40) }} />
       </View>
 
-      <ScrollView 
-        style={{ flex: 1 }} 
+      <ScrollView
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 30 }}
         refreshControl={
-          <RefreshControlWrapper
-            isRefreshing={isRefetching || isManualRefreshing}
+          <RefreshControl
+            refreshing={isRefetching || isManualRefreshing}
             onRefresh={handleRefresh}
-            isDark={isDark}
+            tintColor={isDark ? '#FFFFFF' : '#000000'}
+            colors={[isDark ? '#FFFFFF' : '#000000']}
           />
         }
       >
         <ProfileCard userData={userData} isDark={isDark} />
-        
+
         {/* ActionGrid */}
         <ActionGrid />
-        
+
         {/* Personal Details - Collapsible */}
         <View style={{
           marginHorizontal: screenWidth * 0.04,
@@ -763,7 +771,7 @@ const ProfilePage: React.FC = () => {
           shadowRadius: 8,
           elevation: 2,
         }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -780,14 +788,14 @@ const ProfilePage: React.FC = () => {
             }}>
               Personal Details
             </Text>
-            <MaterialCommunityIcons 
-              name={personalDetailsExpanded ? "chevron-up" : "chevron-down"} 
-              size={getResponsiveSize(24)} 
+            <MaterialCommunityIcons
+              name={personalDetailsExpanded ? "chevron-up" : "chevron-down"}
+              size={getResponsiveSize(24)}
               color={isDark ? '#FFFFFF' : '#1F2937'}
               style={{ marginLeft: 10 }}
             />
           </TouchableOpacity>
-          
+
           {personalDetailsExpanded && (
             <View style={{ marginTop: 15, overflow: 'hidden' }}>
               {contactItems.map((item, index) => (
@@ -796,6 +804,19 @@ const ProfilePage: React.FC = () => {
             </View>
           )}
         </View>
+
+
+        {/* Recently Viewed Categories Section */}
+        <View style={{ marginBottom: 20 }}>
+          <RecentlyViewedCategory key={`recent-cat-${refreshKey}`} transparentBackground={true} />
+        </View>
+
+        {/* Recently Viewed Section */}
+        <View style={{ marginBottom: 20 }}>
+          <RecentlyViewedSection key={`recent-${refreshKey}`} transparentBackground={true} />
+        </View>
+
+       
 
         {/* Privacy & Terms - Collapsible */}
         <View style={{
@@ -810,7 +831,7 @@ const ProfilePage: React.FC = () => {
           shadowRadius: 8,
           elevation: 2,
         }}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -827,14 +848,14 @@ const ProfilePage: React.FC = () => {
             }}>
               Privacy & Terms
             </Text>
-            <MaterialCommunityIcons 
-              name={privacyTermsExpanded ? "chevron-up" : "chevron-down"} 
-              size={getResponsiveSize(24)} 
+            <MaterialCommunityIcons
+              name={privacyTermsExpanded ? "chevron-up" : "chevron-down"}
+              size={getResponsiveSize(24)}
               color={isDark ? '#FFFFFF' : '#1F2937'}
               style={{ marginLeft: 10 }}
             />
           </TouchableOpacity>
-          
+
           {privacyTermsExpanded && (
             <View style={{ marginTop: 15, overflow: 'hidden' }}>
               <PrivacyTermsPage isDark={isDark} />
@@ -844,7 +865,7 @@ const ProfilePage: React.FC = () => {
 
         {/* Circular Logout Button */}
         <TouchableOpacity
-          style={{ 
+          style={{
             width: getResponsiveSize(50),
             height: getResponsiveSize(50),
             borderRadius: getResponsiveSize(25),
@@ -862,10 +883,10 @@ const ProfilePage: React.FC = () => {
           onPress={handleLogout}
           activeOpacity={0.7}
         >
-          <MaterialCommunityIcons 
-            name="logout" 
-            size={getResponsiveSize(22)} 
-            color="#FFFFFF" 
+          <MaterialCommunityIcons
+            name="logout"
+            size={getResponsiveSize(22)}
+            color="#FFFFFF"
           />
         </TouchableOpacity>
 
@@ -875,10 +896,10 @@ const ProfilePage: React.FC = () => {
           marginBottom: 10,
           color: isDark ? '#666666' : '#9CA3AF'
         }}>
-          MEDICARE+ v1.0.0
+          MEDICARE+ v2.0.0
         </Text>
       </ScrollView>
-    </LinearGradient>
+    </LinearGradient >
   );
 };
 

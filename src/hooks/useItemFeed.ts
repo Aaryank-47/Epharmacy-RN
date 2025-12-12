@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getItemFeed, ItemFeedItem } from '../api/medicinesApi';
+import { getItemFeed } from '../api/medicinesApi';
 
 export const useItemFeed = () => {
     return useQuery({

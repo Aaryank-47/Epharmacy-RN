@@ -16,7 +16,7 @@ interface CartContextType {
   getCartTotal: () => number;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Calculate total price of all items
 export const calculateTotal = (items: CartItem[]): number => {

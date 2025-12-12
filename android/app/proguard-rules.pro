@@ -12,3 +12,32 @@
 # React Native Reanimated
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
+
+# React Native Vector Icons
+-keep class com.oblador.vectoricons.** { *; }
+
+# React Native Safe Area Context
+-keep class com.th3rdwave.safeareacontext.** { *; }
+
+# React Native Screens
+-keep class com.swmansion.rnscreens.** { *; }
+
+# React Native Gesture Handler
+-keep class com.swmansion.gesturehandler.** { *; }
+
+# React Native Async Storage
+-keep class com.reactnativecommunity.asyncstorage.** { *; }
+
+# Lottie
+-keep class com.airbnb.lottie.** { *; }
+
+# Hermes
+-keep class com.facebook.hermes.unicode.** { *; }
+-keep class com.facebook.jni.** { *; }
+
+# OkHttp
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.squareup.okhttp.** { *; }
+-keep interface com.squareup.okhttp.** { *; }
+-dontwarn com.squareup.okhttp.**

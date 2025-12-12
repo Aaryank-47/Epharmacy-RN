@@ -339,16 +339,9 @@ const TrendingSection: React.FC = () => {
     const handleProductPress = async (item: TrendingProduct) => {
         const itemId = item._id;
         console.log('[TrendingSection] Product selected:', item.itemName, '| ID:', itemId);
-
         if (itemId) {
-            try {
-                await addItemToRecentlyViewed(itemId);
-                console.log('[TrendingSection] Added to recently viewed:', itemId);
-            } catch (error) {
-                console.error('[TrendingSection] Error adding to recently viewed:', error);
-            }
+            navigation.navigate('ProductDetail', { productId: itemId });
         }
-        // navigation.navigate('ProductDetail', { productId: itemId, product: item });
     };
 
     return (

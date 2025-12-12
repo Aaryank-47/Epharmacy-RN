@@ -89,7 +89,7 @@ export interface UserProfilePayload {
 }
 
 export interface LoginResponsePayload {
-  readonly token: string;
+  readonly token: string | null;
   readonly refreshToken: string | null;
   readonly user: UserPayload;
 }
@@ -113,4 +113,52 @@ export interface ApiErrorResponse {
   readonly success: false;
   readonly message: string;
   readonly data?: null;
+}
+
+// ============================================================================
+// ITEM TYPES
+// ============================================================================
+
+export interface ItemFeedItem {
+  _id: string;
+  itemName: string;
+  code?: string;
+  image: string | null;
+  itemDescription?: string;
+  itemDiscount?: number;
+  itemRatings?: number;
+  itemFinalPrice?: number;
+  itemInitialPrice?: number;
+}
+
+export interface ItemDetails {
+  _id: string;
+  itemName: string;
+  itemDescription: string;
+  itemMfgDate: string;
+  itemExpiryDate: string;
+  itemImages: string[];
+  itemDiscount: number;
+  itemRatings: number;
+  itemFinalPrice: number;
+  itemInitialPrice: number;
+  views: number;
+  category: any;
+  units: {
+    parent: { _id: string; name: string };
+    child: { _id: string; name: string };
+  };
+  gst: { id: string; rate: number };
+  otherInformation?: {
+    keyFeatures?: string[];
+    benefits?: string[];
+    precautions?: string[];
+    allergyInfo?: string[];
+    sideEffects?: string[];
+    howToUse?: string;
+    safetyAdvice?: string[];
+    ingredients?: string[];
+  };
+  formula?: string;
+  deliveryTime?: string; // Not in schema but used in UI
 }
