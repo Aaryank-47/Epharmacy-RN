@@ -16,6 +16,7 @@ import OfferBannerSection from './screens/OfferBannerSection';
 import ItemFeedSection from './screens/ItemFeedSection';
 import RecentlyViewedSection from './screens/RecentlyViewedSection';
 import ScrollToTopButton from '../commonPage/ScrollToTopButton';
+import FloatingAiButton from '../FloatingAiButton';
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -153,6 +154,9 @@ const Home: React.FC = () => {
 
           {/* Scroll To Top Button */}
           <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
+
+          {/* Floating AI Doctor Button */}
+          <FloatingAiButton />
         </Tabs>
       )}
     </>
