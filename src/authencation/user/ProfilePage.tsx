@@ -888,7 +888,7 @@ const ProfilePage: React.FC = () => {
             size={getResponsiveSize(22)}
             color="#FFFFFF"
           />
-        </TouchableOpacity>
+        </TouchableOpacity> 
 
         <Text style={{
           textAlign: 'center',

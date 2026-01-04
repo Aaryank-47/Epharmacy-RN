@@ -8,7 +8,8 @@
 // ============================================================================
 
 export interface LoginRequestPayload {
-  readonly email: string;
+  readonly email?: string;
+  readonly phone?: string;
   readonly password: string;
   readonly fcmToken?: string | null;
 }
