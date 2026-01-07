@@ -64,4 +64,10 @@ export const API_ROUTES = {
   },
 } as const;
 
+export const AI_SERVER_URL = 'https://ai-server-1-xzqm.onrender.com';
+export const AI_ENDPOINTS = {
+  REGISTER: `${AI_SERVER_URL}/register`,
+  PREDICT: `${AI_SERVER_URL}/predict`,
+};
+
 export type ApiRouteTree = typeof API_ROUTES;

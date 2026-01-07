@@ -30,7 +30,7 @@ import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
 export type RootStackParamList = {
   HomeTabs: undefined;
   ProfilePage: undefined;
-  EditProfile: { 
+  EditProfile: {
     userData?: {
       name: string;
       email: string;
@@ -44,7 +44,7 @@ export type RootStackParamList = {
       viewedItemsCount: number;
       itemsPurchasedCount: number;
       lastLogin: string | null;
-    }; 
+    };
     refreshProfile?: () => void;
   };
   Search: undefined;

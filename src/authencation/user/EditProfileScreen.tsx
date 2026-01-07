@@ -16,7 +16,7 @@ import {
   Linking,
   Modal,
 } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
+import LocationService from '../../services/LocationService';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navigation/native';
@@ -177,12 +177,12 @@ const EditProfileScreen: React.FC = () => {
   const [locationLoading, setLocationLoading] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [isPicking, setIsPicking] = useState<boolean>(false);
-  
+
   // Camera preview modal state
   const [showCameraPreview, setShowCameraPreview] = useState<boolean>(false);
   const [cameraPreviewUri, setCameraPreviewUri] = useState<string | null>(null);
   const [tempCameraAsset, setTempCameraAsset] = useState<Asset | null>(null);
-  
+
   const [formData, setFormData] = useState<FormData>({
     name: initialUserData?.name || '',
     email: initialUserData?.email || '',
@@ -223,9 +223,9 @@ const EditProfileScreen: React.FC = () => {
       `${permissionType} access is blocked. Please enable it in Settings to ${permissionType === 'Gallery' ? 'select a profile picture' : 'take a photo'}.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Open Settings', 
-          onPress: () => Linking.openSettings() 
+        {
+          text: 'Open Settings',
+          onPress: () => Linking.openSettings()
         },
       ]
     );
@@ -278,61 +278,61 @@ const EditProfileScreen: React.FC = () => {
     try {
       // REQUIRED LOG: Must appear exactly as shown
       console.log('[Gallery] Checking permission...');
-      
+
       const alreadyAsked = await hasPermissionBeenAsked(STORAGE_KEYS.GALLERY_PERMISSION_ASKED);
-      
+
       if (Platform.OS === 'ios') {
         const permission = PERMISSIONS.IOS.PHOTO_LIBRARY;
         const result = await check(permission);
-        
+
         // REQUIRED LOG: Must show exact status
         console.log('[Gallery] iOS permission status:', result);
-        
+
         // GRANTED or LIMITED = proceed immediately (do NOT show "permission needed" alert)
         if (result === RESULTS.GRANTED || result === RESULTS.LIMITED) {
           return true;
         }
-        
+
         // BLOCKED = show Settings redirect (user previously denied permanently)
         if (result === RESULTS.BLOCKED) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
         }
-        
+
         // DENIED + first time = request permission
         if (result === RESULTS.DENIED && !alreadyAsked) {
           // Mark as asked BEFORE requesting to ensure lifetime behavior
           await markPermissionAsAsked(STORAGE_KEYS.GALLERY_PERMISSION_ASKED);
-          
+
           // Request permission from OS
           const requestResult = await request(permission);
           console.log('[Gallery] iOS permission request result:', requestResult);
-          
+
           // If user granted (GRANTED or LIMITED), return true to proceed
           if (requestResult === RESULTS.GRANTED || requestResult === RESULTS.LIMITED) {
             return true;
           }
-          
+
           // If user denied, show Settings modal (not "Permission needed" alert)
           if (requestResult === RESULTS.DENIED || requestResult === RESULTS.BLOCKED) {
             showSettingsPromptIfBlocked('Gallery');
             return false;
           }
-          
+
           return false;
         }
-        
+
         // DENIED + already asked = show Settings modal (don't ask again)
         if (result === RESULTS.DENIED && alreadyAsked) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
         }
-        
+
         return false;
       } else {
         // Android
         const androidVersion = Platform.Version as number;
-        
+
         // Choose permission based on Android version
         let permission;
         if (androidVersion >= 33) {
@@ -342,52 +342,52 @@ const EditProfileScreen: React.FC = () => {
           // Android 12- (API 32-): Use READ_EXTERNAL_STORAGE
           permission = PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
         }
-        
+
         const result = await check(permission);
-        
+
         // REQUIRED LOG: Must match exact format (line 307 in original)
         console.log('[Gallery] Android permission status:', result);
-        
+
         // GRANTED = proceed immediately
         if (result === RESULTS.GRANTED) {
           return true;
         }
-        
+
         // BLOCKED / NEVER_ASK_AGAIN = show Settings redirect
         if (result === RESULTS.BLOCKED) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
         }
-        
+
         // DENIED + first time = request permission
         if (result === RESULTS.DENIED && !alreadyAsked) {
           // Mark as asked BEFORE requesting to ensure lifetime behavior
           await markPermissionAsAsked(STORAGE_KEYS.GALLERY_PERMISSION_ASKED);
-          
+
           // Request permission from OS
           const requestResult = await request(permission);
           console.log('[Gallery] Android permission request result:', requestResult);
-          
+
           // If user granted, return true to proceed (do NOT show alert)
           if (requestResult === RESULTS.GRANTED) {
             return true;
           }
-          
+
           // If user denied or blocked, show Settings modal
           if (requestResult === RESULTS.DENIED || requestResult === RESULTS.BLOCKED) {
             showSettingsPromptIfBlocked('Gallery');
             return false;
           }
-          
+
           return false;
         }
-        
+
         // DENIED + already asked = show Settings modal (don't ask again)
         if (result === RESULTS.DENIED && alreadyAsked) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
         }
-        
+
         return false;
       }
     } catch (error) {
@@ -415,58 +415,58 @@ const EditProfileScreen: React.FC = () => {
     try {
       // REQUIRED LOG: Must appear exactly as shown (line 373 in original)
       console.log('[Camera] Checking permission...');
-      
+
       const alreadyAsked = await hasPermissionBeenAsked(STORAGE_KEYS.CAMERA_PERMISSION_ASKED);
-      
-      const permission = Platform.OS === 'ios' 
-        ? PERMISSIONS.IOS.CAMERA 
+
+      const permission = Platform.OS === 'ios'
+        ? PERMISSIONS.IOS.CAMERA
         : PERMISSIONS.ANDROID.CAMERA;
-      
+
       const result = await check(permission);
-      
+
       // REQUIRED LOG: Must match exact format (line 382 in original)
       console.log('[Camera] Permission status:', result);
-      
+
       // GRANTED = proceed immediately
       if (result === RESULTS.GRANTED) {
         return true;
       }
-      
+
       // BLOCKED / NEVER_ASK_AGAIN = show Settings redirect
       if (result === RESULTS.BLOCKED) {
         showSettingsPromptIfBlocked('Camera');
         return false;
       }
-      
+
       // DENIED + first time = request permission
       if (result === RESULTS.DENIED && !alreadyAsked) {
         // Mark as asked BEFORE requesting to ensure lifetime behavior
         await markPermissionAsAsked(STORAGE_KEYS.CAMERA_PERMISSION_ASKED);
-        
+
         // Request permission from OS
         const requestResult = await request(permission);
         console.log('[Camera] Permission request result:', requestResult);
-        
+
         // If user granted, return true to proceed (do NOT show alert)
         if (requestResult === RESULTS.GRANTED) {
           return true;
         }
-        
+
         // If user denied or blocked, show Settings modal
         if (requestResult === RESULTS.DENIED || requestResult === RESULTS.BLOCKED) {
           showSettingsPromptIfBlocked('Camera');
           return false;
         }
-        
+
         return false;
       }
-      
+
       // DENIED + already asked = show Settings modal (don't ask again)
       if (result === RESULTS.DENIED && alreadyAsked) {
         showSettingsPromptIfBlocked('Camera');
         return false;
       }
-      
+
       return false;
     } catch (error) {
       console.error('[Camera] Error checking permission:', error);
@@ -496,7 +496,7 @@ const EditProfileScreen: React.FC = () => {
 
       // Check permission with lifetime behavior (will show Settings modal if needed)
       const hasPermission = await checkAndHandleGalleryPermission();
-      
+
       if (!hasPermission) {
         // Permission not granted - checkAndHandleGalleryPermission already showed modal if needed
         setIsPicking(false);
@@ -515,14 +515,14 @@ const EditProfileScreen: React.FC = () => {
 
       console.log('[Gallery] Launching image picker...');
       const result = await launchImageLibrary(options);
-      
+
       // Handle cancellation silently
       if (result.didCancel) {
         console.log('[Gallery] User cancelled');
         setIsPicking(false);
         return;
       }
-      
+
       // Handle errors
       if (result.errorCode) {
         console.error('[Gallery] Picker error:', result.errorMessage);
@@ -534,11 +534,11 @@ const EditProfileScreen: React.FC = () => {
         setIsPicking(false);
         return;
       }
-      
+
       // Handle successful selection - ALWAYS take first asset only
       if (result.assets && result.assets.length > 0) {
         const asset = result.assets[0]; // Force single asset (handle unexpected multiple)
-        
+
         // Validate URI
         if (!asset.uri) {
           console.error('[Gallery] Invalid asset URI');
@@ -546,7 +546,7 @@ const EditProfileScreen: React.FC = () => {
           setIsPicking(false);
           return;
         }
-        
+
         // IMMEDIATE SET - no second selection step, no confirmation needed
         console.log('[Gallery] Setting image immediately:', asset.uri);
         setProfileImageUri(asset.uri);
@@ -558,12 +558,12 @@ const EditProfileScreen: React.FC = () => {
             name: asset.fileName || `profile_${Date.now()}.jpg`,
           }
         }));
-        
+
         console.log('[Gallery] Image set successfully');
       } else {
         console.warn('[Gallery] No assets returned');
       }
-      
+
       setIsPicking(false);
     } catch (error) {
       console.error('[Gallery] Unexpected error:', error);
@@ -593,7 +593,7 @@ const EditProfileScreen: React.FC = () => {
 
       // Check permission with lifetime behavior (will show Settings modal if needed)
       const hasPermission = await checkAndHandleCameraPermission();
-      
+
       if (!hasPermission) {
         // Permission not granted - checkAndHandleCameraPermission already showed modal if needed
         setIsPicking(false);
@@ -612,14 +612,14 @@ const EditProfileScreen: React.FC = () => {
 
       console.log('[Camera] Launching camera...');
       const result = await launchCamera(options);
-      
+
       // Handle cancellation silently
       if (result.didCancel) {
         console.log('[Camera] User cancelled');
         setIsPicking(false);
         return;
       }
-      
+
       // Handle errors
       if (result.errorCode) {
         console.error('[Camera] Camera error:', result.errorMessage);
@@ -631,11 +631,11 @@ const EditProfileScreen: React.FC = () => {
         setIsPicking(false);
         return;
       }
-      
+
       // Handle successful capture - show preview modal (NOT immediate set)
       if (result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        
+
         // Validate URI
         if (!asset.uri) {
           console.error('[Camera] Invalid asset URI');
@@ -643,14 +643,14 @@ const EditProfileScreen: React.FC = () => {
           setIsPicking(false);
           return;
         }
-        
+
         // Show preview modal for user to retake or accept
         console.log('[Camera] Showing preview modal:', asset.uri);
         setCameraPreviewUri(asset.uri);
         setTempCameraAsset(asset);
         setShowCameraPreview(true);
       }
-      
+
       setIsPicking(false);
     } catch (error) {
       console.error('[Camera] Unexpected error:', error);
@@ -668,7 +668,7 @@ const EditProfileScreen: React.FC = () => {
     setShowCameraPreview(false);
     setCameraPreviewUri(null);
     setTempCameraAsset(null);
-    
+
     // Re-launch camera after modal closes
     setTimeout(() => {
       openCamera();
@@ -684,9 +684,9 @@ const EditProfileScreen: React.FC = () => {
       console.error('[Camera] No asset to accept');
       return;
     }
-    
+
     console.log('[Camera] Accepting photo:', cameraPreviewUri);
-    
+
     // Set the image
     setProfileImageUri(cameraPreviewUri);
     setFormData(prev => ({
@@ -697,12 +697,12 @@ const EditProfileScreen: React.FC = () => {
         name: tempCameraAsset.fileName || `profile_camera_${Date.now()}.jpg`,
       }
     }));
-    
+
     // Close modal
     setShowCameraPreview(false);
     setCameraPreviewUri(null);
     setTempCameraAsset(null);
-    
+
     console.log('[Camera] Photo accepted and set');
   };
 
@@ -719,207 +719,58 @@ const EditProfileScreen: React.FC = () => {
   /**
    * Requests location permission using react-native-permissions
    * More stable than using PermissionsAndroid or promptForEnableLocationIfNeeded
-   * @returns true if permission granted, false otherwise
-   */
-  const requestLocationPermission = async (): Promise<boolean> => {
-    try {
-      console.log('[Location] Starting permission request...');
-      console.log('[Location] Platform:', Platform.OS);
-      
-      if (Platform.OS === 'ios') {
-        const permission = PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
-        console.log('[Location] Requesting iOS permission:', permission);
-        
-        const result = await check(permission);
-        console.log('[Location] iOS permission check result:', result);
-        
-        if (result === RESULTS.GRANTED) {
-          console.log('[Location] iOS permission already granted');
-          return true;
-        }
-        
-        if (result === RESULTS.DENIED) {
-          const requestResult = await request(permission);
-          console.log('[Location] iOS permission request result:', requestResult);
-          return requestResult === RESULTS.GRANTED;
-        }
-        
-        if (result === RESULTS.BLOCKED) {
-          console.warn('[Location] iOS permission blocked');
-          Alert.alert(
-            'Permission Required',
-            'Location permission is blocked. Please enable it in Settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-            ]
-          );
-          return false;
-        }
-        
-        return false;
-      } else {
-        // Android
-        const permission = PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
-        console.log('[Location] Requesting Android permission:', permission);
-        
-        const result = await check(permission);
-        console.log('[Location] Android permission check result:', result);
-        
-        if (result === RESULTS.GRANTED) {
-          console.log('[Location] Android permission already granted');
-          return true;
-        }
-        
-        if (result === RESULTS.DENIED) {
-          console.log('[Location] Permission denied, requesting...');
-          const requestResult = await request(permission);
-          console.log('[Location] Android permission request result:', requestResult);
-          
-          if (requestResult === RESULTS.GRANTED) {
-            console.log('[Location] Permission granted after request');
-            return true;
-          } else {
-            console.warn('[Location] Permission denied after request');
-            Alert.alert(
-              'Permission Denied',
-              'Location permission is required to get your current location.',
-              [{ text: 'OK' }]
-            );
-            return false;
-          }
-        }
-        
-        if (result === RESULTS.BLOCKED) {
-          console.warn('[Location] Android permission blocked');
-          Alert.alert(
-            'Permission Required',
-            'Location permission is blocked. Please enable it in Settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-            ]
-          );
-          return false;
-        }
-        
-        console.warn('[Location] Unexpected permission result:', result);
-        return false;
-      }
-    } catch (error) {
-      console.error('[Location] Error requesting permission:', error);
-      Alert.alert(
-        'Permission Error',
-        `Failed to request location permission: ${error}`,
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-  };
+
 
   /**
-   * Gets the current GPS location using @react-native-community/geolocation
-   * More stable than react-native-geolocation-service
+   * Gets the current GPS location using LocationService
    */
   const getCurrentLocation = async (): Promise<void> => {
     console.log('[Location] getCurrentLocation called');
-    
+
     try {
       setLocationLoading(true);
-      console.log('[Location] Checking permission...');
 
-      // Step 1: Request permission
-      const hasPermission = await requestLocationPermission();
-      console.log('[Location] Permission result:', hasPermission);
-      
-      if (!hasPermission) {
-        console.warn('[Location] Permission not granted');
-        setLocationLoading(false);
-        Alert.alert(
-          'Permission Required',
-          'Location permission is required to get your current location.',
-          [{ text: 'OK' }]
-        );
-        return;
+      const locationData = await LocationService.getCurrentLocation();
+      console.log('[Location] Success! Position:', locationData);
+
+      setFormData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          location: {
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+          },
+        },
+      }));
+
+      setLocationLoading(false);
+
+      Alert.alert(
+        'Success',
+        `Location obtained successfully!\nLat: ${locationData.latitude.toFixed(6)}\nLon: ${locationData.longitude.toFixed(6)}`
+      );
+
+    } catch (error: any) {
+      console.error('[Location] Error:', error);
+      setLocationLoading(false);
+
+      let message = 'Failed to get current location.';
+      if (error.message === 'PERMISSION_DENIED') {
+        message = 'Location permission was denied. Please enable it in Settings.';
+      } else if (error.message === 'GPS_DISABLED') {
+        message = 'Location services are disabled. Please enable GPS.';
+      } else {
+        message = error.message || 'An unexpected error occurred.';
       }
 
-      console.log('[Location] Getting current position...');
-      
-      // Step 2: Get current position using community geolocation
-      Geolocation.getCurrentPosition(
-        (position) => {
-          console.log('[Location] Success! Position:', position);
-          const { latitude, longitude } = position.coords;
-
-          setFormData(prev => ({
-            ...prev,
-            address: {
-              ...prev.address,
-              location: {
-                latitude,
-                longitude,
-              },
-            },
-          }));
-
-          setLocationLoading(false);
-          
-          Alert.alert(
-            'Success',
-            `Location obtained successfully!\nLat: ${latitude.toFixed(6)}\nLon: ${longitude.toFixed(6)}`
-          );
-        },
-        (error) => {
-          console.error('[Location] Error:', error);
-          setLocationLoading(false);
-
-          let message = 'Failed to get current location.';
-          let suggestion = '';
-          
-          switch (error.code) {
-            case 1:
-              message = 'Location permission was denied.';
-              suggestion = 'Please grant location permission in Settings.';
-              break;
-            case 2:
-              message = 'Location information is unavailable.';
-              suggestion = 'Please ensure GPS/Location services are turned on.';
-              break;
-            case 3:
-              message = 'Location request timed out.';
-              suggestion = 'Please try again or check your GPS signal.';
-              break;
-            case 5:
-              message = 'Location services are disabled.';
-              suggestion = 'Please enable location services in Settings.';
-              break;
-            default:
-              message = `Location error (code ${error.code})`;
-              suggestion = error.message || 'Please try again.';
-          }
-
-          Alert.alert(
-            'Location Error',
-            `${message}\n\n${suggestion}`,
-            [
-              { text: 'Cancel' },
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-            ]
-          );
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-        }
-      );
-    } catch (error) {
-      console.error('[Location] Unexpected error:', error);
-      setLocationLoading(false);
       Alert.alert(
-        'Error',
-        `An unexpected error occurred: ${error}`,
-        [{ text: 'OK' }]
+        'Location Error',
+        message,
+        [
+          { text: 'Cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
       );
     }
   };
@@ -927,7 +778,7 @@ const EditProfileScreen: React.FC = () => {
   const handleSubmit = async (): Promise<void> => {
     // Declare hasImage at the top so it's accessible in catch block
     let hasImage = false;
-    
+
     try {
       setLoading(true);
 
@@ -949,11 +800,11 @@ const EditProfileScreen: React.FC = () => {
       if (hasImage && formData.profileImage) {
         // Use FormData for image upload
         const submitFormData = new FormData();
-        
+
         // Add basic fields
         submitFormData.append('name', formData.name.trim());
         submitFormData.append('email', formData.email.trim());
-        
+
         if (formData.phone && formData.phone.trim()) {
           submitFormData.append('phone', formData.phone.trim());
         }
@@ -971,7 +822,7 @@ const EditProfileScreen: React.FC = () => {
         if (formData.address.state) addressData.state = formData.address.state;
         if (formData.address.zip) addressData.zip = formData.address.zip;
         if (formData.address.country) addressData.country = formData.address.country;
-        
+
         if (formData.address.location.latitude && formData.address.location.longitude) {
           addressData.location = {
             latitude: parseFloat(formData.address.location.latitude.toString()),
@@ -989,15 +840,15 @@ const EditProfileScreen: React.FC = () => {
           type: formData.profileImage.type || 'image/jpeg',
           name: formData.profileImage.name || `profile_${Date.now()}.jpg`,
         };
-        
+
         console.log('[Upload] Preparing image for upload:', {
           uri: imageFile.uri,
           type: imageFile.type,
           name: imageFile.name,
         });
-        
+
         submitFormData.append('profileImage', imageFile);
-        
+
         console.log('[Upload] Starting profile update with image...');
         response = await updateUserProfile(submitFormData, true);
         console.log('[Upload] Profile update successful');
@@ -1019,7 +870,7 @@ const EditProfileScreen: React.FC = () => {
         if (formData.address.state) addressData.state = formData.address.state;
         if (formData.address.zip) addressData.zip = formData.address.zip;
         if (formData.address.country) addressData.country = formData.address.country;
-        
+
         if (formData.address.location.latitude && formData.address.location.longitude) {
           addressData.location = {
             latitude: parseFloat(formData.address.location.latitude.toString()),
@@ -1030,7 +881,7 @@ const EditProfileScreen: React.FC = () => {
         if (Object.keys(addressData).length > 0) {
           jsonData.address = addressData;
         }
-        
+
         response = await updateUserProfile(jsonData, false);
       }
 
@@ -1062,30 +913,30 @@ const EditProfileScreen: React.FC = () => {
         response: error.response?.data,
         code: error.code,
       });
-      
+
       // Check error type
       const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
       const isNetworkError = error.message === 'Network Error' || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK';
       const isTimeoutError = error.code === 'ECONNABORTED' || errorMessage.toLowerCase().includes('timeout');
-      const isImageUploadError = errorMessage.toLowerCase().includes('upload preset') || 
-                                  errorMessage.toLowerCase().includes('cloudinary');
-      
+      const isImageUploadError = errorMessage.toLowerCase().includes('upload preset') ||
+        errorMessage.toLowerCase().includes('cloudinary');
+
       // Handle network errors specifically
       if (isNetworkError && hasImage) {
         Alert.alert(
           'Network Error',
           'Unable to upload image. This usually happens with large files. Would you like to try updating without the image?',
           [
-            { 
-              text: 'Cancel', 
-              style: 'cancel' 
+            {
+              text: 'Cancel',
+              style: 'cancel'
             },
             {
               text: 'Update Without Image',
               onPress: async () => {
                 try {
                   setLoading(true);
-                  
+
                   // Retry without image
                   const jsonData: any = {
                     name: formData.name.trim(),
@@ -1102,7 +953,7 @@ const EditProfileScreen: React.FC = () => {
                   if (formData.address.state) addressData.state = formData.address.state;
                   if (formData.address.zip) addressData.zip = formData.address.zip;
                   if (formData.address.country) addressData.country = formData.address.country;
-                  
+
                   if (formData.address.location.latitude && formData.address.location.longitude) {
                     addressData.location = {
                       latitude: parseFloat(formData.address.location.latitude.toString()),
@@ -1113,9 +964,9 @@ const EditProfileScreen: React.FC = () => {
                   if (Object.keys(addressData).length > 0) {
                     jsonData.address = addressData;
                   }
-                  
+
                   const retryResponse = await updateUserProfile(jsonData, false);
-                  
+
                   if (retryResponse.success) {
                     Alert.alert(
                       'Success',
@@ -1149,16 +1000,16 @@ const EditProfileScreen: React.FC = () => {
           'Image Upload Failed',
           'The server is having trouble uploading images. Would you like to update your profile without changing the picture?',
           [
-            { 
-              text: 'Cancel', 
-              style: 'cancel' 
+            {
+              text: 'Cancel',
+              style: 'cancel'
             },
             {
               text: 'Update Without Image',
               onPress: async () => {
                 try {
                   setLoading(true);
-                  
+
                   // Retry without image
                   const jsonData: any = {
                     name: formData.name.trim(),
@@ -1175,7 +1026,7 @@ const EditProfileScreen: React.FC = () => {
                   if (formData.address.state) addressData.state = formData.address.state;
                   if (formData.address.zip) addressData.zip = formData.address.zip;
                   if (formData.address.country) addressData.country = formData.address.country;
-                  
+
                   if (formData.address.location.latitude && formData.address.location.longitude) {
                     addressData.location = {
                       latitude: parseFloat(formData.address.location.latitude.toString()),
@@ -1186,9 +1037,9 @@ const EditProfileScreen: React.FC = () => {
                   if (Object.keys(addressData).length > 0) {
                     jsonData.address = addressData;
                   }
-                  
+
                   const retryResponse = await updateUserProfile(jsonData, false);
-                  
+
                   if (retryResponse.success) {
                     Alert.alert(
                       'Success',
@@ -1218,10 +1069,10 @@ const EditProfileScreen: React.FC = () => {
         );
       } else {
         Alert.alert(
-          'Update Failed', 
-          isImageUploadError 
+          'Update Failed',
+          isImageUploadError
             ? 'Server image upload is temporarily unavailable. Please try again later or contact support.'
-            : errorMessage, 
+            : errorMessage,
           [{ text: 'OK' }]
         );
       }
@@ -1230,16 +1081,16 @@ const EditProfileScreen: React.FC = () => {
     }
   };
 
-  const InputField: React.FC<InputFieldProps> = useCallback(({ 
-    label, 
-    value, 
-    onChangeText, 
-    placeholder, 
-    keyboardType = 'default', 
-    multiline = false 
+  const InputField: React.FC<InputFieldProps> = useCallback(({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    keyboardType = 'default',
+    multiline = false
   }) => (
     <View className="mb-5">
-      <Text 
+      <Text
         className="text-sm font-semibold mb-2"
         style={{ color: isDark ? COLORS.white : COLORS.black }}
       >
@@ -1249,7 +1100,7 @@ const EditProfileScreen: React.FC = () => {
         className="px-4 py-3 rounded-xl text-base"
         style={[
           multiline && styles.textInputMultiline,
-          { 
+          {
             backgroundColor: isDark ? COLORS.darkBgLight : COLORS.lightGray,
             color: isDark ? COLORS.white : COLORS.black,
           }
@@ -1271,39 +1122,39 @@ const EditProfileScreen: React.FC = () => {
       colors={isDark ? ['#1A1A1A', COLORS.darkBg] : [COLORS.white, '#F8F9FA']}
       style={styles.container}
     >
-      <StatusBar 
-        backgroundColor={isDark ? '#1A1A1A' : COLORS.white} 
-        barStyle={isDark ? 'light-content' : 'dark-content'} 
+      <StatusBar
+        backgroundColor={isDark ? '#1A1A1A' : COLORS.white}
+        barStyle={isDark ? 'light-content' : 'dark-content'}
       />
-      
+
       {/* Header */}
-      <View 
+      <View
         className="flex-row items-center justify-between px-4 border-b"
         style={[
           styles.header,
           { borderBottomColor: isDark ? COLORS.darkBgLight : '#E5E7EB' }
         ]}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           className="w-10 h-10 rounded-full items-center justify-center"
           style={{ backgroundColor: isDark ? COLORS.darkBgLight : COLORS.lightGray }}
         >
           <MaterialCommunityIcons name="arrow-left" size={getResponsiveSize(24)} color={isDark ? COLORS.white : COLORS.black} />
         </TouchableOpacity>
-        <Text 
+        <Text
           className="text-xl font-bold"
           style={{ color: isDark ? COLORS.white : COLORS.black }}
         >
           Edit Profile
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleSubmit}
           disabled={loading}
           className="w-10 h-10 rounded-full items-center justify-center"
-          style={{ 
+          style={{
             backgroundColor: isDark ? COLORS.primaryDark : COLORS.primary,
-            opacity: loading ? 0.6 : 1 
+            opacity: loading ? 0.6 : 1
           }}
         >
           {loading ? (
@@ -1316,68 +1167,68 @@ const EditProfileScreen: React.FC = () => {
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Profile Image Section */}
-        <View 
+        <View
           className="m-4 p-5 rounded-2xl items-center"
           style={[
             styles.section,
             { backgroundColor: isDark ? COLORS.darkBg : COLORS.white }
           ]}
         >
-          <Text 
+          <Text
             className="text-lg font-bold mb-5"
             style={{ color: isDark ? COLORS.white : COLORS.black }}
           >
             Profile Picture
           </Text>
-          
+
           {/* Circular Avatar */}
           <View className="items-center mb-4">
             <View className="relative">
               {profileImageUri ? (
-                <Image 
-                  source={{ uri: profileImageUri }} 
-                  style={styles.profileImage} 
+                <Image
+                  source={{ uri: profileImageUri }}
+                  style={styles.profileImage}
                   resizeMode="cover"
                 />
               ) : (
-                <View 
+                <View
                   className="items-center justify-center"
                   style={[
                     styles.placeholderImage,
                     { backgroundColor: isDark ? COLORS.primaryDark : COLORS.primary }
                   ]}
                 >
-                  <MaterialCommunityIcons 
-                    name="account" 
-                    size={getResponsiveSize(60)} 
-                    color={COLORS.white} 
+                  <MaterialCommunityIcons
+                    name="account"
+                    size={getResponsiveSize(60)}
+                    color={COLORS.white}
                   />
                 </View>
               )}
-              
+
               {/* Camera Badge */}
-              <View 
+              <View
                 className="absolute items-center justify-center"
                 style={[
                   styles.cameraBadge,
                   { backgroundColor: isDark ? COLORS.primaryDark : COLORS.primary }
                 ]}
               >
-                <MaterialCommunityIcons 
-                  name="camera" 
-                  size={getResponsiveSize(18)} 
-                  color={COLORS.white} 
+                <MaterialCommunityIcons
+                  name="camera"
+                  size={getResponsiveSize(18)}
+                  color={COLORS.white}
                 />
               </View>
             </View>
           </View>
-          
+
           {/* Action Buttons Row */}
           <View className="flex-row gap-3 w-full">
             {/* Choose Photo Button */}
             <TouchableOpacity
               className="flex-1 flex-row items-center justify-center px-4 py-3 rounded-xl"
-              style={{ 
+              style={{
                 backgroundColor: isDark ? COLORS.primaryDark : COLORS.primary,
                 opacity: isPicking ? 0.6 : 1
               }}
@@ -1389,10 +1240,10 @@ const EditProfileScreen: React.FC = () => {
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <>
-                  <MaterialCommunityIcons 
-                    name="image-outline" 
-                    size={getResponsiveSize(20)} 
-                    color={COLORS.white} 
+                  <MaterialCommunityIcons
+                    name="image-outline"
+                    size={getResponsiveSize(20)}
+                    color={COLORS.white}
                   />
                   <Text className="text-white text-sm font-semibold ml-2">
                     Choose Photo
@@ -1400,11 +1251,11 @@ const EditProfileScreen: React.FC = () => {
                 </>
               )}
             </TouchableOpacity>
-            
+
             {/* Take Photo Button */}
             <TouchableOpacity
               className="flex-1 flex-row items-center justify-center px-4 py-3 rounded-xl"
-              style={{ 
+              style={{
                 backgroundColor: isDark ? COLORS.success : COLORS.success,
                 opacity: isPicking ? 0.6 : 1
               }}
@@ -1412,19 +1263,19 @@ const EditProfileScreen: React.FC = () => {
               disabled={isPicking}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons 
-                name="camera" 
-                size={getResponsiveSize(20)} 
-                color={COLORS.white} 
+              <MaterialCommunityIcons
+                name="camera"
+                size={getResponsiveSize(20)}
+                color={COLORS.white}
               />
               <Text className="text-white text-sm font-semibold ml-2">
                 Take Photo
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           {/* Helper Text */}
-          <Text 
+          <Text
             className="text-xs text-center mt-3"
             style={{ color: isDark ? COLORS.gray : COLORS.gray }}
           >
@@ -1433,20 +1284,20 @@ const EditProfileScreen: React.FC = () => {
         </View>
 
         {/* Basic Information */}
-        <View 
+        <View
           className="m-4 p-5 rounded-2xl"
           style={[
             styles.section,
             { backgroundColor: isDark ? COLORS.darkBg : COLORS.white }
           ]}
         >
-          <Text 
+          <Text
             className="text-lg font-bold mb-5"
             style={{ color: isDark ? COLORS.white : COLORS.black }}
           >
             Basic Information
           </Text>
-          
+
           <InputField
             label="Full Name *"
             value={formData.name}
@@ -1484,7 +1335,7 @@ const EditProfileScreen: React.FC = () => {
 
           {/* Date of Birth */}
           <View className="mb-5">
-            <Text 
+            <Text
               className="text-sm font-semibold mb-2"
               style={{ color: isDark ? COLORS.white : COLORS.black }}
             >
@@ -1498,10 +1349,10 @@ const EditProfileScreen: React.FC = () => {
               <Text style={{ color: isDark ? COLORS.white : COLORS.black }}>
                 {formData.dob.toLocaleDateString()}
               </Text>
-              <MaterialCommunityIcons 
-                name="calendar" 
-                size={getResponsiveSize(20)} 
-                color={isDark ? COLORS.white : COLORS.black} 
+              <MaterialCommunityIcons
+                name="calendar"
+                size={getResponsiveSize(20)}
+                color={isDark ? COLORS.white : COLORS.black}
               />
             </TouchableOpacity>
           </View>
@@ -1518,25 +1369,25 @@ const EditProfileScreen: React.FC = () => {
         </View>
 
         {/* Address Information */}
-        <View 
+        <View
           className="m-4 p-5 rounded-2xl"
           style={[
             styles.section,
             { backgroundColor: isDark ? COLORS.darkBg : COLORS.white }
           ]}
         >
-          <Text 
+          <Text
             className="text-lg font-bold mb-5"
             style={{ color: isDark ? COLORS.white : COLORS.black }}
           >
             Address Information
           </Text>
-          
+
           <InputField
             label="Street Address"
             value={formData.address.street}
-            onChangeText={(text) => setFormData(prev => ({ 
-              ...prev, 
+            onChangeText={(text) => setFormData(prev => ({
+              ...prev,
               address: { ...prev.address, street: text }
             }))
             }
@@ -1547,8 +1398,8 @@ const EditProfileScreen: React.FC = () => {
           <InputField
             label="City"
             value={formData.address.city}
-            onChangeText={(text) => setFormData(prev => ({ 
-              ...prev, 
+            onChangeText={(text) => setFormData(prev => ({
+              ...prev,
               address: { ...prev.address, city: text }
             }))}
             placeholder="Enter city"
@@ -1557,8 +1408,8 @@ const EditProfileScreen: React.FC = () => {
           <InputField
             label="State"
             value={formData.address.state}
-            onChangeText={(text) => setFormData(prev => ({ 
-              ...prev, 
+            onChangeText={(text) => setFormData(prev => ({
+              ...prev,
               address: { ...prev.address, state: text }
             }))
             }
@@ -1568,8 +1419,8 @@ const EditProfileScreen: React.FC = () => {
           <InputField
             label="ZIP Code"
             value={formData.address.zip}
-            onChangeText={(text) => setFormData(prev => ({ 
-              ...prev, 
+            onChangeText={(text) => setFormData(prev => ({
+              ...prev,
               address: { ...prev.address, zip: text }
             }))
             }
@@ -1580,8 +1431,8 @@ const EditProfileScreen: React.FC = () => {
           <InputField
             label="Country"
             value={formData.address.country}
-            onChangeText={(text) => setFormData(prev => ({ 
-              ...prev, 
+            onChangeText={(text) => setFormData(prev => ({
+              ...prev,
               address: { ...prev.address, country: text }
             }))
             }
@@ -1591,7 +1442,7 @@ const EditProfileScreen: React.FC = () => {
           {/* Location Section */}
           <View className="mb-5">
             <View className="flex-row items-center justify-between mb-4">
-              <Text 
+              <Text
                 className="text-sm font-semibold"
                 style={{ color: isDark ? COLORS.white : COLORS.black }}
               >
@@ -1660,31 +1511,31 @@ const EditProfileScreen: React.FC = () => {
         transparent={false}
         onRequestClose={() => setShowCameraPreview(false)}
       >
-        <View 
+        <View
           className="flex-1"
           style={{ backgroundColor: isDark ? COLORS.black : COLORS.white }}
         >
-          <StatusBar 
-            backgroundColor={isDark ? COLORS.black : COLORS.white} 
-            barStyle={isDark ? 'light-content' : 'dark-content'} 
+          <StatusBar
+            backgroundColor={isDark ? COLORS.black : COLORS.white}
+            barStyle={isDark ? 'light-content' : 'dark-content'}
           />
-          
+
           {/* Header */}
-          <View 
+          <View
             className="px-4 py-4 border-b"
             style={[
               styles.modalHeader,
               { borderBottomColor: isDark ? COLORS.darkBgLight : '#E5E7EB' }
             ]}
           >
-            <Text 
+            <Text
               className="text-xl font-bold text-center"
               style={{ color: isDark ? COLORS.white : COLORS.black }}
             >
               Preview Photo
             </Text>
           </View>
-          
+
           {/* Image Preview */}
           <View className="flex-1 items-center justify-center p-4">
             {cameraPreviewUri ? (
@@ -1695,12 +1546,12 @@ const EditProfileScreen: React.FC = () => {
               />
             ) : (
               <View className="items-center justify-center">
-                <MaterialCommunityIcons 
-                  name="image-off" 
-                  size={getResponsiveSize(80)} 
-                  color={isDark ? COLORS.gray : COLORS.gray} 
+                <MaterialCommunityIcons
+                  name="image-off"
+                  size={getResponsiveSize(80)}
+                  color={isDark ? COLORS.gray : COLORS.gray}
                 />
-                <Text 
+                <Text
                   className="text-base mt-4"
                   style={{ color: isDark ? COLORS.gray : COLORS.gray }}
                 >
@@ -1709,9 +1560,9 @@ const EditProfileScreen: React.FC = () => {
               </View>
             )}
           </View>
-          
+
           {/* Action Buttons */}
-          <View 
+          <View
             className="px-4 py-6 border-t"
             style={[
               styles.modalFooter,
@@ -1726,19 +1577,19 @@ const EditProfileScreen: React.FC = () => {
                 onPress={handleRetakePhoto}
                 activeOpacity={0.7}
               >
-                <MaterialCommunityIcons 
-                  name="close" 
-                  size={getResponsiveSize(24)} 
-                  color={isDark ? COLORS.white : COLORS.black} 
+                <MaterialCommunityIcons
+                  name="close"
+                  size={getResponsiveSize(24)}
+                  color={isDark ? COLORS.white : COLORS.black}
                 />
-                <Text 
+                <Text
                   className="text-lg font-bold ml-2"
                   style={{ color: isDark ? COLORS.white : COLORS.black }}
                 >
                   Retake
                 </Text>
               </TouchableOpacity>
-              
+
               {/* Use Photo Button */}
               <TouchableOpacity
                 className="flex-1 flex-row items-center justify-center py-4 rounded-2xl overflow-hidden"
@@ -1749,10 +1600,10 @@ const EditProfileScreen: React.FC = () => {
                   colors={[COLORS.success, '#059669']}
                   style={styles.usePhotoGradient}
                 >
-                  <MaterialCommunityIcons 
-                    name="check" 
-                    size={getResponsiveSize(24)} 
-                    color={COLORS.white} 
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={getResponsiveSize(24)}
+                    color={COLORS.white}
                   />
                   <Text className="text-white text-lg font-bold ml-2">
                     Use Photo
@@ -1760,9 +1611,9 @@ const EditProfileScreen: React.FC = () => {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-            
+
             {/* Helper Text */}
-            <Text 
+            <Text
               className="text-xs text-center mt-4"
               style={{ color: isDark ? COLORS.gray : COLORS.gray }}
             >
@@ -1777,7 +1628,7 @@ const EditProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  
+
   header: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + (-25) : 40,
     paddingBottom: 15,

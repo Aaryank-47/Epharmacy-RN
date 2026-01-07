@@ -13,12 +13,10 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
-  PermissionsAndroid,
   Linking,
   ToastAndroid,
 } from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
-import { promptForEnableLocationIfNeeded } from 'react-native-android-location-enabler';
+import LocationService from '../../../services/LocationService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
@@ -599,96 +597,82 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   const startIndex = 0;
 
   // ========== LOCATION HANDLER ==========
+  // ========== LOCATION HANDLER ==========
   const handleLocationPress = useCallback(async () => {
     setLocationLoading(true);
 
     try {
-      // Step 1: Request permission (runtime permission dialog will show)
-      if (Platform.OS === 'android') {
-        const permission = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      // Get location using consolidated service (handles permission & GPS enable)
+      const { latitude, longitude } = await LocationService.getCurrentLocation();
+
+      // Get readable address
+      const addressString = await LocationService.getAddressFromCoordinates(latitude, longitude);
+
+      // Store location data
+      const locationData: LocationData = {
+        latitude,
+        longitude,
+        address: addressString,
+        city: 'Current City', // In a real app, parse this from address components
+        state: 'India',
+      };
+
+      setUserLocation(locationData);
+
+      // Update profile with location
+      const addressData = {
+        address: {
+          street: addressString,
+          city: 'Current City',
+          state: 'India',
+          zip: 'PIN',
+          country: 'India',
+          location: { latitude, longitude },
+        },
+      };
+
+      await updateUserProfile(addressData, false);
+
+      // Show success toast
+      ToastAndroid.show(
+        `✓ Location Updated: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        ToastAndroid.LONG
+      );
+
+      setLocationLoading(false);
+    } catch (error: any) {
+      console.error('[HeroSection] Location Error:', error);
+      setLocationLoading(false);
+
+      let message = 'Error updating location';
+      if (error.message === 'PERMISSION_DENIED') {
+        message = 'Location permission denied';
+      } else if (error.message === 'GPS_DISABLED') {
+        Alert.alert(
+          'Location Required',
+          'GPS is disabled. Please enable it in Settings to detect your location.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => {
+                // Open Location Settings (Android)
+                if (Platform.OS === 'android') {
+                  Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS');
+                } else {
+                  Linking.openSettings();
+                }
+              }
+            },
+          ]
         );
-
-        if (permission !== PermissionsAndroid.RESULTS.GRANTED) {
-          ToastAndroid.show('Location permission denied', ToastAndroid.SHORT);
-          setLocationLoading(false);
-          return;
-        }
-
-        // Step 2: Prompt to Enable GPS (System Dialog)
-        try {
-          await promptForEnableLocationIfNeeded({
-            interval: 10000,
-          });
-        } catch (error) {
-          console.log('Location enable denied or error', error);
-          ToastAndroid.show('Location is required to proceed', ToastAndroid.SHORT);
-          setLocationLoading(false);
-          return;
-        }
+        setLocationLoading(false);
+        return;
+      } else {
+        message = error.message || 'Unknown error';
       }
 
-      // Step 3: Get current location using Geolocation API
-      Geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-
-            // Store location data
-            const locationData: LocationData = {
-              latitude,
-              longitude,
-              address: 'Current Location',
-              city: 'Current City',
-              state: 'India',
-            };
-
-            setUserLocation(locationData);
-
-            // Update profile with location
-            const addressData = {
-              address: {
-                street: 'Current Location',
-                city: 'Current City',
-                state: 'Current State',
-                zip: 'PIN',
-                country: 'India',
-                location: { latitude, longitude },
-              },
-            };
-
-            await updateUserProfile(addressData, false);
-
-            // Show success toast
-            ToastAndroid.show(
-              `✓ Location Updated: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-              ToastAndroid.LONG
-            );
-
-            setLocationLoading(false);
-          } catch (error: any) {
-            console.error('[HeroSection] Error:', error);
-            ToastAndroid.show('Error updating location', ToastAndroid.SHORT);
-            setLocationLoading(false);
-          }
-        },
-        (error) => {
-          console.error('[HeroSection] Geolocation error:', error);
-          setLocationLoading(false);
-          ToastAndroid.show('Error getting location: ' + error.message, ToastAndroid.SHORT);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-          forceRequestLocation: true,
-          showLocationDialog: true,
-        }
-      );
-    } catch (error: any) {
-      console.error('[HeroSection] Exception:', error);
-      setLocationLoading(false);
-      ToastAndroid.show('Error: ' + error.message, ToastAndroid.SHORT);
+      ToastAndroid.show(message, ToastAndroid.SHORT);
     }
   }, []);
 
@@ -783,16 +767,25 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
         {/* Featured Title */}
         <View style={{ marginVertical: 16 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: '700',
-                color: isDark ? '#FFFFFF' : '#1F2937',
-                letterSpacing: 0.5,
-              }}
-            >
-              {userLocation ? ` ${userLocation.address}` : 'Featured Medicines'}
-            </Text>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: '700',
+                  color: isDark ? '#FFFFFF' : '#1F2937',
+                  letterSpacing: 0.5,
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {userLocation ? userLocation.address : 'Featured Medicines'}
+              </Text>
+              {userLocation && (
+                <Text style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                  Current Location
+                </Text>
+              )}
+            </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               {/* QR Button */}
               <TouchableOpacity
