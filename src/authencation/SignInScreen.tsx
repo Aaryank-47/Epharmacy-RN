@@ -30,11 +30,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LottieView from 'lottie-react-native';
 import { useMutation } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 import type { RootStackParamList } from '../../AppNavigator';
-import { loginRequest } from '../api/authApi';
+import { loginRequest, googleLoginRequest } from '../api/authApi';
 import type { LoginRequestPayload } from '../api/types';
-import { toHumanReadableError } from '../utils/errorHandler';
+import { toHumanReadableError, mapApiError } from '../utils/errorHandler';
 import useThemePalette from '../hooks/useThemePalette';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,10 +54,11 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   const [localError, setLocalError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const haloAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView | null>(null);
+  // const scrollRef = useRef<ScrollView | null>(null);
   const { login: persistSession } = useAuth();
   const {
     statusBarBackground,
@@ -68,24 +70,67 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
   const compactTopInset = Math.max(insets.top - 24, 0);
 
+  // Initialize Google Sign-In
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '933031359598-ofs7ps3rg2k8fpamhoa659f14uk08f5m.apps.googleusercontent.com',
+      // Android client ID (type: Android) tied to package com.epharmacynative + SHA-1
+      offlineAccess: true,
+      forceCodeForRefreshToken: true,
+    });
+  }, []);
+
   const mutation = useMutation({
     mutationFn: (payload: LoginRequestPayload) => loginRequest(payload),
     onSuccess: async data => {
-      setFormErrors({});
-      setLocalError(null);
+      // setFormErrors({});
+      // setLocalError(null);
       await persistSession(data);
-      
+
       // FCM token is already registered via login API
       console.log('✅ Login successful with FCM token');
-      
-      // Let the AppNavigator detect the auth change and navigate
-      // The navigator will automatically redirect to HomeTabs
-      // This avoids the RESET action warning
+
     },
     onError: (error: any) => {
-      const message = toHumanReadableError(error?.message || 'Login failed');
+      const normalizedError = mapApiError(error);
+      const message = toHumanReadableError(normalizedError);
+      console.error('❌ Login error:', { normalizedError, message });
       setLocalError(message);
-      setFormErrors({});
+      // setFormErrors({});
+    },
+  });
+
+  const googleMutation = useMutation({
+    mutationFn: (idToken: string) => {
+      console.log('[Google] mutationFn invoked with idToken length', idToken?.length);
+      return googleLoginRequest(idToken)
+    },
+    onSuccess: async data => {
+      setIsGoogleSigningIn(false);
+      // setFormErrors({});
+      // setLocalError(null);
+      console.log('🔐 Google login successful, persisting session...');
+      console.log('[Google] mutation success payload user:', data?.user?.email, 'token?', !!data?.token);
+      await persistSession(data);
+      console.log('✅ Google login successful');
+    },
+    onError: (error: any) => {
+      setIsGoogleSigningIn(false);
+      console.error('❌ Google login error (raw):', error);
+
+      // Normalize the error to extract proper message
+      const normalizedError = mapApiError(error);
+      const message = toHumanReadableError(normalizedError);
+
+      console.error('❌ Google login error (normalized):', { normalizedError, message });
+      console.error('[Google] mutation error details', {
+        message: error?.message,
+        code: error?.code,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      setLocalError(message);
+      // setFormErrors({});
     },
   });
 
@@ -178,7 +223,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   );
 
   const handleSubmit = useCallback(async () => {
-    setLocalError(null);
+    // setLocalError(null);
     const errors: { email?: string; password?: string } = {};
 
     if (!email.trim()) {
@@ -206,6 +251,59 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
     mutation.mutate(payload);
   }, [email, password, mutation]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    try {
+      setIsGoogleSigningIn(true);
+      // setLocalError(null);
+      // setFormErrors({});
+      console.log('[Google] handleGoogleSignIn start');
+
+      console.log('[Google] checking Play Services...');
+      console.log('Play Services available:', await GoogleSignin.hasPlayServices());
+      console.log('[Google] calling signIn()');
+      const response = await GoogleSignin.signIn();
+      console.log('response from Google Sign-In:', response);
+      console.log('[Google] signIn response keys', Object.keys(response || {}));
+      console.log('[Google] signIn data keys', response?.data ? Object.keys(response.data) : []);
+      console.log('[Google] signIn user email', response?.user?.email);
+      console.log('[Google] signIn scopes', response?.scopes);
+
+      // Extract ID token - it can be in different places depending on library version
+      const idToken = response.data?.idToken;
+      console.log('[Google] extracted idToken:', idToken ? 'FOUND' : 'NOT FOUND');
+      console.log('[Google] extracted idToken length', idToken?.length);
+
+      if (!idToken) {
+        console.error('❌ No ID token in response:', {
+          response: response,
+          data: response.data,
+          keys: Object.keys(response),
+          dataKeys: response.data ? Object.keys(response.data) : []
+        });
+        throw new Error('No ID token received from Google');
+      }
+
+      console.log('🔐 Google Sign-In successful, sending token to backend...');
+      console.log('📝 ID Token preview:', idToken.substring(0, 50) + '...');
+      console.log('[Google] queueing mutate with idToken length', idToken.length);
+      googleMutation.mutate(idToken);
+    } catch (error: any) {
+      setIsGoogleSigningIn(false);
+      console.error('❌ Google Sign-In error (raw):', error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('Google Sign-In cancelled by user');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        setLocalError('Google Sign-In is in progress');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setLocalError('Google Play Services not available');
+      } else {
+        const message = toHumanReadableError(error?.message || 'Google Sign-In failed');
+        setLocalError(message);
+      }
+      console.error('[Google] handleGoogleSignIn error', error);
+    }
+  }, [googleMutation]);
 
   return (
     <SafeAreaView
@@ -375,7 +473,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
                     </Text>
                   </View>
                 )}
-                  
+
                 {/* LOGIN BUTTON */}
                 <Animated.View style={[buttonScaleStyle, { marginTop: 8 }]}>
                   <TouchableOpacity
@@ -413,7 +511,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
                       )}
                     </LinearGradient>
                   </TouchableOpacity>
-                     <TouchableOpacity
+                  <TouchableOpacity
                     activeOpacity={0.8}
                     className="mt-3 self-end"
                     onPress={() => navigation.navigate('ForgotPassword')}
@@ -429,16 +527,22 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
                 {/* Social Login */}
                 <View className="mt-8 flex-row justify-center gap-4">
-                  {/* REAL GOOGLE ICON */}
+                  {/* GOOGLE SIGN-IN BUTTON */}
                   <TouchableOpacity
                     activeOpacity={0.9}
+                    disabled={isGoogleSigningIn || googleMutation.isPending}
+                    onPress={handleGoogleSignIn}
                     className="h-14 w-14 items-center justify-center rounded-full border border-slate-200 dark:border-white/20 bg-white dark:bg-white/5"
                   >
-                    <MaterialCommunityIcons
-                      name="google"
-                      size={28}
-                      color="#DB4437"
-                    />
+                    {isGoogleSigningIn || googleMutation.isPending ? (
+                      <ActivityIndicator color="#DB4437" />
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="google"
+                        size={28}
+                        color="#DB4437"
+                      />
+                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity

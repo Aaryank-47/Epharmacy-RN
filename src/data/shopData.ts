@@ -18,7 +18,6 @@ export interface Shop {
   longitude: number;
   availableMedicines: string[]; // Generic medicine names available
 }
-
 export const RAIPUR_SHOPS: Shop[] = [
   {
     id: 'shop_001',
