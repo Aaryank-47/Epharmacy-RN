@@ -17,6 +17,7 @@ import StartPage from "./src/components/StartPage";
 
 // PRIVATE SCREENS
 import HomePage from "./src/components/home/HomePage";
+import OfferBannerSection from "./src/components/home/screens/OfferBannerSection";
 import ProfilePage from "./src/authencation/user/ProfilePage";
 import EditProfileScreen from "./src/authencation/user/EditProfileScreen";
 import SearchScreen from "./src/components/commonPage/SearchScreen";
@@ -26,6 +27,7 @@ import CheckoutPage from "./src/components/pages/CheckoutPage";
 import PaymentScreen from "./src/components/commonPage/PaymentScreen";
 import QRScannerScreen from "./src/components/qr/QRScannerScreen";
 import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
+import HistoryPage from "./src/components/commonPage/HistoryPage";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -53,7 +55,9 @@ export type RootStackParamList = {
   CheckoutPage: undefined;
   PaymentScreen: undefined;
   QRScannerScreen: undefined;
+  OfferBannerSection: undefined;
   PDFUploadScreen: undefined;
+  HistoryPage: undefined;
   Welcome: undefined;
   Start: undefined;
   SignIn: undefined;
@@ -77,8 +81,10 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "ShoppingBagScreen", component: ShoppingBagScreen },
   { name: "CheckoutPage", component: CheckoutPage },
   { name: "PaymentScreen", component: PaymentScreen },
-  { name: "QRScannerScreen", component: QRScannerScreen },
   { name: "PDFUploadScreen", component: PDFUploadScreen },
+  { name: "HistoryPage", component: HistoryPage },
+  { name: "QRScannerScreen", component: QRScannerScreen },
+  { name: "OfferBannerSection", component: OfferBannerSection },
 ];
 
 const PUBLIC_SCREENS: ScreenConfig[] = [

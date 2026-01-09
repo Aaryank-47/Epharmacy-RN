@@ -73,11 +73,15 @@ const Home: React.FC = () => {
   };
 
   // Fetch Data & Handle Refresh Logic
-  const fetchData = useCallback(async (): Promise<void> => {
+  const fetchData = useCallback(async (isRefresh = false): Promise<void> => {
     try {
-      setRefreshKey((prev) => prev + 1);
-      await queryClient.resetQueries();
-      await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+      if (isRefresh) {
+        setRefreshKey((prev) => prev + 1);
+        // User wants to see shimmers ("semeres"), so we must clear data to trigger loading states
+        await queryClient.resetQueries();
+        // Add a delay so the shimmer and spinner are visible and smooth
+        await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+      }
     } catch (error) {
       console.error('[HomePage] Error:', error);
     }
@@ -85,13 +89,14 @@ const Home: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    fetchData().then(() => setLoading(false));
-  }, [fetchData]);
+    // Immediate load without delay
+    setLoading(false);
+  }, []);
 
   // Refresh control hook
   const { isRefreshing, handleRefresh } = useRefreshControl({
-    onRefresh: [fetchData],
-    minRefreshTime: 1500,
+    onRefresh: [() => fetchData(true)],
+    minRefreshTime: 2000, // Increased to 2000ms for smoother loader visibility
   });
 
   // Handle tab navigation
@@ -103,6 +108,35 @@ const Home: React.FC = () => {
       console.error('[HomePage] Navigation error:', error);
     }
   }, [navigation]);
+
+  const lastTapRef = useRef<number>(0);
+
+  // Handle Tab Reselect (Scroll to top or Refresh)
+  const handleTabReselect = useCallback((tabName: string) => {
+    if (tabName !== 'Home') return;
+
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    // Check if scrolled down OR double tap
+    // @ts-ignore - _value is internal but often accessible, or use a listener
+    const currentScrollY = (scrollY as any)._value || 0;
+
+    if (currentScrollY > 100) {
+      // Not at top -> Scroll to top
+      handleScrollToTop();
+    } else {
+      // At top -> Check for double tap to refresh
+      if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+        handleRefresh();
+      } else {
+        // Single tap at top -> Ensure exactly 0
+        handleScrollToTop();
+      }
+    }
+
+    lastTapRef.current = now;
+  }, [handleRefresh, scrollY]);
 
   return (
     <>
@@ -116,7 +150,13 @@ const Home: React.FC = () => {
           />
         </View>
       ) : (
-        <Tabs translateY={translateY} onNavigate={handleNavigate}>
+        <Tabs
+          translateY={translateY}
+          onNavigate={handleNavigate}
+          onTabReselect={handleTabReselect}
+          scrollY={scrollY}
+          onScrollToTop={handleScrollToTop}
+        >
           {/* Header */}
           <HeaderScreen />
 
@@ -150,12 +190,6 @@ const Home: React.FC = () => {
               <RecentlyViewedSection key={`recent-${refreshKey}`} />
             </View>
           </RefreshControlWrapper>
-
-          {/* Scroll To Top Button */}
-          <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
-
-          {/* Floating AI Doctor Button */}
-          <AiChatSupport />
         </Tabs>
       )}
     </>

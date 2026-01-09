@@ -14,6 +14,7 @@ import {
   ListRenderItem,
   ActivityIndicator,
   Easing,
+  StyleSheet,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CartContext } from '../../context/CartContext';
 import { getItemDetails, addItemToRecentlyViewed } from '../../api/medicinesApi';
 import { ItemDetails } from '../../api/types';
+import ShareOverlay from '../commonPage/ShareOverlay';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -166,6 +168,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
 
   const [quantity, setQuantity] = useState(1);
   const [showShareOptions, setShowShareOptions] = useState(false);
+  const [showShareArcOverlay, setShowShareArcOverlay] = useState(false);
 
   const shareOptions = [
     { id: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366' },
@@ -368,8 +371,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
         }}
         scrollEventThrottle={16}
       >
-        {/* Image carousel */}
-        <View className="w-full justify-center items-center bg-white dark:bg-[#1A1A1A] pb-8" style={{ height: screenWidth * 0.95 }}>
+        {/* Image carousel and Thumbnails */}
+        <View className="w-full justify-center items-center bg-white dark:bg-[#1A1A1A] pb-12">
           <Animated.FlatList
             ref={imageRef}
             data={product.images}
@@ -387,9 +390,36 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
               setActiveImage(idx);
             }}
           />
-          <View className="absolute bottom-9 left-0 right-0 flex-row justify-center items-center">
+
+          {/* Dots - Relative Position */}
+          <View className="flex-row justify-center items-center w-full mt-2 mb-4">
             {product.images.map((_, i) => renderDot(i))}
           </View>
+
+          {/* Thumbnails - Left Aligned */}
+          {product.images.length > 1 && (
+            <View className="w-full px-4 items-start">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 20 }}
+              >
+                {product.images.map((img, idx) => (
+                  <TouchableOpacity
+                    key={`thumb-${idx}`}
+                    onPress={() => {
+                      setActiveImage(idx);
+                      imageRef.current?.scrollToIndex({ index: idx, animated: true });
+                    }}
+                    className={`w-16 h-16 rounded-xl mr-3 overflow-hidden border-2 ${activeImage === idx ? 'border-[#40C057]' : 'border-gray-200 dark:border-neutral-700'
+                      }`}
+                  >
+                    <Image source={{ uri: img }} className="w-full h-full" resizeMode="cover" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {/* Product details card */}
@@ -538,9 +568,19 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
 
           {/* Unit selection */}
           <View className="mb-5">
-            <Text className="text-lg font-bold mb-3 text-neutral-900 dark:text-white">
-              Select Unit
-            </Text>
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-lg font-bold text-neutral-900 dark:text-white">
+                Select Unit
+              </Text>
+              <TouchableOpacity
+                className={`w-10 h-10 rounded-full justify-center items-center border ${isDark ? 'border-neutral-700 bg-neutral-800' : 'border-gray-200 bg-white'
+                  }`}
+                style={{ marginTop: 8 }}
+                onPress={() => setShowShareArcOverlay(true)}
+              >
+                <Icon name="share-social-outline" size={22} color="#40C057" />
+              </TouchableOpacity>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -630,6 +670,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* ARC Share Overlay */}
+      {showShareArcOverlay && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]} pointerEvents="box-none">
+          <Animated.View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowShareArcOverlay(false)} />
+          </Animated.View>
+          <ShareOverlay
+            onClose={() => setShowShareArcOverlay(false)}
+            onShareWhatsapp={() => console.log('Share WA')}
+            onShareInsta={() => console.log('Share Insta')}
+            onShareFB={() => console.log('Share FB')}
+            onShareTelegram={() => console.log('Share TG')}
+          />
+        </View>
+      )}
 
       {/* Floating Premium Bottom Bar */}
       <Animated.View

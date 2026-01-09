@@ -70,14 +70,17 @@ export const RefreshControlWrapper = React.forwardRef<ScrollView, RefreshControl
           onRefresh={onRefresh}
           tintColor={refreshColor}
           colors={[refreshColor]}
+          progressBackgroundColor={isDark ? '#333' : '#fff'} // For Android consistency
           enabled={enabled}
         />
       }
       showsVerticalScrollIndicator={scrollViewProps?.showsVerticalScrollIndicator ?? true}
       scrollEventThrottle={16}
+      style={[{ flex: 1 }, scrollViewProps?.style]}
+      contentContainerStyle={scrollViewProps?.contentContainerStyle}
       {...scrollViewProps}
     >
-      <View {...viewProps}>{children}</View>
+      <View {...viewProps} style={[{ flex: 1 }, viewProps?.style]}>{children}</View>
     </Animated.ScrollView>
   );
 });

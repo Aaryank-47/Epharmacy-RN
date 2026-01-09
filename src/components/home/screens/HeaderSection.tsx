@@ -17,7 +17,7 @@ import { useThemePalette } from '../../../hooks/useThemePalette';
 
 // Constants
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HEADER_BASE_HEIGHT = 28; 
+const HEADER_BASE_HEIGHT = 28;
 const LOGO_LETTERS = ['M', 'E', 'D', 'I', 'C', 'A', 'R', 'E', '+'] as const;
 
 // Types
@@ -70,7 +70,7 @@ const TEXT_COLORS = {
 const LogoLetter = memo<LogoLetterProps>(({ letter, index, translateY, isDark }) => {
   const isPrimary = index < 4;
   const colors = TEXT_COLORS[isDark ? 'dark' : 'light'];
-  
+
   const letterStyle = useMemo(() => ({
     transform: [{ translateY }],
     fontSize: SCREEN_WIDTH * 0.045,
@@ -104,7 +104,7 @@ const HeaderScreen: React.FC = () => {
   const animationRefs = useRef<Animated.CompositeAnimation[]>([]);
 
   // Calculate header height
-  const statusBarHeight = useMemo(() => 
+  const statusBarHeight = useMemo(() =>
     Platform.select({
       android: StatusBar.currentHeight || 24,
       ios: insets.top,
@@ -113,7 +113,7 @@ const HeaderScreen: React.FC = () => {
     [insets.top]
   );
 
-  const headerHeight = useMemo(() => 
+  const headerHeight = useMemo(() =>
     statusBarHeight + HEADER_BASE_HEIGHT,
     [statusBarHeight]
   );
@@ -169,7 +169,7 @@ const HeaderScreen: React.FC = () => {
     navigation.navigate('Search');
   }, [navigation]);
 
-  
+
 
   // Memoized styles and values
   const gradientColors = useMemo(
@@ -205,7 +205,7 @@ const HeaderScreen: React.FC = () => {
         minHeight: headerHeight,
         paddingHorizontal: 12,
         paddingVertical: 2,
-       
+
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -218,21 +218,21 @@ const HeaderScreen: React.FC = () => {
           justifyContent: 'center',
         }}
       >
-       
-          <Image
-            source={avatarSource}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              borderWidth: 1.5,
-              borderColor: isDark ? '#374151' : '#E5E7EB',
-               transform: [{ translateY: -10 }],
-            }}
-            resizeMode="cover"
-            accessibilityLabel="User profile"
-          />
-        
+
+        <Image
+          source={avatarSource}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            borderWidth: 1.5,
+            borderColor: isDark ? '#374151' : '#E5E7EB',
+            transform: [{ translateY: -10 }],
+          }}
+          resizeMode="cover"
+          accessibilityLabel="User profile"
+        />
+
       </Animated.View>
 
       {/* Center Animated Logo */}
@@ -268,28 +268,7 @@ const HeaderScreen: React.FC = () => {
           gap: 10,
         }}
       >
-        {/* Cart Icon */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={handleCartPress}
-          style={{
-            padding: 8,
-            borderRadius: 20,
-            backgroundColor: iconButtonBg,
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: 36,
-            height: 36,
-          }}
-          accessibilityLabel="Go to cart"
-          accessibilityRole="button"
-        >
-          <MaterialCommunityIcons
-            name="cart-outline"
-            size={20}
-            color={iconColor}
-          />
-        </TouchableOpacity>
+
 
         {/* Search Icon */}
         <TouchableOpacity
