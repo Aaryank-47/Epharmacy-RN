@@ -16,6 +16,7 @@ import OfferBannerSection from './screens/OfferBannerSection';
 import ItemFeedSection from './screens/ItemFeedSection';
 import RecentlyViewedSection from './screens/RecentlyViewedSection';
 import ScrollToTopButton from '../commonPage/ScrollToTopButton';
+import AiChatSupport from '../AiChatSupport';
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -39,8 +40,7 @@ const Home: React.FC = () => {
     const currentY = event.nativeEvent.contentOffset.y;
     const dy = currentY - lastScrollY.current;
 
-    // --- Tab Bar Logic (Snap Animation) ---
-    // Only trigger if scrolled past header (e.g., 50px) to avoid jitter at top
+
     if (currentY > 50) {
       if (dy > 10 && !isTabBarHidden.current) { // Lower threshold (10) for easier hide
         // Scrolling Down -> Hide
@@ -153,6 +153,9 @@ const Home: React.FC = () => {
 
           {/* Scroll To Top Button */}
           <ScrollToTopButton scrollY={scrollY} onPress={handleScrollToTop} />
+
+          {/* Floating AI Doctor Button */}
+          <AiChatSupport />
         </Tabs>
       )}
     </>

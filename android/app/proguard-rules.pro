@@ -9,6 +9,14 @@
 
 # Add any project specific keep options here:
 
+# General React Native
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.jni.** { *; }
+-keep class com.facebook.soloader.** { *; }
+-keep class com.facebook.yoga.** { *; }
+-keep class com.facebook.hermes.** { *; }
+
+
 # React Native Reanimated
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import Icon from "react-native-vector-icons/Ionicons";
 import LinearGradient from "react-native-linear-gradient";
 import useThemePalette from "../hooks/useThemePalette";
 
@@ -161,7 +161,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ navigation }) => {
             style={{
               borderRadius: 9999,
               paddingVertical: 16,
-              paddingHorizontal: 12,     
+              paddingHorizontal: 12,
             }}
           >
             <View className="w-full flex-row items-center justify-center ">
@@ -173,7 +173,6 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ navigation }) => {
               </Text>
               <View
                 className="ml-3 h-6 w-6 items-center justify-center rounded-full"
-                style={{ backgroundColor: iconMutedBackground }}
               >
                 <Icon name="arrow-forward" size={20} color="#FFF" />
               </View>

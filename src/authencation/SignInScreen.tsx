@@ -48,11 +48,11 @@ interface SignInScreenProps {
 const INPUT_HEIGHT = 56;
 
 const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+  const [formErrors, setFormErrors] = useState<{ identifier?: string; password?: string }>({});
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -90,6 +90,9 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
       // FCM token is already registered via login API
       console.log('✅ Login successful with FCM token');
 
+      // Let the AppNavigator detect the auth change and navigate
+      // The navigator will automatically redirect to HomeTabs
+      // This avoids the RESET action warning
     },
     onError: (error: any) => {
       const normalizedError = mapApiError(error);
@@ -184,9 +187,9 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
   const buttonDisabled = useMemo(() => {
     return (
-      mutation.isPending || email.trim().length === 0 || password.length < 6
+      mutation.isPending || identifier.trim().length === 0 || password.length < 6
     );
-  }, [email, password, mutation.isPending]);
+  }, [identifier, password, mutation.isPending]);
 
   const remoteErrorMessage = toHumanReadableError(mutation.error as any);
   const combinedError = localError || remoteErrorMessage;
@@ -223,13 +226,19 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   );
 
   const handleSubmit = useCallback(async () => {
-    // setLocalError(null);
-    const errors: { email?: string; password?: string } = {};
+    setLocalError(null);
+    const errors: { identifier?: string; password?: string } = {};
+    const trimmedIdentifier = identifier.trim();
 
-    if (!email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Invalid email format';
+    if (!trimmedIdentifier) {
+      errors.identifier = 'Email or Phone is required';
+    } else {
+      const isEmail = trimmedIdentifier.includes('@');
+      const isPhone = /^[0-9+]{10,15}$/.test(trimmedIdentifier);
+
+      if (!isEmail && !isPhone) {
+        errors.identifier = 'Invalid email or phone format';
+      }
     }
 
     if (!password.trim()) {
@@ -242,15 +251,19 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
     if (Object.keys(errors).length > 0) return;
 
     const cachedToken = (await AsyncStorage.getItem('fcmToken')) ?? null;
+    const isEmail = trimmedIdentifier.includes('@');
 
     const payload: LoginRequestPayload = {
-      email: email.trim().toLowerCase(),
       password,
       fcmToken: cachedToken,
+      ...(isEmail
+        ? { email: trimmedIdentifier.toLowerCase() }
+        : { phone: trimmedIdentifier }
+      )
     };
 
     mutation.mutate(payload);
-  }, [email, password, mutation]);
+  }, [identifier, password, mutation]);
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
@@ -402,21 +415,21 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
                       }
                     />
                     <TextInput
-                      placeholder="Email address"
+                      placeholder="Email or Phone Number"
                       placeholderTextColor="rgba(148,163,184,0.8)"
                       autoCapitalize="none"
                       keyboardType="email-address"
                       className="ml-3 flex-1 text-base text-slate-900 dark:text-white"
                       style={{ fontFamily: serifFontFamily }}
-                      value={email}
-                      onChangeText={setEmail}
+                      value={identifier}
+                      onChangeText={setIdentifier}
                       onFocus={() => setKeyboardVisible(true)}
                       onBlur={() => setKeyboardVisible(false)}
                     />
                   </View>
-                  {formErrors.email && (
+                  {formErrors.identifier && (
                     <Text className="text-xs text-red-500 mt-1">
-                      {formErrors.email}
+                      {formErrors.identifier}
                     </Text>
                   )}
 
@@ -496,19 +509,20 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
                         <ActivityIndicator color="#fff" />
                       ) : (
                         <View className="flex-row items-center justify-center gap-3">
-                          <MaterialCommunityIcons
-                            name="login"
-                            size={18}
-                            color="#fff"
-                          />
+
                           <Text
                             className="text-base font-semibold uppercase tracking-[3px] text-white"
                             style={{ fontFamily: serifFontFamily }}
                           >
                             Access Pharmacy
                           </Text>
+                          {/* <MaterialCommunityIcons
+                            name="login"
+                            size={18}
+                            color="#fff"
+                          /> */}
                         </View>
-                      )}
+                      )}  ,
                     </LinearGradient>
                   </TouchableOpacity>
                   <TouchableOpacity

@@ -888,7 +888,7 @@ const ProfilePage: React.FC = () => {
             size={getResponsiveSize(22)}
             color="#FFFFFF"
           />
-        </TouchableOpacity>
+        </TouchableOpacity> 
 
         <Text style={{
           textAlign: 'center',
@@ -896,7 +896,7 @@ const ProfilePage: React.FC = () => {
           marginBottom: 10,
           color: isDark ? '#666666' : '#9CA3AF'
         }}>
-          MEDICARE+ v2.0.0
+          MEDICARE+ v3.0.0
         </Text>
       </ScrollView>
     </LinearGradient >

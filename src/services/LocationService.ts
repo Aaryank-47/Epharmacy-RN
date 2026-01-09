@@ -1,6 +1,6 @@
 import { Platform, PermissionsAndroid, ToastAndroid, Alert, Linking } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
-import { promptForEnableLocationIfNeeded } from 'react-native-android-location-enabler';
+
 
 export interface LocationData {
   latitude: number;
@@ -61,29 +61,6 @@ class LocationService {
     return false;
   }
 
-  /**
-   * Enable GPS via system dialog (Android)
-   */
-  async enableLocationServices(): Promise<boolean> {
-    if (Platform.OS === 'android') {
-      try {
-        await promptForEnableLocationIfNeeded({
-          interval: 10000,
-        });
-        // Add a delay to allow the system to fully initialize the location provider
-        await new Promise(resolve => setTimeout(() => resolve(true), 1000));
-        return true;
-      } catch (error: any) {
-        console.log('Location enable error:', error);
-        // ERR00 usually means user cancelled or resolution failed
-        if (error.message && (error.message.includes('ERR00') || error.code === 'ERR00')) {
-             return false;
-        }
-        return false;
-      }
-    }
-    return true; // iOS usually handles this via Geolocation.getCurrentPosition error
-  }
 
   /**
    * Get current location with retries and error handling
@@ -97,37 +74,53 @@ class LocationService {
         return;
       }
 
-      // 2. Enable GPS
-      const isEnabled = await this.enableLocationServices();
-      if (!isEnabled) {
-        reject(new Error('GPS_DISABLED'));
-        return;
-      }
+      // Helper to get position with specific options
+      const getPosition = (options: Geolocation.GeoOptions): Promise<LocationData> => {
+        return new Promise((res, rej) => {
+          Geolocation.getCurrentPosition(
+            (position) => {
+              res({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+            },
+            (error) => {
+              rej(error);
+            },
+            options
+          );
+        });
+      };
 
-      // 3. Get Position
-      Geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.log(error.code, error.message);
-          if (error.code === 1) {
-             reject(new Error('PERMISSION_DENIED'));
-          } else if (error.code === 2) {
-             reject(new Error('GPS_DISABLED'));
-          } else {
-             reject(new Error(error.message));
-          }
-        },
-        {
+      // 2. Try High Accuracy (GPS)
+      try {
+        console.log('[LocationService] Trying GPS...');
+        const location = await getPosition({
           enableHighAccuracy: true,
-          timeout: 15000,
+          timeout: 10000, // 10s for GPS
           maximumAge: 10000,
+          forceLocationManager: true, // Bypass Google Play Services
+        });
+        resolve(location);
+      } catch (error: any) {
+        console.log('[LocationService] GPS failed, trying Network...', error.message);
+
+        // 3. Fallback to Low Accuracy (Network/WiFi)
+        try {
+          const location = await getPosition({
+            enableHighAccuracy: false,
+            timeout: 15000, // 15s for Network
+            maximumAge: 10000,
+            forceLocationManager: true,
+          });
+          resolve(location);
+        } catch (finalError: any) {
+          console.log('[LocationService] All providers failed:', finalError.code, finalError.message);
+          if (finalError.code === 1) reject(new Error('PERMISSION_DENIED'));
+          else if (finalError.code === 2) reject(new Error('GPS_DISABLED'));
+          else reject(new Error(finalError.message));
         }
-      );
+      }
     });
   }
 
@@ -145,9 +138,9 @@ class LocationService {
           },
         }
       );
-      
+
       const data = await response.json();
-      
+
       if (data && data.address) {
         const city = data.address.city || data.address.town || data.address.village || '';
         const state = data.address.state || '';
@@ -160,14 +153,14 @@ class LocationService {
         if (suburb) parts.push(suburb);
         if (city) parts.push(city);
         if (state) parts.push(state);
-        
+
         if (parts.length > 0) {
-           return parts.join(', ');
+          return parts.join(', ');
         } else if (country) {
-           return country;
+          return country;
         }
       }
-      
+
       return 'Unknown Location';
     } catch (error) {
       console.warn('[LocationService] Reverse Geocoding Error:', error);
@@ -177,3 +170,4 @@ class LocationService {
 }
 
 export default new LocationService();
+

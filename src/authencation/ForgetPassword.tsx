@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Keyboard,
+  ToastAndroid,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,10 +28,7 @@ interface ForgetPasswordScreenProps {
   navigation: any;
 }
 
-interface ErrorAlertState {
-  visible: boolean;
-  message: string;
-}
+
 
 const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
   navigation,
@@ -44,10 +42,8 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [errorAlert, setErrorAlert] = useState<ErrorAlertState>({
-    visible: false,
-    message: '',
-  });
+  const [otpStatus, setOtpStatus] = useState<'pending' | 'success' | 'failure'>('pending');
+
   const [timer, setTimer] = useState<number>(0);
   const [keyboardVisible, setKeyboardVisible] = useState<boolean>(false);
 
@@ -69,13 +65,7 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
   }, [timer]);
 
   // Auto-dismiss error after 5 seconds
-  useEffect(() => {
-    if (!errorAlert.visible) return;
-    const timeout = setTimeout(() => {
-      setErrorAlert({ visible: false, message: '' });
-    }, 5000);
-    return () => clearTimeout(timeout);
-  }, [errorAlert.visible]);
+
 
   // Keyboard listener for animation
   useEffect(() => {
@@ -96,7 +86,7 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
       typeof message === 'string'
         ? message
         : toHumanReadableError(message as any);
-    setErrorAlert({ visible: true, message: displayMessage });
+    ToastAndroid.show(displayMessage, ToastAndroid.SHORT);
   };
 
   const handleSendOTP = async (): Promise<void> => {
@@ -137,16 +127,29 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
     try {
       const res = await verifyOtpRequest({ email, otp: otpCode });
       if (res?.message) {
-        setStep(2);
+        setOtpStatus('success');
+        setTimeout(() => {
+          setStep(2);
+          setOtpStatus('pending'); // Reset
+        }, 1000);
       } else {
+        setOtpStatus('failure');
         showErrorAlert(res?.message || 'Invalid OTP');
       }
     } catch (err: any) {
+      setOtpStatus('failure');
       showErrorAlert(err?.message || 'Error verifying OTP');
     } finally {
       setLoading(false);
     }
   };
+
+  // Auto-verify when OTP is filled
+  useEffect(() => {
+    if (step === 1 && otp.every(digit => digit !== '')) {
+      handleVerifyOTP();
+    }
+  }, [otp, step]);
 
   const handleResendOTP = async (): Promise<void> => {
     if (timer > 0) return;
@@ -205,6 +208,7 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
     const newOtp = [...otp];
     newOtp[index] = text.replace(/[^0-9]/g, '');
     setOtp(newOtp);
+    setOtpStatus('pending');
 
     if (text && index < 3) {
       otpRefs.current[index + 1]?.focus();
@@ -240,29 +244,24 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
           {/* Step Indicator */}
           <View className="flex-row items-center justify-center mb-6 gap-1.5">
             <View
-              className={`w-3 h-3 rounded-full ${
-                step >= 0 ? 'bg-black' : 'bg-gray-300'
-              }`}
+              className={`w-3 h-3 rounded-full ${step >= 0 ? 'bg-black' : 'bg-gray-300'
+                }`}
             />
             <View
-              className={`flex-1 h-0.5 mx-1 ${
-                step >= 1 ? 'bg-black' : 'bg-gray-300'
-              }`}
+              className={`flex-1 h-0.5 mx-1 ${step >= 1 ? 'bg-black' : 'bg-gray-300'
+                }`}
             />
             <View
-              className={`w-3 h-3 rounded-full ${
-                step >= 1 ? 'bg-black' : 'bg-gray-300'
-              }`}
+              className={`w-3 h-3 rounded-full ${step >= 1 ? 'bg-black' : 'bg-gray-300'
+                }`}
             />
             <View
-              className={`flex-1 h-0.5 mx-1 ${
-                step >= 2 ? 'bg-black' : 'bg-gray-300'
-              }`}
+              className={`flex-1 h-0.5 mx-1 ${step >= 2 ? 'bg-black' : 'bg-gray-300'
+                }`}
             />
             <View
-              className={`w-3 h-3 rounded-full ${
-                step >= 2 ? 'bg-black' : 'bg-gray-300'
-              }`}
+              className={`w-3 h-3 rounded-full ${step >= 2 ? 'bg-black' : 'bg-gray-300'
+                }`}
             />
           </View>
 
@@ -359,22 +358,29 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
               </Text>
 
               <View className="flex-row justify-between gap-2 px-1 mb-3">
-                {otp.map((digit, idx) => (
-                  <TextInput
-                    key={idx}
-                    ref={ref => {
-                      otpRefs.current[idx] = ref;
-                    }}
-                    className="flex-1 border-2 border-gray-300 rounded-lg py-3 text-2xl font-bold text-center text-black bg-gray-50"
-                    placeholder="0"
-                    placeholderTextColor="#ccc"
-                    value={digit}
-                    onChangeText={text => handleOtpChange(text, idx)}
-                    keyboardType="numeric"
-                    maxLength={1}
-                    editable={!loading}
-                  />
-                ))}
+                {otp.map((digit, idx) => {
+                  let borderColor = 'border-gray-300';
+                  if (otpStatus === 'success') borderColor = 'border-green-500';
+                  else if (otpStatus === 'failure') borderColor = 'border-red-500';
+                  else if (digit) borderColor = 'border-blue-500';
+
+                  return (
+                    <TextInput
+                      key={idx}
+                      ref={ref => {
+                        otpRefs.current[idx] = ref;
+                      }}
+                      className={`flex-1 border-2 ${borderColor} rounded-lg py-3 text-2xl font-bold text-center text-black bg-gray-50`}
+                      placeholder="0"
+                      placeholderTextColor="#ccc"
+                      value={digit}
+                      onChangeText={text => handleOtpChange(text, idx)}
+                      keyboardType="numeric"
+                      maxLength={1}
+                      editable={!loading}
+                    />
+                  )
+                })}
               </View>
 
               {/* Timer & Resend */}
@@ -543,68 +549,7 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
       </KeyboardAvoidingView>
 
       {/* Beautiful Error Alert Popup */}
-      {errorAlert.visible && (
-        <View
-          className="absolute inset-0 items-center justify-center z-50"
-          style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
-        >
-          <View
-            className="rounded-2xl p-6 mx-5 shadow-2xl w-80"
-            style={{ backgroundColor: surfaceColor }}
-          >
-            <View className="flex-row items-start gap-3 mb-4">
-              <View
-                className="w-12 h-12 rounded-full items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: '#fee2e2' }}
-              >
-                <MaterialCommunityIcons
-                  name="alert-circle"
-                  size={28}
-                   color={
-                        statusBarStyle === 'light-content'
-                          ? '#cbd5f5'
-                          : '#334155'
-                      }
-                />
-              </View>
-              <View className="flex-1 justify-center">
-                <Text
-                  className="text-base font-bold mb-0.5"
-                  style={{ color: ctaGradient[0] }}
-                >
-                  Oops!
-                </Text>
-              </View>
-            </View>
-            <View className="mb-4 px-1">
-              <Text
-                className="text-sm leading-5 font-medium"
-                style={{ color: isDark ? '#ffffff' : '#000000' }}
-              >
-                {errorAlert.message || 'Something went wrong'}
-              </Text>
-            </View>
-            <LinearGradient
-              colors={ctaGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              className=" overflow-hidden rounded-full border"
-            >
-             
 
-              <TouchableOpacity
-                className="py-3 items-center  "
-                onPress={() => setErrorAlert({ visible: false, message: '' })}
-                activeOpacity={0.8}
-              >
-                
-                <Text className="text-white font-semibold text-sm">
-                  Got it</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 };
