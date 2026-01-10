@@ -787,33 +787,8 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
               )}
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              {/* QR Button */}
-              <TouchableOpacity
-                onPress={handleQRScannerToggle}
-                style={{
-                  shadowColor: isDark ? '' : '#1F2937',
-                  borderRadius: 24,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 6,
-                }}
-              >
-                <LinearGradient
-                  colors={isDark ? ['#3A3A3A', '#2A2D35'] : ['#ffffff', '#f8fafc']}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 24,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                  }}
-                >
-                  <Icon name="qr-code-outline" size={22} color={isDark ? '#FFF' : '#333'} />
-                </LinearGradient>
-              </TouchableOpacity>
+              {/* QR Button Removed */}
+
 
               {/* Location Button */}
               <TouchableOpacity
@@ -1094,7 +1069,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
         onScanQR={handleScanQR}
         onUploadPDF={handleUploadPDF}
       />
-    </LinearGradient>
+    </LinearGradient >
   );
 });
 

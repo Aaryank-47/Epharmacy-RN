@@ -11,13 +11,17 @@ const getResponsiveSize = (size: number): number => (screenWidth / 375) * size;
 const ActionGrid = memo(() => {
   const navigation = useNavigation();
   const { isDark, accentColor, surfaceColor } = useThemePalette();
+  const [isExpanded, setIsExpanded] = React.useState(false);
 
   const menuItems = [
     { id: 1, title: 'Orders', icon: 'shopping-outline', route: 'Orders', color: '#EF4444' },
-    { id: 2, title: 'Wishlist', icon: 'heart-outline', route: 'Wishlist', color: '#EC4899' },
+    { id: 2, title: 'History', icon: 'history', route: 'HistoryPage', color: '#F59E0B' },
     { id: 3, title: 'Notify', icon: 'bell-outline', route: 'Notifications', color: '#8B5CF6', badge: 3 },
     { id: 4, title: 'Settings', icon: 'cog-outline', route: 'Settings', color: '#10B981' },
+    { id: 5, title: 'Wishlist', icon: 'heart-outline', route: 'Wishlist', color: '#EC4899' },
   ];
+
+  const visibleItems = isExpanded ? menuItems : menuItems.slice(0, 4);
 
   return (
     <View style={{
@@ -37,33 +41,38 @@ const ActionGrid = memo(() => {
         }}>
           Quick Actions
         </Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
           <Text style={{
             fontSize: getResponsiveSize(14),
             color: isDark ? '#FFFFFF' : '#000000',
             fontWeight: '500',
           }}>
-            View All
+            {isExpanded ? 'View Less' : 'View All'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={{
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         marginTop: getResponsiveSize(16),
       }}>
-        {menuItems.map((item) => (
+        {visibleItems.map((item) => (
           <TouchableOpacity
             key={item.id}
-            style={{ alignItems: 'center' }}
+            style={{
+              alignItems: 'center',
+              width: '23%', // Fits 4 items with space between
+              marginBottom: getResponsiveSize(16),
+            }}
             activeOpacity={0.8}
             onPress={() => navigation.navigate(item.route as never)}
           >
             {/* Circular Icon */}
             <View style={{ position: 'relative' }}>
-              <View 
-                style={{ 
+              <View
+                style={{
                   width: getResponsiveSize(56),
                   height: getResponsiveSize(56),
                   borderRadius: getResponsiveSize(28),
@@ -75,7 +84,7 @@ const ActionGrid = memo(() => {
                 }}
               >
                 <Icon name={item.icon} size={getResponsiveSize(24)} color={item.color} />
-                
+
                 {item.badge && (
                   <LinearGradient
                     colors={['#EF4444', '#DC2626']}
@@ -101,7 +110,7 @@ const ActionGrid = memo(() => {
                 )}
               </View>
             </View>
-            
+
             {/* Title */}
             <Text style={{
               fontSize: getResponsiveSize(14),

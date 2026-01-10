@@ -14,15 +14,20 @@ import {
   Image,
   useWindowDimensions,
   Animated,
+  StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import { getUserProfile } from '../../api/authApi';
+import ExploreOverlay from './ExploreOverlay';
+import AiChatSupport from '../AiChatSupport';
+import QROptionsBottomSheet from '../qr/QROptionsBottomSheet';
+import ScrollToTopButton from './ScrollToTopButton';
 
 
 // ============================================================================
@@ -72,7 +77,7 @@ const getInitials = (name: string): string => {
 const fetchUserDataFromStorage = async (): Promise<UserData> => {
   try {
     console.log('[UserData] Fetching from localStorage first...');
-    
+
     // Try multiple localStorage sources for initial data
     const sources = await Promise.all([
       AsyncStorage.getItem('auth_user'),
@@ -89,8 +94,8 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
         console.log('[UserData] Initial data from userProfile');
         return {
           name: profile.name || 'User',
-          profileImage: Array.isArray(profile.profileImage) 
-            ? profile.profileImage[0] 
+          profileImage: Array.isArray(profile.profileImage)
+            ? profile.profileImage[0]
             : profile.profileImage || profile.avatar || null,
         };
       } catch (parseError) {
@@ -144,14 +149,14 @@ const fetchUserDataFromAPI = async (): Promise<UserData> => {
   try {
     console.log('[UserData] Fetching latest data from API...');
     const response = await getUserProfile();
-    
+
     if (response.success && response.data) {
       const apiData = response.data;
-      console.log('[UserData] API data received:', { 
+      console.log('[UserData] API data received:', {
         name: apiData.name,
-        hasImage: !!apiData.profileImage 
+        hasImage: !!apiData.profileImage
       });
-      
+
       // Save updated data to localStorage for next time
       const updatedProfile = {
         name: apiData.name,
@@ -159,15 +164,15 @@ const fetchUserDataFromAPI = async (): Promise<UserData> => {
         avatar: apiData.profileImage?.[0] || null,
       };
       await AsyncStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-      
+
       return {
         name: apiData.name || 'User',
-        profileImage: Array.isArray(apiData.profileImage) 
-          ? apiData.profileImage[0] 
+        profileImage: Array.isArray(apiData.profileImage)
+          ? apiData.profileImage[0]
           : apiData.profileImage || null,
       };
     }
-    
+
     console.warn('[UserData] API response unsuccessful');
     return { name: 'User', profileImage: null };
   } catch (error) {
@@ -188,11 +193,11 @@ interface ProfileTabIconProps {
   readonly isDark?: boolean;
 }
 
-const ProfileTabIcon = memo<ProfileTabIconProps>(({ 
-  isActive, 
-  userData, 
+const ProfileTabIcon = memo<ProfileTabIconProps>(({
+  isActive,
+  userData,
   size = 32,
-  isDark = false 
+  isDark = false
 }) => {
   if (!userData) {
     return (
@@ -252,10 +257,10 @@ const ProfileTabIcon = memo<ProfileTabIconProps>(({
             alignItems: 'center',
           }}
         >
-          <Text 
-            style={{ 
-              fontWeight: 'bold', 
-              color: 'white', 
+          <Text
+            style={{
+              fontWeight: 'bold',
+              color: 'white',
               fontSize: size * 0.4,
               textAlign: 'center',
             }}
@@ -279,6 +284,7 @@ interface TabBarProps {
   readonly setActiveTab: (tab: string) => void;
   readonly userData: UserData;
   readonly onNavigate: (screenName: string) => void;
+  readonly onTabReselect?: (tabName: string) => void;
   readonly isLoading?: boolean;
   readonly translateY?: Animated.Value | Animated.AnimatedInterpolation<string | number>;
 }
@@ -290,6 +296,7 @@ const TabBar = memo<TabBarProps>(({
   setActiveTab,
   userData,
   onNavigate,
+  onTabReselect,
   isLoading = false,
   translateY = new Animated.Value(0),
 }) => {
@@ -312,8 +319,13 @@ const TabBar = memo<TabBarProps>(({
   const handleTabPress = useCallback(
     (tab: TabConfig) => {
       if (isLoading) return;
-      
+
       try {
+        if (tab.name === activeTab) {
+          onTabReselect?.(tab.name);
+          return;
+        }
+
         setActiveTab(tab.name);
         if (tab.screenName) {
           onNavigate(tab.screenName);
@@ -322,16 +334,16 @@ const TabBar = memo<TabBarProps>(({
         console.error('[TabBar] Navigation error:', error);
       }
     },
-    [setActiveTab, onNavigate, isLoading]
+    [setActiveTab, onNavigate, isLoading, activeTab, onTabReselect]
   );
 
   // If we have a bottom inset (Gesture Nav), use standard height.
   // If no inset (Button Nav), reduce height to be more compact.
   const isGestureNav = bottomInset > 45;
-  const TAB_CONTENT_HEIGHT = isGestureNav ? 20 : 69; 
-  
+  const TAB_CONTENT_HEIGHT = isGestureNav ? 20 : 69;
+
   const effectiveBottomPadding = isGestureNav ? bottomInset : 4;
-  
+
   const tabBarHeight = TAB_CONTENT_HEIGHT + effectiveBottomPadding;
 
   const borderColor = isDark ? '#374151' : '#E5E7EB';
@@ -372,56 +384,56 @@ const TabBar = memo<TabBarProps>(({
           elevation: 8,
         }}
       >
-      {state.routes.map((route, index) => {
-        const currentTab = tabs.find((tab) => tab.name === route.name);
-        if (!currentTab) return null;
+        {state.routes.map((route, index) => {
+          const currentTab = tabs.find((tab) => tab.name === route.name);
+          if (!currentTab) return null;
 
-        const isActive = isTabActive(currentTab);
-        const activeColor = getActiveColor(isActive);
-        const iconName = isActive ? currentTab.icon : currentTab.iconOutline;
+          const isActive = isTabActive(currentTab);
+          const activeColor = getActiveColor(isActive);
+          const iconName = isActive ? currentTab.icon : currentTab.iconOutline;
 
-        return (
-          <TouchableOpacity
-            key={`${route.name}-${index}`}
-            onPress={() => handleTabPress(currentTab)}
-            activeOpacity={0.6}
-            disabled={isLoading}
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {currentTab.isProfile ? (
-              <ProfileTabIcon
-                isActive={isActive}
-                userData={userData}
-                size={Math.min(screenWidth * 0.08, 32)}
-                isDark={isDark}
-              />
-            ) : (
-              <Icon
-                name={iconName || 'circle'}
-                size={Math.min(screenWidth * 0.064, 26)}
-                color={activeColor}
-              />
-            )}
-            <Text
+          return (
+            <TouchableOpacity
+              key={`${route.name}-${index}`}
+              onPress={() => handleTabPress(currentTab)}
+              activeOpacity={0.6}
+              disabled={isLoading}
               style={{
-                marginTop: 3,
-                textAlign: 'center',
-                paddingHorizontal: 4,
-                color: activeColor,
-                fontSize: Math.min(screenWidth * 0.026, 11),
-                fontWeight: isActive ? '600' : '400',
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-              numberOfLines={1}
             >
-              {currentTab.isProfile && userData.name ? userData.name.split(' ')[0] : route.name}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+              {currentTab.isProfile ? (
+                <ProfileTabIcon
+                  isActive={isActive}
+                  userData={userData}
+                  size={Math.min(screenWidth * 0.08, 32)}
+                  isDark={isDark}
+                />
+              ) : (
+                <Icon
+                  name={iconName || 'circle'}
+                  size={Math.min(screenWidth * 0.064, 26)}
+                  color={activeColor}
+                />
+              )}
+              <Text
+                style={{
+                  marginTop: 3,
+                  textAlign: 'center',
+                  paddingHorizontal: 4,
+                  color: activeColor,
+                  fontSize: Math.min(screenWidth * 0.026, 11),
+                  fontWeight: isActive ? '600' : '400',
+                }}
+                numberOfLines={1}
+              >
+                {currentTab.isProfile && userData.name ? userData.name.split(' ')[0] : route.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </LinearGradient>
     </Animated.View>
   );
@@ -436,25 +448,16 @@ interface TabsProps {
   readonly tabs?: readonly TabConfig[];
   readonly currentActiveTab?: string;
   readonly onNavigate?: (screenName: string) => void;
+  readonly onTabReselect?: (tabName: string) => void;
   readonly onError?: (error: Error) => void;
   readonly translateY?: Animated.Value | Animated.AnimatedInterpolation<string | number>;
+  readonly scrollY?: Animated.Value;
+  readonly onScrollToTop?: () => void;
 }
 
 const Tabs = memo<TabsProps>(({
   children,
   tabs = [
-    {
-      name: 'Store',
-      screenName: 'HomeTabs',
-      icon: 'storefront',
-      iconOutline: 'storefront-outline',
-    },
-    {
-      name: 'Wish List',
-      screenName: 'Wishlist',
-      icon: 'heart',
-      iconOutline: 'heart-outline',
-    },
     {
       name: 'Home',
       screenName: 'HomeTabs',
@@ -462,10 +465,22 @@ const Tabs = memo<TabsProps>(({
       iconOutline: 'home-outline',
     },
     {
-      name: 'History',
-      screenName: 'HistoryPage',
-      icon: 'time',
-      iconOutline: 'time-outline',
+      name: 'Cart',
+      screenName: 'ShoppingBagScreen',
+      icon: 'cart',
+      iconOutline: 'cart-outline',
+    },
+    {
+      name: 'Explore',
+      screenName: 'ExplorePage',
+      icon: 'compass',
+      iconOutline: 'compass-outline',
+    },
+    {
+      name: 'Store',
+      screenName: 'HomeTabs',
+      icon: 'storefront',
+      iconOutline: 'storefront-outline',
     },
     {
       name: 'Profile',
@@ -476,15 +491,23 @@ const Tabs = memo<TabsProps>(({
     },
   ],
   currentActiveTab = 'Home',
-  onNavigate = () => {},
-  onError = () => {},
+  onNavigate = () => { },
+  onTabReselect,
+  onError = () => { },
   translateY,
+  scrollY,
+  onScrollToTop,
 }) => {
   const { surfaceColor } = useThemePalette();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState(currentActiveTab);
   const [userData, setUserData] = useState<UserData>({ name: 'User', profileImage: null });
+  const [showExploreOverlay, setShowExploreOverlay] = useState(false);
+  const [showAiChat, setShowAiChat] = useState(false);
+  const [showQRSheet, setShowQRSheet] = useState(false);
+
+  const navigation = useNavigation();
 
   // First query: Get initial data from localStorage (fast)
   const localStorageQuery = useQuery({
@@ -510,18 +533,19 @@ const Tabs = memo<TabsProps>(({
   // Refetch API data when screen is focused
   useFocusEffect(
     useCallback(() => {
-      console.log('[Tabs] Screen focused - refetching API data');
+      console.log('[Tabs] Screen focused - syncing tab state');
       apiQuery.refetch();
-    }, [apiQuery])
+      setActiveTab(currentActiveTab); // Force active tab to match the current page
+    }, [apiQuery, currentActiveTab])
   );
 
   // Update userData: First show localStorage data, then update with API data when available
   useEffect(() => {
     // Show localStorage data immediately (if available)
     if (localStorageQuery.data) {
-      console.log('[Tabs] Setting initial localStorage data:', { 
+      console.log('[Tabs] Setting initial localStorage data:', {
         name: localStorageQuery.data.name,
-        hasImage: !!localStorageQuery.data.profileImage 
+        hasImage: !!localStorageQuery.data.profileImage
       });
       setUserData(localStorageQuery.data);
     }
@@ -530,10 +554,10 @@ const Tabs = memo<TabsProps>(({
   useEffect(() => {
     // Update with API data when it arrives
     if (apiQuery.data) {
-      console.log('[Tabs] Updating with API data:', { 
+      console.log('[Tabs] Updating with API data:', {
         name: apiQuery.data.name,
         hasImage: !!apiQuery.data.profileImage,
-        imageUrl: apiQuery.data.profileImage 
+        imageUrl: apiQuery.data.profileImage
       });
       setUserData(apiQuery.data);
     }
@@ -557,6 +581,14 @@ const Tabs = memo<TabsProps>(({
 
   const handleTabChange = useCallback((tabName: string) => {
     try {
+      if (tabName === 'Explore') {
+        setShowExploreOverlay(prev => !prev);
+        // Do not setActiveTab for Explore if we want to stay on current tab visually? 
+        // User asked to "stay on page", so we just toggle overlay.
+        return;
+      }
+
+      setShowExploreOverlay(false); // Close overlay if switching tabs
       setActiveTab(tabName);
       console.log('[Tabs] Tab changed to:', tabName);
     } catch (error) {
@@ -567,6 +599,11 @@ const Tabs = memo<TabsProps>(({
 
   const handleNavigate = useCallback((screenName: string) => {
     try {
+      if (screenName === 'ExplorePage') {
+        // Should be caught by handleTabChange, but if called directly:
+        setShowExploreOverlay(true);
+        return;
+      }
       onNavigate(screenName);
     } catch (error) {
       console.error('[Tabs] Navigation error:', error);
@@ -598,8 +635,57 @@ const Tabs = memo<TabsProps>(({
         setActiveTab={handleTabChange}
         userData={userData}
         onNavigate={handleNavigate}
+        onTabReselect={onTabReselect}
         isLoading={isLoadingUserData}
         translateY={translateY}
+      />
+
+      {/* Explore Overlay & Dimming */}
+      {showExploreOverlay && (
+        <>
+          <Animated.View
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: 'rgba(0,0,0,0.7)', // Dimmed background
+              zIndex: 101, // Above content, below Custom Tabs if needed, but here tabs are zIndex 100
+            }}
+          >
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => setShowExploreOverlay(false)}
+            />
+          </Animated.View>
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 102 }} pointerEvents="box-none">
+            <ExploreOverlay
+              onClose={() => setShowExploreOverlay(false)}
+              onOpenAiChat={() => setShowAiChat(true)}
+              onOpenScanner={() => setShowQRSheet(true)}
+            />
+          </View>
+        </>
+      )}
+
+      {/* Scroll To Top Button - Hide when Explore Overlay is open */}
+      {!showExploreOverlay && scrollY && onScrollToTop && (
+        <ScrollToTopButton scrollY={scrollY} onPress={onScrollToTop} />
+      )}
+
+      {/* AI Chat Modal - Global access */}
+      <AiChatSupport visible={showAiChat} onClose={() => setShowAiChat(false)} />
+
+      {/* QR Options Bottom Sheet - Global access */}
+      <QROptionsBottomSheet
+        visible={showQRSheet}
+        onClose={() => setShowQRSheet(false)}
+        onScanQR={() => {
+          setShowQRSheet(false);
+          navigation.navigate('QRScannerScreen' as never);
+        }}
+        onUploadPDF={() => {
+          setShowQRSheet(false);
+          navigation.navigate('PDFUploadScreen' as never);
+        }}
       />
     </View>
   );

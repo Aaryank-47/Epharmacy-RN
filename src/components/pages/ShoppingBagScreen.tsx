@@ -27,11 +27,21 @@ export const calculateSavings = (originalTotal: number, currentTotal: number): n
   return Math.max(0, originalTotal - currentTotal);
 };
 
+import Tabs from '../commonPage/Tab';
+import { useNavigation } from '@react-navigation/native';
+
 const ShoppingBagScreen: React.FC = () => {
+  const navigation = useNavigation();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Shopping Bag</Text>
-    </View>
+    <Tabs
+      currentActiveTab="Cart"
+      onNavigate={(screen) => navigation.navigate(screen as never)}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Shopping Bag</Text>
+      </View>
+    </Tabs>
   );
 };
 

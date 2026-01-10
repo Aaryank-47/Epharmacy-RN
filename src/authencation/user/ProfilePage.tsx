@@ -396,16 +396,16 @@ const ProfilePage: React.FC = () => {
             <Text style={{
               color: '#FFFFFF',
               fontSize: getResponsiveSize(13),
-               marginBottom: getResponsiveSize(-8),
+              marginBottom: getResponsiveSize(-8),
               opacity: 0.9
             }}>{userBio}</Text>
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
-            <View style={{ flexDirection: 'row', gap: getResponsiveSize(15)}}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: getResponsiveSize(15) }}>
               {socialIcons.map((icon) => (
                 <TouchableOpacity key={icon}>
-                  <MaterialCommunityIcons name={icon} size={getResponsiveSize(30)} color="#FFFFFF"  />
+                  <MaterialCommunityIcons name={icon} size={getResponsiveSize(30)} color="#FFFFFF" />
                 </TouchableOpacity>
               ))}
             </View>
@@ -423,7 +423,7 @@ const ProfilePage: React.FC = () => {
                 color: '#e16c61f1',
                 fontSize: getResponsiveSize(12),
                 fontWeight: 'bold'
-                
+
               }}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -621,6 +621,7 @@ const ProfilePage: React.FC = () => {
           borderRadius={getResponsiveSize(25)}
           style={{ marginLeft: screenWidth * 0.8, marginBottom: 20 }}
         />
+        <View style={{ height: 20 }} />
       </ScrollView>
     </LinearGradient>
   ));
@@ -816,7 +817,7 @@ const ProfilePage: React.FC = () => {
           <RecentlyViewedSection key={`recent-${refreshKey}`} transparentBackground={true} />
         </View>
 
-       
+
 
         {/* Privacy & Terms - Collapsible */}
         <View style={{
@@ -888,7 +889,7 @@ const ProfilePage: React.FC = () => {
             size={getResponsiveSize(22)}
             color="#FFFFFF"
           />
-        </TouchableOpacity> 
+        </TouchableOpacity>
 
         <Text style={{
           textAlign: 'center',
@@ -899,7 +900,7 @@ const ProfilePage: React.FC = () => {
           MEDICARE+ v3.0.0
         </Text>
       </ScrollView>
-    </LinearGradient >
+    </LinearGradient>
   );
 };
 

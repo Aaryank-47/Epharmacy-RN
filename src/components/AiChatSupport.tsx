@@ -33,12 +33,14 @@ interface Message {
     timestamp: number;
 }
 
-const AiChatSupport: React.FC = () => {
+interface AiChatSupportProps {
+    visible: boolean;
+    onClose: () => void;
+}
+
+const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
     const { accentColor, isDark } = useThemePalette();
     const { user } = useAuth();
-
-    // UI State
-    const [isVisible, setIsVisible] = useState(false);
 
     // Chat State
     const [messages, setMessages] = useState<Message[]>([]);
@@ -50,7 +52,7 @@ const AiChatSupport: React.FC = () => {
 
     // Initial Greeting
     useEffect(() => {
-        if (isVisible && messages.length === 0) {
+        if (visible && messages.length === 0) {
             setMessages([
                 {
                     id: 'welcome',
@@ -61,7 +63,7 @@ const AiChatSupport: React.FC = () => {
             ]);
             checkAndRegisterUser();
         }
-    }, [isVisible]);
+    }, [visible]);
 
     const checkAndRegisterUser = async () => {
         try {
@@ -296,203 +298,166 @@ const AiChatSupport: React.FC = () => {
     };
 
     return (
-        <>
-            {/* Floating Trigger Button */}
-            <View
-                style={{
-                    position: 'absolute',
-                    bottom: 90,
-                    right: 20,
-                    zIndex: 9999,
-                    borderRadius: 30,
-                    elevation: 8,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.30,
-                    shadowRadius: 4.65,
-                }}
-                pointerEvents="box-none"
-            >
-                <TouchableOpacity
-                    onPress={() => setIsVisible(true)}
-                    activeOpacity={0.8}
-                    style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 28,
-                        backgroundColor: accentColor,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: isDark ? '#ffffff30' : '#00000010'
-                    }}
-                >
-                    <Icon name="robot" size={28} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Chat Modal */}
-            <Modal
-                visible={isVisible}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setIsVisible(false)}
-            >
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+        <Modal
+            visible={visible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={onClose}
+        >
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+                <View style={{
+                    height: height * 0.85,
+                    backgroundColor: isDark ? '#1A1A1A' : '#FFF',
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                    overflow: 'hidden',
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: -2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
+                }}>
+                    {/* Header */}
                     <View style={{
-                        height: height * 0.85,
-                        backgroundColor: isDark ? '#1A1A1A' : '#FFF',
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                        overflow: 'hidden',
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: -2 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 3.84,
-                        elevation: 5,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: 16,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? '#333' : '#EEE',
+                        backgroundColor: isDark ? '#252525' : '#FAFAFA'
                     }}>
-                        {/* Header */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{
+                                width: 40, height: 40, borderRadius: 20,
+                                backgroundColor: accentColor,
+                                alignItems: 'center', justifyContent: 'center',
+                                marginRight: 10
+                            }}>
+                                <Icon name="robot" size={24} color="#FFF" />
+                            </View>
+                            <View>
+                                <Text style={{ fontSize: 18, fontWeight: 'bold', color: isDark ? '#FFF' : '#000' }}>
+                                    AI Assistant
+                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{
+                                        width: 8, height: 8, borderRadius: 4,
+                                        backgroundColor: isRegistering ? '#F59E0B' : (aiUserId ? '#10B981' : '#EF4444'),
+                                        marginRight: 6
+                                    }} />
+                                    <Text style={{ fontSize: 12, color: isDark ? '#AAA' : '#666' }}>
+                                        {isRegistering ? 'Connecting...' : (aiUserId ? 'Online' : 'Offline')}
+                                    </Text>
+
+                                    {!aiUserId && !isRegistering && (
+                                        <TouchableOpacity onPress={registerUser} style={{ marginLeft: 10 }}>
+                                            <Text style={{ color: accentColor, fontWeight: 'bold' }}>Retry</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            onPress={onClose}
+                            style={{
+                                padding: 8,
+                                backgroundColor: isDark ? '#333' : '#EEE',
+                                borderRadius: 20
+                            }}
+                        >
+                            <Icon name="close" size={20} color={isDark ? '#FFF' : '#555'} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Messages */}
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        style={{ flex: 1 }}
+                    >
+                        <FlatList
+                            ref={flatListRef}
+                            data={messages}
+                            renderItem={renderMessage}
+                            keyExtractor={(item) => item.id}
+                            contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
+                            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                            ListFooterComponent={
+                                isLoading ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+                                        <View style={{
+                                            width: 32, height: 32, borderRadius: 16,
+                                            backgroundColor: accentColor,
+                                            justifyContent: 'center', alignItems: 'center',
+                                            marginRight: 8
+                                        }}>
+                                            <Icon name="robot" size={18} color="#FFF" />
+                                        </View>
+                                        <View style={{
+                                            backgroundColor: isDark ? '#333' : '#E5E7EB',
+                                            borderRadius: 20,
+                                            padding: 10,
+                                            paddingHorizontal: 16,
+                                        }}>
+                                            <Text style={{ color: isDark ? '#AAA' : '#666', fontStyle: 'italic', fontSize: 12 }}>
+                                                Typing...
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ) : null
+                            }
+                        />
+
+                        {/* Input */}
                         <View style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: 16,
-                            borderBottomWidth: 1,
-                            borderBottomColor: isDark ? '#333' : '#EEE',
-                            backgroundColor: isDark ? '#252525' : '#FAFAFA'
+                            padding: 12,
+                            borderTopWidth: 1,
+                            borderTopColor: isDark ? '#333' : '#EEE',
+                            backgroundColor: isDark ? '#222' : '#FFF'
                         }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{
-                                    width: 40, height: 40, borderRadius: 20,
-                                    backgroundColor: accentColor,
-                                    alignItems: 'center', justifyContent: 'center',
-                                    marginRight: 10
-                                }}>
-                                    <Icon name="robot" size={24} color="#FFF" />
-                                </View>
-                                <View>
-                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: isDark ? '#FFF' : '#000' }}>
-                                        AI Assistant
-                                    </Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <View style={{
-                                            width: 8, height: 8, borderRadius: 4,
-                                            backgroundColor: isRegistering ? '#F59E0B' : (aiUserId ? '#10B981' : '#EF4444'),
-                                            marginRight: 6
-                                        }} />
-                                        <Text style={{ fontSize: 12, color: isDark ? '#AAA' : '#666' }}>
-                                            {isRegistering ? 'Connecting...' : (aiUserId ? 'Online' : 'Offline')}
-                                        </Text>
-
-                                        {!aiUserId && !isRegistering && (
-                                            <TouchableOpacity onPress={registerUser} style={{ marginLeft: 10 }}>
-                                                <Text style={{ color: accentColor, fontWeight: 'bold' }}>Retry</Text>
-                                            </TouchableOpacity>
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
-                            <TouchableOpacity
-                                onPress={() => setIsVisible(false)}
+                            <TextInput
                                 style={{
-                                    padding: 8,
-                                    backgroundColor: isDark ? '#333' : '#EEE',
-                                    borderRadius: 20
+                                    flex: 1,
+                                    backgroundColor: isDark ? '#333' : '#F5F5F5',
+                                    borderRadius: 24,
+                                    paddingHorizontal: 20,
+                                    paddingVertical: 12,
+                                    color: isDark ? '#FFF' : '#000',
+                                    maxHeight: 100,
+                                    fontSize: 16
+                                }}
+                                placeholder="Type a message..."
+                                placeholderTextColor={isDark ? '#888' : '#999'}
+                                multiline
+                                value={inputText}
+                                onChangeText={setInputText}
+                            />
+                            <TouchableOpacity
+                                onPress={sendMessage}
+                                // disabled={!inputText.trim() || isLoading} // Allow press to handle retry hint
+                                style={{
+                                    marginLeft: 10,
+                                    width: 48, height: 48,
+                                    borderRadius: 24,
+                                    backgroundColor: (!inputText.trim() || isLoading) ? (isDark ? '#444' : '#DDD') : accentColor,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowColor: accentColor,
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: (!inputText.trim() || isLoading) ? 0 : 0.3,
+                                    shadowRadius: 3,
+                                    elevation: (!inputText.trim() || isLoading) ? 0 : 3
                                 }}
                             >
-                                <Icon name="close" size={20} color={isDark ? '#FFF' : '#555'} />
+                                <Icon name="send" size={22} color="#FFF" />
                             </TouchableOpacity>
                         </View>
-
-                        {/* Messages */}
-                        <KeyboardAvoidingView
-                            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                            style={{ flex: 1 }}
-                        >
-                            <FlatList
-                                ref={flatListRef}
-                                data={messages}
-                                renderItem={renderMessage}
-                                keyExtractor={(item) => item.id}
-                                contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
-                                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                                ListFooterComponent={
-                                    isLoading ? (
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
-                                            <View style={{
-                                                width: 32, height: 32, borderRadius: 16,
-                                                backgroundColor: accentColor,
-                                                justifyContent: 'center', alignItems: 'center',
-                                                marginRight: 8
-                                            }}>
-                                                <Icon name="robot" size={18} color="#FFF" />
-                                            </View>
-                                            <View style={{
-                                                backgroundColor: isDark ? '#333' : '#E5E7EB',
-                                                borderRadius: 20,
-                                                padding: 10,
-                                                paddingHorizontal: 16,
-                                            }}>
-                                                <Text style={{ color: isDark ? '#AAA' : '#666', fontStyle: 'italic', fontSize: 12 }}>
-                                                    Typing...
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ) : null
-                                }
-                            />
-
-                            {/* Input */}
-                            <View style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                padding: 12,
-                                borderTopWidth: 1,
-                                borderTopColor: isDark ? '#333' : '#EEE',
-                                backgroundColor: isDark ? '#222' : '#FFF'
-                            }}>
-                                <TextInput
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor: isDark ? '#333' : '#F5F5F5',
-                                        borderRadius: 24,
-                                        paddingHorizontal: 20,
-                                        paddingVertical: 12,
-                                        color: isDark ? '#FFF' : '#000',
-                                        maxHeight: 100,
-                                        fontSize: 16
-                                    }}
-                                    placeholder="Type a message..."
-                                    placeholderTextColor={isDark ? '#888' : '#999'}
-                                    multiline
-                                    value={inputText}
-                                    onChangeText={setInputText}
-                                />
-                                <TouchableOpacity
-                                    onPress={sendMessage}
-                                    // disabled={!inputText.trim() || isLoading} // Allow press to handle retry hint
-                                    style={{
-                                        marginLeft: 10,
-                                        width: 48, height: 48,
-                                        borderRadius: 24,
-                                        backgroundColor: (!inputText.trim() || isLoading) ? (isDark ? '#444' : '#DDD') : accentColor,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        shadowColor: accentColor,
-                                        shadowOffset: { width: 0, height: 2 },
-                                        shadowOpacity: (!inputText.trim() || isLoading) ? 0 : 0.3,
-                                        shadowRadius: 3,
-                                        elevation: (!inputText.trim() || isLoading) ? 0 : 3
-                                    }}
-                                >
-                                    <Icon name="send" size={22} color="#FFF" />
-                                </TouchableOpacity>
-                            </View>
-                        </KeyboardAvoidingView>
-                    </View>
+                    </KeyboardAvoidingView>
                 </View>
-            </Modal>
-        </>
+            </View>
+        </Modal>
     );
 };
 
