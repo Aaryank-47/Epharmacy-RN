@@ -135,7 +135,7 @@ const DealOfDaySection: React.FC = () => {
 
   return (
     <LinearGradient
-      colors={isDark ? ['#181A20', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']}
+      colors={isDark ? ['#181A20', '#2A2D35'] : ['#F9FAFB', '#F3F4F6']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ marginTop: 0, paddingVertical: 24 }}
@@ -146,46 +146,50 @@ const DealOfDaySection: React.FC = () => {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 20,
       }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{
-            fontSize: 20,
-            fontWeight: '700',
-            color: isDark ? '#FFFFFF' : '#111827',
-            fontStyle: 'italic',
-            letterSpacing: -0.5,
-          }}>
-            DEAL OF THE DAY
-          </Text>
-          {/* Timer Badge */}
-          <View style={{
-            marginLeft: 12,
-            paddingHorizontal: 8,
-            paddingVertical: 2,
-            backgroundColor: isDark ? 'rgba(127, 29, 29, 0.3)' : '#FEE2E2',
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: isDark ? '#991B1B' : '#FECACA',
-          }}>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Ionicons name="flash" size={18} color={isDark ? '#FBBF24' : '#F59E0B'} style={{ marginRight: 6 }} />
             <Text style={{
-              fontSize: 12,
-              fontWeight: '700',
-              color: isDark ? '#FCA5A5' : '#DC2626',
+              fontSize: 22,
+              fontWeight: '800',
+              color: isDark ? '#FFFFFF' : '#111827',
+              letterSpacing: -0.5,
             }}>
-              Ends in 12:00:00
+              DEAL OF THE DAY
             </Text>
           </View>
-        </View>
-        <TouchableOpacity onPress={() => {}}>
           <Text style={{
-            color: accentColor,
-            fontSize: 14,
-            fontWeight: '700',
+            fontSize: 13,
+            color: isDark ? '#9CA3AF' : '#6B7280',
+            fontWeight: '500',
+            marginLeft: 24
           }}>
-            View All
+            Prices slashed for 24 hours!
           </Text>
-        </TouchableOpacity>
+        </View>
+
+        {/* Timer Badge */}
+        <LinearGradient
+          colors={isDark ? ['#7F1D1D', '#991B1B'] : ['#FEE2E2', '#FECACA']}
+          style={{
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: isDark ? '#B91C1C' : '#FCA5A5',
+          }}
+        >
+          <Text style={{
+            fontSize: 12,
+            fontWeight: '800',
+            color: isDark ? '#FECACA' : '#DC2626',
+            fontVariant: ['tabular-nums']
+          }}>
+            12:00:00 LEFT
+          </Text>
+        </LinearGradient>
       </View>
 
       {showShimmer ? (
@@ -196,75 +200,105 @@ const DealOfDaySection: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           data={deals}
           keyExtractor={(item) => item._id || item.itemName || String(Math.random())}
-          contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 10 }}
+          contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 15 }}
           renderItem={({ item }) => (
             <TouchableOpacity
-              activeOpacity={0.95}
+              activeOpacity={0.92}
               onPress={() => handleProductPress(item)}
               style={{
-                width: screenWidth * 0.46,
-                marginHorizontal: 6,
-                backgroundColor: isDark ? '#1A1C23' : '#FFFFFF',
-                borderRadius: 12,
+                width: screenWidth * 0.48,
+                marginHorizontal: 8,
+                backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
+                borderRadius: 20,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 3,
-                borderWidth: 1,
-                borderColor: isDark ? '#2D3038' : '#E5E7EB',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: isDark ? 0.4 : 0.08,
+                shadowRadius: 12,
+                elevation: 6,
+                borderWidth: isDark ? 1 : 0,
+                borderColor: isDark ? '#2D3038' : 'transparent',
                 overflow: 'hidden',
               }}
             >
-              {/* Image Area - Compact & Clean */}
+              {/* Image Area - Classy & Modern */}
               <View style={{
-                height: 128,
+                height: 160,
                 width: '100%',
-                backgroundColor: '#FFFFFF',
-                padding: 8,
+                backgroundColor: isDark ? '#2A2D35' : '#F8FAFC',
+                padding: 12,
                 justifyContent: 'center',
                 alignItems: 'center',
                 position: 'relative',
-                borderBottomWidth: 1,
-                borderBottomColor: isDark ? '#2D3038' : '#F3F4F6',
               }}>
-                <Image
-                  source={{ uri: (item.itemImages && item.itemImages[0]) || '' }}
-                  style={{ width: '100%', height: '100%' }}
-                  resizeMode="contain"
-                />
-
-                {/* Discount Badge - Minimalist */}
+                {/* Discount Tag */}
                 {item.itemDiscount && (
                   <View style={{
                     position: 'absolute',
-                    top: 8,
-                    left: 8,
-                    backgroundColor: '#DC2626',
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    borderRadius: 4,
-                    alignItems: 'center',
+                    top: 12,
+                    left: 12,
+                    backgroundColor: '#EF4444',
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 8,
+                    zIndex: 10,
+                    shadowColor: '#EF4444',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 3,
                   }}>
                     <Text style={{
                       color: '#FFFFFF',
-                      fontSize: 10,
-                      fontWeight: '700',
+                      fontSize: 11,
+                      fontWeight: '800',
+                      letterSpacing: 0.5
                     }}>
                       -{item.itemDiscount}%
                     </Text>
                   </View>
                 )}
+
+                <Image
+                  source={{ uri: (item.itemImages && item.itemImages[0]) || '' }}
+                  style={{ width: '90%', height: '90%' }}
+                  resizeMode="contain"
+                />
+
+                {/* Rating Badge */}
+                <View style={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 6,
+                }}>
+                  <Ionicons name="star" size={10} color="#FBBF24" />
+                  <Text style={{
+                    fontSize: 10,
+                    fontWeight: '700',
+                    color: isDark ? '#FFF' : '#1F2937',
+                    marginLeft: 3
+                  }}>
+                    {item.itemRatings ? item.itemRatings.toFixed(1) : '4.5'}
+                  </Text>
+                </View>
               </View>
 
-              <View style={{ padding: 12 }}>
+              <View style={{ padding: 14 }}>
+
+
                 <Text
-                  numberOfLines={1}
+                  numberOfLines={2}
                   style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: isDark ? '#F3F4F6' : '#1F2937',
-                    marginBottom: 4,
+                    fontSize: 15,
+                    fontWeight: '700',
+                    color: isDark ? '#F3F4F6' : '#111827',
+                    marginBottom: 8,
+                    lineHeight: 20
                   }}
                 >
                   {item.itemName}
@@ -273,46 +307,50 @@ const DealOfDaySection: React.FC = () => {
                 {/* Price & Action Row */}
                 <View style={{
                   flexDirection: 'row',
-                  alignItems: 'center',
+                  alignItems: 'flex-end',
                   justifyContent: 'space-between',
                   marginTop: 4,
                 }}>
                   <View>
-                    <Text style={{
-                      fontSize: 16,
-                      fontWeight: '700',
-                      color: isDark ? '#FFFFFF' : '#111827',
-                    }}>
-                      ₹{item.itemFinalPrice || 0}
-                    </Text>
                     {item.itemInitialPrice && (
                       <Text style={{
-                        fontSize: 10,
-                        color: '#9CA3AF',
+                        fontSize: 11,
+                        color: isDark ? '#6B7280' : '#9CA3AF',
                         textDecorationLine: 'line-through',
+                        marginBottom: 1,
+                        fontWeight: '500'
                       }}>
                         ₹{item.itemInitialPrice}
                       </Text>
                     )}
+                    <Text style={{
+                      fontSize: 18,
+                      fontWeight: '800',
+                      color: isDark ? '#FFFFFF' : '#1F2937',
+                      letterSpacing: -0.5
+                    }}>
+                      ₹{item.itemFinalPrice || 0}
+                    </Text>
                   </View>
 
                   <TouchableOpacity
                     style={{
-                      backgroundColor: accentColor,
-                      width: 40,
-                      height: 40,
-                      borderRadius: 16,
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 2,
-                      elevation: 2,
+                      backgroundColor: accentColor,
+                      shadowColor: accentColor,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 4,
                     }}
+                    activeOpacity={0.8}
                     onPress={() => handleProductPress(item)}
                   >
-                    <Ionicons name="cart-outline" size={24} color="#FFFFFF" />
+                    <Ionicons name="add" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
               </View>
