@@ -8,6 +8,7 @@ import {
     FlatList,
     Animated,
     Platform,
+    ToastAndroid,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -92,9 +93,12 @@ interface ItemCardProps {
     isDark: boolean;
     accentColor: string;
     onPress: () => void;
+    onAddToCart: () => void;
+    isInCart: boolean;
 }
 
-const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) => {
+const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAddToCart, isInCart }) => {
+    // ... logic ...
     const hasDiscount = item.itemDiscount && item.itemDiscount > 0;
 
     const p1 = Number(item.itemInitialPrice) || 0;
@@ -299,21 +303,22 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
 
                         <TouchableOpacity
                             activeOpacity={0.85}
+                            onPress={onAddToCart}
                             style={{
                                 width: 36,
                                 height: 36,
                                 borderRadius: 18,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: accentColor,
-                                shadowColor: '#000',
+                                backgroundColor: isInCart ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
+                                shadowColor: isInCart ? 'transparent' : '#000',
                                 shadowOffset: { width: 0, height: 1 },
                                 shadowOpacity: 0.1,
                                 shadowRadius: 2,
                                 elevation: 2,
                             }}
                         >
-                            <Icon name="bag-add-outline" size={20} color="#FFFFFF" />
+                            <Icon name={isInCart ? "checkmark" : "add"} size={20} color="#FFFFFF" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -326,7 +331,7 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
 // ROW CONTAINER
 // ============================================================================
 
-const HorizontalRow = memo(({ items, isDark, accentColor, handlePress }: { items: ItemFeedItem[], isDark: boolean, accentColor: string, handlePress: (item: ItemFeedItem) => void }) => {
+const HorizontalRow = memo(({ items, isDark, accentColor, handlePress, handleAddToCart, checkIsInCart }: { items: ItemFeedItem[], isDark: boolean, accentColor: string, handlePress: (item: ItemFeedItem) => void, handleAddToCart: (item: ItemFeedItem) => void, checkIsInCart: (id: string) => boolean }) => {
     return (
         <View style={{ marginBottom: 12 }}>
             <FlatList
@@ -341,6 +346,8 @@ const HorizontalRow = memo(({ items, isDark, accentColor, handlePress }: { items
                         isDark={isDark}
                         accentColor={accentColor}
                         onPress={() => handlePress(item)}
+                        onAddToCart={() => handleAddToCart(item)}
+                        isInCart={checkIsInCart(item._id)}
                     />
                 )}
                 snapToInterval={CARD_WIDTH + GAP}
@@ -354,15 +361,33 @@ const HorizontalRow = memo(({ items, isDark, accentColor, handlePress }: { items
 // MAIN COMPONENT
 // ============================================================================
 
+import { useCart } from '../../../context/CartContext';
+
 const ItemFeedSection = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
     const { data: items, isLoading } = useItemFeed();
+    const { addToCart, isInCart } = useCart();
 
     const handlePress = async (item: ItemFeedItem) => {
         if (item._id) {
             navigation.navigate('ProductDetail', { productId: item._id });
         }
+    };
+
+    const handleAddToCart = (item: ItemFeedItem) => {
+        if (isInCart(item._id)) {
+            ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+            return;
+        }
+
+        addToCart({
+            id: item._id,
+            name: item.itemName,
+            price: Number(item.itemFinalPrice) || 0,
+            quantity: 1,
+        });
+        ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
     };
 
     const chunkedItems = useMemo(() => {
@@ -447,6 +472,8 @@ const ItemFeedSection = () => {
                             isDark={isDark}
                             accentColor={accentColor}
                             handlePress={handlePress}
+                            handleAddToCart={handleAddToCart}
+                            checkIsInCart={isInCart}
                         />
                     ))
                 )}

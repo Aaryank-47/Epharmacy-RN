@@ -9,10 +9,12 @@ import {
   Image,
   StyleProp,
   ViewStyle,
+  ToastAndroid,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { useDealsOfTheDay } from '../../../hooks/useDealsOfTheDay';
+import { useCart } from '../../../context/CartContext';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -76,6 +78,22 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
 const DealOfDaySection: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isDark, accentColor } = useThemePalette();
+  const { addToCart, isInCart } = useCart();
+
+  const handleAddToCart = (item: any) => {
+    if (isInCart((item as any)._id || (item as any).id)) {
+      ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+      return;
+    }
+
+    addToCart({
+      id: item._id || item.id,
+      name: item.itemName,
+      price: item.itemFinalPrice || 0,
+      quantity: 1,
+    });
+    ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
+  };
 
   const { data, isLoading, error } = useDealsOfTheDay();
   const deals = data?.deals || [];
@@ -283,7 +301,7 @@ const DealOfDaySection: React.FC = () => {
                     color: isDark ? '#FFF' : '#1F2937',
                     marginLeft: 3
                   }}>
-                    {item.itemRatings ? item.itemRatings.toFixed(1) : '4.5'}
+                    {(item as any).itemRatings ? (item as any).itemRatings.toFixed(1) : '4.5'}
                   </Text>
                 </View>
               </View>
@@ -340,17 +358,21 @@ const DealOfDaySection: React.FC = () => {
                       borderRadius: 12,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: accentColor,
-                      shadowColor: accentColor,
+                      backgroundColor: isInCart((item as any)._id || (item as any).id) ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
+                      shadowColor: isInCart((item as any)._id || (item as any).id) ? 'transparent' : accentColor,
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.3,
                       shadowRadius: 8,
                       elevation: 4,
                     }}
                     activeOpacity={0.8}
-                    onPress={() => handleProductPress(item)}
+                    onPress={() => handleAddToCart(item)}
                   >
-                    <Ionicons name="add" size={24} color="#FFFFFF" />
+                    <Ionicons
+                      name={isInCart((item as any)._id || (item as any).id) ? "checkmark" : "add"}
+                      size={24}
+                      color="#FFFFFF"
+                    />
                   </TouchableOpacity>
                 </View>
               </View>

@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import { getUserProfile } from '../../api/authApi';
+import { useCart } from '../../context/CartContext';
 import ExploreOverlay from './ExploreOverlay';
 import AiChatSupport from '../AiChatSupport';
 import QROptionsBottomSheet from '../qr/QROptionsBottomSheet';
@@ -96,7 +97,7 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
             : profile.profileImage || profile.avatar || null,
         };
       } catch (parseError) {
-        }
+      }
     }
 
     // Check auth_user
@@ -108,7 +109,7 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
           profileImage: user.avatar || user.profileImage?.[0] || null,
         };
       } catch (parseError) {
-        }
+      }
     }
 
     // Check jwtToken
@@ -122,7 +123,7 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
           };
         }
       } catch (parseError) {
-        }
+      }
     }
 
     return { name: 'User', profileImage: null };
@@ -225,7 +226,7 @@ const ProfileTabIcon = memo<ProfileTabIconProps>(({
             borderRadius: (size - 4) / 2,
           }}
           onError={() => {
-            }}
+          }}
         />
       ) : (
         <View
@@ -282,8 +283,11 @@ const TabBar = memo<TabBarProps>(({
   translateY = new Animated.Value(0),
 }) => {
   const { isDark, accentColor } = useThemePalette();
+  const { items } = useCart(); // Access cart items
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+
+  const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
 
   const bottomInset = insets.bottom;
 
@@ -312,7 +316,7 @@ const TabBar = memo<TabBarProps>(({
           onNavigate(tab.screenName);
         }
       } catch (error) {
-        }
+      }
     },
     [setActiveTab, onNavigate, isLoading, activeTab, onTabReselect]
   );
@@ -398,6 +402,29 @@ const TabBar = memo<TabBarProps>(({
                   color={activeColor}
                 />
               )}
+
+              {/* Cart Badge */}
+              {currentTab.name === 'Cart' && cartItemCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: screenWidth * 0.05, // Adjust based on icon position
+                    backgroundColor: '#EF4444',
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                    {cartItemCount > 99 ? '99+' : cartItemCount}
+                  </Text>
+                </View>
+              )}
+
               <Text
                 style={{
                   marginTop: 3,
@@ -559,7 +586,7 @@ const Tabs = memo<TabsProps>(({
 
       setShowExploreOverlay(false); // Close overlay if switching tabs
       setActiveTab(tabName);
-      } catch (error) {
+    } catch (error) {
       onError(error as Error);
     }
   }, [onError]);

@@ -1,4 +1,4 @@
-import React, { memo,useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { useTrendingProducts } from '../../../hooks/useTrendingProducts';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -9,6 +9,7 @@ import {
     Image,
     FlatList,
     Animated,
+    ToastAndroid,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -143,16 +144,19 @@ interface TrendingProductCardProps {
     item: TrendingProduct;
     accentColor: string;
     onPress: () => void;
+    onAddToCart: () => void;
     isDark: boolean;
+    isInCart: boolean;
 }
 
 const TrendingProductCard = memo<TrendingProductCardProps>(
-    ({ item, accentColor, onPress, isDark }) => (
+    ({ item, accentColor, onPress, onAddToCart, isDark, isInCart }) => (
         <TouchableOpacity
             activeOpacity={0.92}
             onPress={onPress}
             className="mr-3 mb-2"
             style={{
+                // ... same styles
                 width: (screenWidth - 28) / 2,
                 borderRadius: 12,
                 backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
@@ -293,21 +297,22 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
 
                     <TouchableOpacity
                         activeOpacity={0.8}
+                        onPress={onAddToCart}
                         style={{
                             width: 34,
                             height: 34,
                             borderRadius: 10,
-                            backgroundColor: accentColor,
+                            backgroundColor: isInCart ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
                             justifyContent: 'center',
                             alignItems: 'center',
-                            shadowColor: accentColor,
+                            shadowColor: isInCart ? 'transparent' : accentColor,
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.3,
                             shadowRadius: 4,
                             elevation: 3,
                         }}
                     >
-                        <Icon name="cart-outline" size={20} color="#FFFFFF" />
+                        <Icon name={isInCart ? "checkmark" : "add"} size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -321,9 +326,12 @@ TrendingProductCard.displayName = 'TrendingProductCard';
 // MAIN TRENDING SECTION
 // ============================================================================
 
+import { useCart } from '../../../context/CartContext';
+
 const TrendingSection: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
+    const { addToCart, isInCart } = useCart();
 
     const { data: trendingProducts, isLoading } = useTrendingProducts();
 
@@ -334,6 +342,21 @@ const TrendingSection: React.FC = () => {
         }
     };
 
+    const handleAddToCart = (item: TrendingProduct) => {
+        if (isInCart(item._id)) {
+            ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+            return;
+        }
+
+        addToCart({
+            id: item._id,
+            name: item.itemName,
+            price: item.itemFinalPrice,
+            quantity: 1,
+        });
+        ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
+    };
+
     return (
         <LinearGradient
             colors={isDark ? ['#181A20', '#2A2D35'] : ['#ffffff', '#F3F4F6']}
@@ -341,7 +364,7 @@ const TrendingSection: React.FC = () => {
             end={{ x: 0, y: 1 }}
             className="py-4 mt-0"
         >
-            {/* Header */}
+            {/* ... Header and Skeleton Logic ... */}
             <View className="flex-row justify-between items-center px-4 mb-5">
                 <View>
                     <Text className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -389,6 +412,8 @@ const TrendingSection: React.FC = () => {
                                     accentColor={accentColor}
                                     isDark={isDark}
                                     onPress={() => handleProductPress(item)}
+                                    onAddToCart={() => handleAddToCart(item)}
+                                    isInCart={isInCart(item._id)}
                                 />
                             )}
                         />
