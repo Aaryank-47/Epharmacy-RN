@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { getRecentlyViewedItems } from '../../../api/medicinesApi';
+import { useRecentlyViewedItems } from '../../../hooks/useRecentlyViewed';
 import useThemePalette from '../../../hooks/useThemePalette';
 
 const { width } = Dimensions.get('window');
@@ -16,14 +17,11 @@ interface RecentlyViewedSectionProps {
 
 const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewedSectionProps) => {
     const navigation = useNavigation<any>();
-    const { isDark, accentColor, surfaceColor } = useThemePalette();
+    const { isDark, accentColor } = useThemePalette();
 
-    const { data: apiResponse, isLoading } = useQuery({
-        queryKey: ['recentlyViewed'],
-        queryFn: getRecentlyViewedItems,
-    });
+    const { data: apiResponse, isLoading } = useRecentlyViewedItems();
 
-    const recentlyViewedItems = apiResponse?.data?.data || [];
+    const recentlyViewedItems = apiResponse?.data || [];
 
     // Skeleton Animation Hooks - Must be before early return!
     const opacityValue = React.useRef(new Animated.Value(0.3)).current;

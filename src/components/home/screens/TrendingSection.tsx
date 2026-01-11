@@ -1,5 +1,4 @@
-import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { memo,useEffect, useRef } from 'react';
 import { useTrendingProducts } from '../../../hooks/useTrendingProducts';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -10,13 +9,10 @@ import {
     Image,
     FlatList,
     Animated,
-    Easing,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-
-import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -227,9 +223,7 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                 </TouchableOpacity>
             </View>
 
-            {/* Content Area - Compact */}
             <View className="px-2.5 py-2">
-                {/* Title */}
                 <Text
                     className="font-bold text-gray-900 dark:text-white mb-1"
                     numberOfLines={1}
@@ -241,7 +235,6 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                     {item.itemName}
                 </Text>
 
-                {/* Description */}
                 {item.itemDescription && (
                     <Text
                         className="text-gray-500 dark:text-gray-400 mb-1.5"
@@ -298,7 +291,6 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                         )}
                     </View>
 
-                    {/* Add to Cart Button */}
                     <TouchableOpacity
                         activeOpacity={0.8}
                         style={{
@@ -333,12 +325,10 @@ const TrendingSection: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
 
-    // React Query for trending products
     const { data: trendingProducts, isLoading } = useTrendingProducts();
 
     const handleProductPress = async (item: TrendingProduct) => {
         const itemId = item._id;
-        console.log('[TrendingSection] Product selected:', item.itemName, '| ID:', itemId);
         if (itemId) {
             navigation.navigate('ProductDetail', { productId: itemId });
         }
@@ -368,7 +358,6 @@ const TrendingSection: React.FC = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Multiple Rows or Loading Skeleton */}
             <View>
                 {isLoading || !trendingProducts || trendingProducts.length === 0 ? (
                     // Render Skeletons
@@ -387,7 +376,6 @@ const TrendingSection: React.FC = () => {
                         </View>
                     ))
                 ) : (
-                    // Render Real Data from API
                     <View className="mb-2">
                         <FlatList
                             horizontal

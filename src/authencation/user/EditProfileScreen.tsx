@@ -27,58 +27,6 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import type { RootStackParamList } from '../../../AppNavigator';
 import { updateUserProfile } from '../../api/authApi';
 
-/**
- * ==================== PROFILE IMAGE SETUP (CAMERA + GALLERY) ====================
- * 
- * FEATURES:
- * - Gallery selection with single image limit (prevents multi-selection bug)
- * - Camera capture with preview modal (retake/accept flow)
- * - Lifetime "ask-only-once" permission behavior (persisted in AsyncStorage)
- * - Settings redirect for permanently denied permissions
- * - Robust error handling and loading states
- * 
- * LIFETIME BEHAVIOR:
- * Once permission is requested via OS dialog, the app NEVER asks again until user
- * manually changes permission in system Settings. This prevents permission spam.
- * The "asked" flag is persisted in AsyncStorage and survives app restarts.
- * 
- * REQUIRED CONSOLE LOGS (exact format):
- * - [Gallery] Checking permission...
- * - [Gallery] Android permission status: denied (or granted/blocked)
- * - [Camera] Checking permission...
- * - [Camera] Permission status: denied (or granted/blocked)
- * 
- * PERMISSIONS TO ADD:
- * 
- * ANDROID (android/app/src/main/AndroidManifest.xml):
- * <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/> <!-- API 33+ -->
- * <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/> <!-- API 32- -->
- * <uses-permission android:name="android.permission.CAMERA"/>
- * 
- * IOS (ios/YourApp/Info.plist):
- * <key>NSPhotoLibraryUsageDescription</key>
- * <string>We need access to your photos to let you select a profile picture.</string>
- * <key>NSCameraUsageDescription</key>
- * <string>We need access to your camera to let you take a profile photo.</string>
- * 
- * ASYNC STORAGE KEYS:
- * - @app/galleryPermissionAsked: boolean (true if OS prompt shown once)
- * - @app/cameraPermissionAsked: boolean (true if OS prompt shown once)
- * 
- * PACKAGES USED:
- * - react-native-image-picker (gallery & camera)
- * - react-native-permissions (permission management)
- * - @react-native-async-storage/async-storage (persist permission flags)
- * 
- * GRANT BEHAVIOR:
- * - If user grants permission (GRANTED / LIMITED / Allow access to all / Allow once),
- *   the app proceeds IMMEDIATELY to gallery/camera without showing "Permission needed" alert.
- * - Only shows Settings modal when permission is DENIED or BLOCKED.
- * 
- * =================================================================================
- */
-
-// Types
 interface Address {
   street?: string;
   city?: string;
@@ -144,11 +92,9 @@ interface InputFieldProps {
   multiline?: boolean;
 }
 
-// Constants
 const { width: screenWidth } = Dimensions.get('window');
 const getResponsiveSize = (size: number): number => (screenWidth / 375) * size;
 
-// AsyncStorage keys for permission tracking
 const STORAGE_KEYS = {
   GALLERY_PERMISSION_ASKED: '@app/galleryPermissionAsked',
   CAMERA_PERMISSION_ASKED: '@app/cameraPermissionAsked',
@@ -178,7 +124,6 @@ const EditProfileScreen: React.FC = () => {
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [isPicking, setIsPicking] = useState<boolean>(false);
 
-  // Camera preview modal state
   const [showCameraPreview, setShowCameraPreview] = useState<boolean>(false);
   const [cameraPreviewUri, setCameraPreviewUri] = useState<string | null>(null);
   const [tempCameraAsset, setTempCameraAsset] = useState<Asset | null>(null);
@@ -209,14 +154,6 @@ const EditProfileScreen: React.FC = () => {
       : null
   );
 
-  /**
-   * ==================== HELPER FUNCTIONS ====================
-   */
-
-  /**
-   * Shows a modal prompting user to open Settings when permission is blocked
-   * @param permissionType - Type of permission ('Gallery' or 'Camera')
-   */
   const showSettingsPromptIfBlocked = (permissionType: 'Gallery' | 'Camera'): void => {
     Alert.alert(
       'Permission Required',
@@ -231,89 +168,49 @@ const EditProfileScreen: React.FC = () => {
     );
   };
 
-  /**
-   * Checks if permission has been asked before using AsyncStorage
-   * @param storageKey - AsyncStorage key to check
-   * @returns true if asked before, false otherwise
-   */
   const hasPermissionBeenAsked = async (storageKey: string): Promise<boolean> => {
     try {
       const value = await AsyncStorage.getItem(storageKey);
       return value === 'true';
     } catch (error) {
-      console.error(`[Permission] Error reading ${storageKey}:`, error);
-      return false;
+      throw error;
     }
   };
 
-  /**
-   * Marks permission as asked in AsyncStorage
-   * @param storageKey - AsyncStorage key to set
-   */
   const markPermissionAsAsked = async (storageKey: string): Promise<void> => {
     try {
       await AsyncStorage.setItem(storageKey, 'true');
     } catch (error) {
-      console.error(`[Permission] Error writing ${storageKey}:`, error);
+      throw error;
     }
   };
 
-  /**
-   * Checks and handles gallery permission with lifetime "ask-only-once" behavior
-   * 
-   * LIFETIME BEHAVIOR: Once permission is requested via OS dialog, the app never asks again
-   * until user manually changes permission in system Settings. This prevents permission spam.
-   * 
-   * ANDROID MANIFEST PERMISSIONS (add to android/app/src/main/AndroidManifest.xml):
-   * <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/> <!-- API 33+ -->
-   * <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/> <!-- API 32- -->
-   * 
-   * IOS INFO.PLIST PERMISSIONS (add to ios/YourApp/Info.plist):
-   * <key>NSPhotoLibraryUsageDescription</key>
-   * <string>We need access to your photos to let you select a profile picture.</string>
-   * 
-   * @returns true if permission granted (GRANTED or LIMITED), false otherwise
-   */
   const checkAndHandleGalleryPermission = async (): Promise<boolean> => {
     try {
-      // REQUIRED LOG: Must appear exactly as shown
-      console.log('[Gallery] Checking permission...');
-
       const alreadyAsked = await hasPermissionBeenAsked(STORAGE_KEYS.GALLERY_PERMISSION_ASKED);
 
       if (Platform.OS === 'ios') {
         const permission = PERMISSIONS.IOS.PHOTO_LIBRARY;
         const result = await check(permission);
 
-        // REQUIRED LOG: Must show exact status
-        console.log('[Gallery] iOS permission status:', result);
-
-        // GRANTED or LIMITED = proceed immediately (do NOT show "permission needed" alert)
         if (result === RESULTS.GRANTED || result === RESULTS.LIMITED) {
           return true;
         }
 
-        // BLOCKED = show Settings redirect (user previously denied permanently)
         if (result === RESULTS.BLOCKED) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
         }
 
-        // DENIED + first time = request permission
         if (result === RESULTS.DENIED && !alreadyAsked) {
-          // Mark as asked BEFORE requesting to ensure lifetime behavior
           await markPermissionAsAsked(STORAGE_KEYS.GALLERY_PERMISSION_ASKED);
 
-          // Request permission from OS
           const requestResult = await request(permission);
-          console.log('[Gallery] iOS permission request result:', requestResult);
 
-          // If user granted (GRANTED or LIMITED), return true to proceed
           if (requestResult === RESULTS.GRANTED || requestResult === RESULTS.LIMITED) {
             return true;
           }
 
-          // If user denied, show Settings modal (not "Permission needed" alert)
           if (requestResult === RESULTS.DENIED || requestResult === RESULTS.BLOCKED) {
             showSettingsPromptIfBlocked('Gallery');
             return false;
@@ -322,7 +219,6 @@ const EditProfileScreen: React.FC = () => {
           return false;
         }
 
-        // DENIED + already asked = show Settings modal (don't ask again)
         if (result === RESULTS.DENIED && alreadyAsked) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
@@ -330,50 +226,33 @@ const EditProfileScreen: React.FC = () => {
 
         return false;
       } else {
-        // Android
         const androidVersion = Platform.Version as number;
 
-        // Choose permission based on Android version
         let permission;
         if (androidVersion >= 33) {
-          // Android 13+ (API 33+): Use READ_MEDIA_IMAGES
           permission = PERMISSIONS.ANDROID.READ_MEDIA_IMAGES;
         } else {
-          // Android 12- (API 32-): Use READ_EXTERNAL_STORAGE
           permission = PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
         }
 
         const result = await check(permission);
-
-        // REQUIRED LOG: Must match exact format (line 307 in original)
-        console.log('[Gallery] Android permission status:', result);
-
-        // GRANTED = proceed immediately
         if (result === RESULTS.GRANTED) {
           return true;
         }
 
-        // BLOCKED / NEVER_ASK_AGAIN = show Settings redirect
         if (result === RESULTS.BLOCKED) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
         }
 
-        // DENIED + first time = request permission
         if (result === RESULTS.DENIED && !alreadyAsked) {
-          // Mark as asked BEFORE requesting to ensure lifetime behavior
           await markPermissionAsAsked(STORAGE_KEYS.GALLERY_PERMISSION_ASKED);
 
-          // Request permission from OS
           const requestResult = await request(permission);
-          console.log('[Gallery] Android permission request result:', requestResult);
-
-          // If user granted, return true to proceed (do NOT show alert)
           if (requestResult === RESULTS.GRANTED) {
             return true;
           }
 
-          // If user denied or blocked, show Settings modal
           if (requestResult === RESULTS.DENIED || requestResult === RESULTS.BLOCKED) {
             showSettingsPromptIfBlocked('Gallery');
             return false;
@@ -382,7 +261,6 @@ const EditProfileScreen: React.FC = () => {
           return false;
         }
 
-        // DENIED + already asked = show Settings modal (don't ask again)
         if (result === RESULTS.DENIED && alreadyAsked) {
           showSettingsPromptIfBlocked('Gallery');
           return false;
@@ -391,31 +269,12 @@ const EditProfileScreen: React.FC = () => {
         return false;
       }
     } catch (error) {
-      console.error('[Gallery] Error checking permission:', error);
-      return false;
+      throw error;
     }
   };
 
-  /**
-   * Checks and handles camera permission with lifetime "ask-only-once" behavior
-   * 
-   * LIFETIME BEHAVIOR: Once permission is requested via OS dialog, the app never asks again
-   * until user manually changes permission in system Settings. This prevents permission spam.
-   * 
-   * ANDROID MANIFEST PERMISSIONS (add to android/app/src/main/AndroidManifest.xml):
-   * <uses-permission android:name="android.permission.CAMERA"/>
-   * 
-   * IOS INFO.PLIST PERMISSIONS (add to ios/YourApp/Info.plist):
-   * <key>NSCameraUsageDescription</key>
-   * <string>We need access to your camera to let you take a profile photo.</string>
-   * 
-   * @returns true if permission granted, false otherwise
-   */
   const checkAndHandleCameraPermission = async (): Promise<boolean> => {
     try {
-      // REQUIRED LOG: Must appear exactly as shown (line 373 in original)
-      console.log('[Camera] Checking permission...');
-
       const alreadyAsked = await hasPermissionBeenAsked(STORAGE_KEYS.CAMERA_PERMISSION_ASKED);
 
       const permission = Platform.OS === 'ios'
@@ -423,36 +282,22 @@ const EditProfileScreen: React.FC = () => {
         : PERMISSIONS.ANDROID.CAMERA;
 
       const result = await check(permission);
-
-      // REQUIRED LOG: Must match exact format (line 382 in original)
-      console.log('[Camera] Permission status:', result);
-
-      // GRANTED = proceed immediately
       if (result === RESULTS.GRANTED) {
         return true;
       }
 
-      // BLOCKED / NEVER_ASK_AGAIN = show Settings redirect
       if (result === RESULTS.BLOCKED) {
         showSettingsPromptIfBlocked('Camera');
         return false;
       }
 
-      // DENIED + first time = request permission
       if (result === RESULTS.DENIED && !alreadyAsked) {
-        // Mark as asked BEFORE requesting to ensure lifetime behavior
         await markPermissionAsAsked(STORAGE_KEYS.CAMERA_PERMISSION_ASKED);
-
-        // Request permission from OS
         const requestResult = await request(permission);
-        console.log('[Camera] Permission request result:', requestResult);
-
-        // If user granted, return true to proceed (do NOT show alert)
         if (requestResult === RESULTS.GRANTED) {
           return true;
         }
 
-        // If user denied or blocked, show Settings modal
         if (requestResult === RESULTS.DENIED || requestResult === RESULTS.BLOCKED) {
           showSettingsPromptIfBlocked('Camera');
           return false;
@@ -461,7 +306,6 @@ const EditProfileScreen: React.FC = () => {
         return false;
       }
 
-      // DENIED + already asked = show Settings modal (don't ask again)
       if (result === RESULTS.DENIED && alreadyAsked) {
         showSettingsPromptIfBlocked('Camera');
         return false;
@@ -469,86 +313,58 @@ const EditProfileScreen: React.FC = () => {
 
       return false;
     } catch (error) {
-      console.error('[Camera] Error checking permission:', error);
-      return false;
+      throw error;
     }
   };
 
-  /**
-   * Opens the gallery to select a single image
-   * 
-   * BEHAVIOR:
-   * - Enforces single-selection (selectionLimit: 1)
-   * - If permission is GRANTED or LIMITED, proceeds immediately to gallery
-   * - Does NOT show "Permission needed" alert after user grants permission
-   * - Sets image immediately after selection (no second step)
-   * - Handles first asset only if multiple returned (unexpected)
-   */
+
   const openGallery = async (): Promise<void> => {
-    // Prevent duplicate picks
     if (isPicking) {
-      console.log('[Gallery] Already picking, ignoring duplicate tap');
       return;
     }
 
     try {
       setIsPicking(true);
 
-      // Check permission with lifetime behavior (will show Settings modal if needed)
       const hasPermission = await checkAndHandleGalleryPermission();
 
       if (!hasPermission) {
-        // Permission not granted - checkAndHandleGalleryPermission already showed modal if needed
-        setIsPicking(false);
         return;
       }
 
-      // Permission granted - proceed to gallery immediately
       const options: ImageLibraryOptions = {
         mediaType: 'photo',
-        quality: 0.5, // Reduced quality for better compression and faster upload
-        maxWidth: 1024, // Limit width to reduce file size
-        maxHeight: 1024, // Limit height to reduce file size
-        selectionLimit: 1, // CRITICAL: Force single selection
+        quality: 0.8,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        selectionLimit: 1,
         includeBase64: false,
+        presentationStyle: 'fullScreen',
       };
 
-      console.log('[Gallery] Launching image picker...');
       const result = await launchImageLibrary(options);
 
-      // Handle cancellation silently
       if (result.didCancel) {
-        console.log('[Gallery] User cancelled');
-        setIsPicking(false);
         return;
       }
 
-      // Handle errors
       if (result.errorCode) {
-        console.error('[Gallery] Picker error:', result.errorMessage);
         Alert.alert(
           'Error',
           result.errorMessage || 'Failed to select image. Please try again.',
           [{ text: 'OK' }]
         );
-        setIsPicking(false);
         return;
       }
 
-      // Handle successful selection - ALWAYS take first asset only
       if (result.assets && result.assets.length > 0) {
-        const asset = result.assets[0]; // Force single asset (handle unexpected multiple)
+        const asset = result.assets[0];
 
-        // Validate URI
         if (!asset.uri) {
-          console.error('[Gallery] Invalid asset URI');
           Alert.alert('Error', 'Invalid image selected. Please try again.');
-          setIsPicking(false);
           return;
         }
 
-        // IMMEDIATE SET - no second selection step, no confirmation needed
-        console.log('[Gallery] Setting image immediately:', asset.uri);
         setProfileImageUri(asset.uri);
         setFormData(prev => ({
           ...prev,
@@ -558,136 +374,86 @@ const EditProfileScreen: React.FC = () => {
             name: asset.fileName || `profile_${Date.now()}.jpg`,
           }
         }));
-
-        console.log('[Gallery] Image set successfully');
-      } else {
-        console.warn('[Gallery] No assets returned');
       }
-
-      setIsPicking(false);
     } catch (error) {
-      console.error('[Gallery] Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
       setIsPicking(false);
     }
   };
 
-  /**
-   * Opens the camera to take a photo
-   * 
-   * BEHAVIOR:
-   * - Shows preview modal with retake/accept options after capture
-   * - Does NOT immediately set image (user must tap "Use Photo" button)
-   * - Retake button re-launches camera for another attempt
-   * - Accept button sets the image and closes modal
-   */
   const openCamera = async (): Promise<void> => {
-    // Prevent duplicate launches
     if (isPicking) {
-      console.log('[Camera] Already picking, ignoring duplicate tap');
       return;
     }
 
     try {
       setIsPicking(true);
 
-      // Check permission with lifetime behavior (will show Settings modal if needed)
       const hasPermission = await checkAndHandleCameraPermission();
 
       if (!hasPermission) {
-        // Permission not granted - checkAndHandleCameraPermission already showed modal if needed
-        setIsPicking(false);
         return;
       }
 
-      // Permission granted - proceed to camera immediately
       const options: CameraOptions = {
         mediaType: 'photo',
-        quality: 0.5, // Reduced quality for better compression and faster upload
-        maxWidth: 1024, // Limit width to reduce file size
-        maxHeight: 1024, // Limit height to reduce file size
-        saveToPhotos: false, // Don't save to gallery automatically
+        quality: 0.8,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        saveToPhotos: true,
         includeBase64: false,
       };
 
-      console.log('[Camera] Launching camera...');
       const result = await launchCamera(options);
 
-      // Handle cancellation silently
       if (result.didCancel) {
-        console.log('[Camera] User cancelled');
-        setIsPicking(false);
         return;
       }
 
-      // Handle errors
       if (result.errorCode) {
-        console.error('[Camera] Camera error:', result.errorMessage);
         Alert.alert(
           'Error',
           result.errorMessage || 'Failed to capture photo. Please try again.',
           [{ text: 'OK' }]
         );
-        setIsPicking(false);
         return;
       }
 
-      // Handle successful capture - show preview modal (NOT immediate set)
       if (result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
 
-        // Validate URI
         if (!asset.uri) {
-          console.error('[Camera] Invalid asset URI');
           Alert.alert('Error', 'Invalid photo captured. Please try again.');
-          setIsPicking(false);
           return;
         }
 
-        // Show preview modal for user to retake or accept
-        console.log('[Camera] Showing preview modal:', asset.uri);
         setCameraPreviewUri(asset.uri);
         setTempCameraAsset(asset);
         setShowCameraPreview(true);
       }
-
-      setIsPicking(false);
     } catch (error) {
-      console.error('[Camera] Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
       setIsPicking(false);
     }
   };
 
-  /**
-   * Handles retake action from camera preview modal
-   * Re-launches camera for another attempt
-   */
   const handleRetakePhoto = (): void => {
-    console.log('[Camera] Retaking photo...');
     setShowCameraPreview(false);
     setCameraPreviewUri(null);
     setTempCameraAsset(null);
 
-    // Re-launch camera after modal closes
     setTimeout(() => {
       openCamera();
     }, 300);
   };
 
-  /**
-   * Handles accept action from camera preview modal
-   * Sets the captured image as profile picture
-   */
   const handleAcceptPhoto = (): void => {
     if (!tempCameraAsset || !cameraPreviewUri) {
-      console.error('[Camera] No asset to accept');
       return;
     }
 
-    console.log('[Camera] Accepting photo:', cameraPreviewUri);
-
-    // Set the image
     setProfileImageUri(cameraPreviewUri);
     setFormData(prev => ({
       ...prev,
@@ -698,12 +464,10 @@ const EditProfileScreen: React.FC = () => {
       }
     }));
 
-    // Close modal
     setShowCameraPreview(false);
     setCameraPreviewUri(null);
     setTempCameraAsset(null);
 
-    console.log('[Camera] Photo accepted and set');
   };
 
   const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date): void => {
@@ -716,23 +480,11 @@ const EditProfileScreen: React.FC = () => {
     }
   };
 
-  /**
-   * Requests location permission using react-native-permissions
-   * More stable than using PermissionsAndroid or promptForEnableLocationIfNeeded
-
-
-  /**
-   * Gets the current GPS location using LocationService
-   */
   const getCurrentLocation = async (): Promise<void> => {
-    console.log('[Location] getCurrentLocation called');
-
     try {
       setLocationLoading(true);
 
       const locationData = await LocationService.getCurrentLocation();
-      console.log('[Location] Success! Position:', locationData);
-
       setFormData(prev => ({
         ...prev,
         address: {
@@ -752,7 +504,6 @@ const EditProfileScreen: React.FC = () => {
       );
 
     } catch (error: any) {
-      console.error('[Location] Error:', error);
       setLocationLoading(false);
 
       let message = 'Failed to get current location.';
@@ -776,7 +527,6 @@ const EditProfileScreen: React.FC = () => {
   };
 
   const handleSubmit = async (): Promise<void> => {
-    // Declare hasImage at the top so it's accessible in catch block
     let hasImage = false;
 
     try {
@@ -798,10 +548,8 @@ const EditProfileScreen: React.FC = () => {
       let response;
 
       if (hasImage && formData.profileImage) {
-        // Use FormData for image upload
         const submitFormData = new FormData();
 
-        // Add basic fields
         submitFormData.append('name', formData.name.trim());
         submitFormData.append('email', formData.email.trim());
 
@@ -815,7 +563,6 @@ const EditProfileScreen: React.FC = () => {
           submitFormData.append('dob', formData.dob.toISOString());
         }
 
-        // Add address as JSON string
         const addressData: any = {};
         if (formData.address.street) addressData.street = formData.address.street;
         if (formData.address.city) addressData.city = formData.address.city;
@@ -834,26 +581,16 @@ const EditProfileScreen: React.FC = () => {
           submitFormData.append('address', JSON.stringify(addressData));
         }
 
-        // Add profile image file
         const imageFile: any = {
           uri: formData.profileImage.uri,
           type: formData.profileImage.type || 'image/jpeg',
           name: formData.profileImage.name || `profile_${Date.now()}.jpg`,
         };
 
-        console.log('[Upload] Preparing image for upload:', {
-          uri: imageFile.uri,
-          type: imageFile.type,
-          name: imageFile.name,
-        });
-
         submitFormData.append('profileImage', imageFile);
 
-        console.log('[Upload] Starting profile update with image...');
         response = await updateUserProfile(submitFormData, true);
-        console.log('[Upload] Profile update successful');
       } else {
-        // Use JSON for no image upload
         const jsonData: any = {
           name: formData.name.trim(),
           email: formData.email.trim(),
@@ -863,7 +600,6 @@ const EditProfileScreen: React.FC = () => {
         if (formData.age) jsonData.age = parseInt(formData.age, 10);
         if (formData.dob) jsonData.dob = formData.dob.toISOString();
 
-        // Add address object
         const addressData: any = {};
         if (formData.address.street) addressData.street = formData.address.street;
         if (formData.address.city) addressData.city = formData.address.city;
@@ -907,21 +643,11 @@ const EditProfileScreen: React.FC = () => {
         );
       }
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        code: error.code,
-      });
-
-      // Check error type
       const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
       const isNetworkError = error.message === 'Network Error' || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK';
-      const isTimeoutError = error.code === 'ECONNABORTED' || errorMessage.toLowerCase().includes('timeout');
       const isImageUploadError = errorMessage.toLowerCase().includes('upload preset') ||
         errorMessage.toLowerCase().includes('cloudinary');
 
-      // Handle network errors specifically
       if (isNetworkError && hasImage) {
         Alert.alert(
           'Network Error',
@@ -937,7 +663,6 @@ const EditProfileScreen: React.FC = () => {
                 try {
                   setLoading(true);
 
-                  // Retry without image
                   const jsonData: any = {
                     name: formData.name.trim(),
                     email: formData.email.trim(),
@@ -985,7 +710,6 @@ const EditProfileScreen: React.FC = () => {
                     Alert.alert('Update Failed', retryResponse.message || 'Failed to update profile');
                   }
                 } catch (retryError: any) {
-                  console.error('Retry without image failed:', retryError);
                   Alert.alert('Update Failed', 'Could not update profile. Please check your connection and try again.');
                 } finally {
                   setLoading(false);
@@ -995,7 +719,6 @@ const EditProfileScreen: React.FC = () => {
           ]
         );
       } else if (isImageUploadError && hasImage) {
-        // Handle Cloudinary-specific errors
         Alert.alert(
           'Image Upload Failed',
           'The server is having trouble uploading images. Would you like to update your profile without changing the picture?',
@@ -1010,7 +733,6 @@ const EditProfileScreen: React.FC = () => {
                 try {
                   setLoading(true);
 
-                  // Retry without image
                   const jsonData: any = {
                     name: formData.name.trim(),
                     email: formData.email.trim(),
@@ -1058,7 +780,6 @@ const EditProfileScreen: React.FC = () => {
                     Alert.alert('Update Failed', retryResponse.message || 'Failed to update profile');
                   }
                 } catch (retryError: any) {
-                  console.error('Retry without image failed:', retryError);
                   Alert.alert('Update Failed', 'Could not update profile. Please try again later.');
                 } finally {
                   setLoading(false);
@@ -1127,7 +848,7 @@ const EditProfileScreen: React.FC = () => {
         barStyle={isDark ? 'light-content' : 'dark-content'}
       />
 
-      {/* Header */}
+      { }
       <View
         className="flex-row items-center justify-between px-4 border-b"
         style={[
@@ -1166,7 +887,7 @@ const EditProfileScreen: React.FC = () => {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Profile Image Section */}
+        { }
         <View
           className="m-4 p-5 rounded-2xl items-center"
           style={[
@@ -1181,7 +902,7 @@ const EditProfileScreen: React.FC = () => {
             Profile Picture
           </Text>
 
-          {/* Circular Avatar */}
+          { }
           <View className="items-center mb-4">
             <View className="relative">
               {profileImageUri ? (
@@ -1206,7 +927,7 @@ const EditProfileScreen: React.FC = () => {
                 </View>
               )}
 
-              {/* Camera Badge */}
+              { }
               <View
                 className="absolute items-center justify-center"
                 style={[
@@ -1223,9 +944,9 @@ const EditProfileScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Action Buttons Row */}
+          { }
           <View className="flex-row gap-3 w-full">
-            {/* Choose Photo Button */}
+            { }
             <TouchableOpacity
               className="flex-1 flex-row items-center justify-center px-4 py-3 rounded-xl"
               style={{
@@ -1252,7 +973,7 @@ const EditProfileScreen: React.FC = () => {
               )}
             </TouchableOpacity>
 
-            {/* Take Photo Button */}
+            { }
             <TouchableOpacity
               className="flex-1 flex-row items-center justify-center px-4 py-3 rounded-xl"
               style={{
@@ -1274,7 +995,7 @@ const EditProfileScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Helper Text */}
+          { }
           <Text
             className="text-xs text-center mt-3"
             style={{ color: isDark ? COLORS.gray : COLORS.gray }}
@@ -1283,7 +1004,7 @@ const EditProfileScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Basic Information */}
+        { }
         <View
           className="m-4 p-5 rounded-2xl"
           style={[
@@ -1333,7 +1054,7 @@ const EditProfileScreen: React.FC = () => {
             keyboardType="numeric"
           />
 
-          {/* Date of Birth */}
+          { }
           <View className="mb-5">
             <Text
               className="text-sm font-semibold mb-2"
@@ -1368,7 +1089,7 @@ const EditProfileScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Address Information */}
+        { }
         <View
           className="m-4 p-5 rounded-2xl"
           style={[
@@ -1439,7 +1160,7 @@ const EditProfileScreen: React.FC = () => {
             placeholder="Enter country"
           />
 
-          {/* Location Section */}
+          { }
           <View className="mb-5">
             <View className="flex-row items-center justify-between mb-4">
               <Text
@@ -1476,7 +1197,7 @@ const EditProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Submit Button */}
+        { }
         <TouchableOpacity
           className="m-4 rounded-2xl overflow-hidden"
           style={[
@@ -1504,7 +1225,7 @@ const EditProfileScreen: React.FC = () => {
         <View style={{ height: 30 }} />
       </ScrollView>
 
-      {/* Camera Preview Modal */}
+      { }
       <Modal
         visible={showCameraPreview}
         animationType="slide"
@@ -1520,7 +1241,7 @@ const EditProfileScreen: React.FC = () => {
             barStyle={isDark ? 'light-content' : 'dark-content'}
           />
 
-          {/* Header */}
+          { }
           <View
             className="px-4 py-4 border-b"
             style={[
@@ -1536,7 +1257,7 @@ const EditProfileScreen: React.FC = () => {
             </Text>
           </View>
 
-          {/* Image Preview */}
+          { }
           <View className="flex-1 items-center justify-center p-4">
             {cameraPreviewUri ? (
               <Image
@@ -1561,7 +1282,7 @@ const EditProfileScreen: React.FC = () => {
             )}
           </View>
 
-          {/* Action Buttons */}
+          { }
           <View
             className="px-4 py-6 border-t"
             style={[
@@ -1570,7 +1291,7 @@ const EditProfileScreen: React.FC = () => {
             ]}
           >
             <View className="flex-row gap-4">
-              {/* Retake Button */}
+              { }
               <TouchableOpacity
                 className="flex-1 flex-row items-center justify-center py-4 rounded-2xl"
                 style={{ backgroundColor: isDark ? COLORS.darkBgLight : COLORS.lightGray }}
@@ -1590,7 +1311,7 @@ const EditProfileScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Use Photo Button */}
+              { }
               <TouchableOpacity
                 className="flex-1 flex-row items-center justify-center py-4 rounded-2xl overflow-hidden"
                 onPress={handleAcceptPhoto}
@@ -1612,7 +1333,7 @@ const EditProfileScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Helper Text */}
+            { }
             <Text
               className="text-xs text-center mt-4"
               style={{ color: isDark ? COLORS.gray : COLORS.gray }}
@@ -1692,7 +1413,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(32),
   },
 
-  // Camera Preview Modal Styles
   modalHeader: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
     borderBottomWidth: 1,

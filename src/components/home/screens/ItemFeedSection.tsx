@@ -15,7 +15,6 @@ import { useNavigation } from '@react-navigation/native';
 
 import { useItemFeed } from '../../../hooks/useItemFeed';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
 import { ItemFeedItem } from '../../../api/types';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -26,7 +25,7 @@ const { width: screenWidth } = Dimensions.get('window');
 const PADDING_H = 12;
 const GAP = 12;
 const CARD_WIDTH = (screenWidth - (PADDING_H * 2) - GAP) / 2;
-const CARD_HEIGHT = 265;
+const CARD_HEIGHT = 290;
 
 // ============================================================================
 // DYNAMIC PULSING SKELETON
@@ -59,16 +58,24 @@ const SkeletonBlock = memo(({ width, height, borderRadius, style, isDark }: any)
 
 const FeedSkeletonCard = memo(({ isDark }: { isDark: boolean }) => (
     <View
-        style={{ width: CARD_WIDTH, height: CARD_HEIGHT, marginRight: GAP }}
-        className={`rounded-2xl overflow-hidden ${isDark ? 'bg-[#1E2028]' : 'bg-white'}`}
+        style={{
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            marginRight: GAP,
+            borderRadius: 16,
+            overflow: 'hidden',
+            backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
+            borderWidth: 1,
+            borderColor: isDark ? '#2D3038' : '#E5E7EB',
+        }}
     >
-        <SkeletonBlock height={145} width="100%" borderRadius={0} isDark={isDark} />
-        <View className="p-3 justify-between flex-1">
+        <SkeletonBlock height={135} width="100%" borderRadius={0} isDark={isDark} />
+        <View style={{ padding: 12, justifyContent: 'space-between', flex: 1 }}>
             <View>
                 <SkeletonBlock height={12} width="40%" isDark={isDark} style={{ marginBottom: 8 }} />
                 <SkeletonBlock height={16} width="90%" isDark={isDark} style={{ marginBottom: 6 }} />
             </View>
-            <View className="flex-row justify-between items-center">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <SkeletonBlock height={22} width="50%" isDark={isDark} />
                 <SkeletonBlock height={32} width={32} borderRadius={16} isDark={isDark} />
             </View>
@@ -90,18 +97,11 @@ interface ItemCardProps {
 const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) => {
     const hasDiscount = item.itemDiscount && item.itemDiscount > 0;
 
-    // "Force Sale" Logic: Treat higher price as original/strikethrough
     const p1 = Number(item.itemInitialPrice) || 0;
     const p2 = Number(item.itemFinalPrice) || 0;
-
-    // Find distinct prices
     const distinct = p1 > 0 && p2 > 0 && p1 !== p2;
-
-    // Always set higher as Strikethrough, Lower as Main
     const higherPrice = Math.max(p1, p2);
     const lowerPrice = (p1 > 0 && p2 > 0) ? Math.min(p1, p2) : Math.max(p1, p2);
-
-    // Limit to max 2 decimals (e.g., 5.00 -> 5, 5.555 -> 5.56)
     const savings = parseFloat((higherPrice - lowerPrice).toFixed(2));
     const showSavings = distinct && savings > 0;
 
@@ -109,11 +109,15 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
         <TouchableOpacity
             activeOpacity={0.92}
             onPress={onPress}
-            className={`mr-3 rounded-2xl overflow-hidden ${isDark ? 'bg-[#1E2028] border border-[#2D3038]' : 'bg-white'
-                }`}
             style={{
                 width: CARD_WIDTH,
                 height: CARD_HEIGHT,
+                marginRight: 12,
+                borderRadius: 16,
+                overflow: 'hidden',
+                backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? '#2D3038' : '#E5E7EB',
                 ...Platform.select({
                     ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 },
                     android: { elevation: 4 },
@@ -122,19 +126,49 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
         >
             {/* IMAGE AREA */}
             <View
-                className="w-full justify-center items-center bg-white relative p-3"
-                style={{ height: 145 }}
+                style={{
+                    width: '100%',
+                    height: 135,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: '#FFFFFF',
+                    position: 'relative',
+                    padding: 12,
+                }}
             >
                 {item.image ? (
-                    <Image source={{ uri: item.image }} className="w-full h-full" resizeMode="contain" />
+                    <Image
+                        source={{ uri: item.image }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="contain"
+                    />
                 ) : (
                     <Icon name="medkit" size={40} color={isDark ? '#4B5563' : '#E5E7EB'} />
                 )}
 
                 {/* Discount Pill */}
                 {hasDiscount && (
-                    <View className="absolute top-2.5 left-2.5 bg-[#3ab45aff] px-2 py-1 rounded-lg z-10 shadow-sm">
-                        <Text className="text-white text-[9px] font-extrabold tracking-wide">
+                    <View style={{
+                        position: 'absolute',
+                        top: 10,
+                        left: 10,
+                        backgroundColor: '#3ab45aff',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 8,
+                        zIndex: 10,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                        elevation: 2,
+                    }}>
+                        <Text style={{
+                            color: '#FFFFFF',
+                            fontSize: 9,
+                            fontWeight: '800',
+                            letterSpacing: 0.5,
+                        }}>
                             {item.itemDiscount}% OFF
                         </Text>
                     </View>
@@ -143,27 +177,65 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
                 {/* Wishlist Heart */}
                 <TouchableOpacity
                     activeOpacity={0.7}
-                    className={`absolute top-2.5 right-2.5 w-[30px] h-[30px] rounded-full items-center justify-center z-10 ${isDark ? 'bg-[#1E2028]/60' : 'bg-white/90'
-                        } shadow-sm`}
+                    style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        width: 30,
+                        height: 30,
+                        borderRadius: 15,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10,
+                        backgroundColor: isDark ? 'rgba(30, 32, 40, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                        elevation: 2,
+                    }}
                 >
                     <Icon name="heart-outline" size={16} color={isDark ? '#FFFFFF' : '#EF4444'} />
                 </TouchableOpacity>
             </View>
 
             {/* INFO AREA */}
-            <View className="px-3 pt-3 pb-3 flex-1 flex-col justify-between">
+            <View style={{
+                paddingHorizontal: 10,
+                paddingTop: 10,
+                paddingBottom: 10,
+                flex: 1,
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+            }}>
                 <View>
                     {/* Code & Rating Row */}
-                    <View className="flex-row items-center justify-between mb-1">
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: 4
+                    }}>
                         <Text
-                            className="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+                            style={{
+                                fontSize: 10,
+                                fontWeight: '700',
+                                color: isDark ? '#9CA3AF' : '#9CA3AF',
+                                textTransform: 'uppercase',
+                                letterSpacing: 1.5
+                            }}
                             numberOfLines={1}
                         >
                             {item.code || 'PRODUCT'}
                         </Text>
-                        <View className="flex-row items-center">
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Icon name="star" size={12} color="#FBBF24" />
-                            <Text className="ml-1 text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                            <Text style={{
+                                marginLeft: 4,
+                                fontSize: 11,
+                                fontWeight: '700',
+                                color: isDark ? '#9CA3AF' : '#4B5563'
+                            }}>
                                 {item.itemRatings ? item.itemRatings.toFixed(1) : '0.0'}
                             </Text>
                         </View>
@@ -171,9 +243,15 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
 
                     {/* Title */}
                     <Text
-                        className="text-[15px] font-bold text-gray-900 dark:text-white leading-5 mb-1"
                         numberOfLines={2}
-                        style={{ letterSpacing: 0.1 }}
+                        style={{
+                            fontSize: 14,
+                            fontWeight: '700',
+                            color: isDark ? '#FFFFFF' : '#111827',
+                            lineHeight: 18,
+                            marginBottom: 3,
+                            letterSpacing: 0.1
+                        }}
                     >
                         {item.itemName}
                     </Text>
@@ -181,20 +259,39 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
 
                 {/* Price Section */}
                 <View>
-                    {/* Savings Text (ABOVE PRICE) */}
                     {showSavings && (
-                        <Text className="text-[12px] font-bold text-green-600 mb-0 ml-0.5">
+                        <Text style={{
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: isDark ? '#10B981' : '#059669',
+                            marginBottom: 3,
+                            marginLeft: 0
+                        }}>
                             Save ₹{savings}
                         </Text>
                     )}
 
-                    <View className="flex-row items-end justify-between">
-                        <View className="flex-row items-baseline">
-                            <Text className="text-[18px] font-extrabold text-gray-900 dark:text-white">
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'flex-end',
+                        justifyContent: 'space-between'
+                    }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                            <Text style={{
+                                fontSize: 17,
+                                fontWeight: '800',
+                                color: isDark ? '#FFFFFF' : '#111827'
+                            }}>
                                 ₹{lowerPrice}
                             </Text>
                             {showSavings && (
-                                <Text className="text-[11px] text-gray-400 line-through ml-1.5 font-medium">
+                                <Text style={{
+                                    fontSize: 11,
+                                    color: '#9CA3AF',
+                                    textDecorationLine: 'line-through',
+                                    marginLeft: 5,
+                                    fontWeight: '500'
+                                }}>
                                     ₹{higherPrice}
                                 </Text>
                             )}
@@ -202,8 +299,19 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
 
                         <TouchableOpacity
                             activeOpacity={0.85}
-                            className="w-9 h-9 rounded-full items-center justify-center shadow-sm"
-                            style={{ backgroundColor: accentColor }}
+                            style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 18,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: accentColor,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 2,
+                                elevation: 2,
+                            }}
                         >
                             <Icon name="bag-add-outline" size={20} color="#FFFFFF" />
                         </TouchableOpacity>
@@ -220,7 +328,7 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress }) =>
 
 const HorizontalRow = memo(({ items, isDark, accentColor, handlePress }: { items: ItemFeedItem[], isDark: boolean, accentColor: string, handlePress: (item: ItemFeedItem) => void }) => {
     return (
-        <View className="mb-3">
+        <View style={{ marginBottom: 12 }}>
             <FlatList
                 horizontal
                 data={items}
@@ -275,29 +383,50 @@ const ItemFeedSection = () => {
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
         >
-            <View className="flex-row justify-between items-end px-4 mb-2 pt-2">
+            <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                paddingHorizontal: 16,
+                marginBottom: 8,
+                paddingTop: 8
+            }}>
                 <View>
                     <Text
-                        className="text-xl font-bold text-gray-900 dark:text-white"
-                        style={{ letterSpacing: -0.5 }}
+                        style={{
+                            fontSize: 20,
+                            fontWeight: '700',
+                            color: isDark ? '#FFFFFF' : '#111827',
+                            letterSpacing: -0.5
+                        }}
                     >
                         Shop Now
                     </Text>
-                    <Text className="text-xs text-gray-500 font-medium mt-0.5">
+                    <Text style={{
+                        fontSize: 12,
+                        color: isDark ? '#9CA3AF' : '#6B7280',
+                        fontWeight: '500',
+                        marginTop: 2
+                    }}>
                         Curated just for you
                     </Text>
                 </View>
                 <TouchableOpacity onPress={() => navigation.navigate('AllProducts', { type: 'feed' })}>
-                    <Text style={{ color: accentColor }} className="text-sm font-bold capitalize">
+                    <Text style={{
+                        color: accentColor,
+                        fontSize: 14,
+                        fontWeight: '700',
+                        textTransform: 'capitalize'
+                    }}>
                         View All
                     </Text>
                 </TouchableOpacity>
             </View>
 
-            <View className="pb-4">
+            <View style={{ paddingBottom: 16 }}>
                 {isLoading ? (
                     skeletonRows.map((row) => (
-                        <View key={`skel-row-${row}`} className="mb-3">
+                        <View key={`skel-row-${row}`} style={{ marginBottom: 12 }}>
                             <FlatList
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
@@ -323,7 +452,7 @@ const ItemFeedSection = () => {
                 )}
             </View>
 
-            <View className="h-4" />
+            <View style={{ height: 16 }} />
         </LinearGradient>
     );
 };

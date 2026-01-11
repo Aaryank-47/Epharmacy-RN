@@ -50,7 +50,6 @@ export const useRefreshControl = ({
       if (onRefresh && onRefresh.length > 0) {
         await Promise.all(onRefresh.map(fn => fn().catch(err => {
           // Individual API fail ho to baki sab chale
-          console.error('[useRefreshControl] Refresh API error:', err);
           return null;
         })));
       }
@@ -65,8 +64,7 @@ export const useRefreshControl = ({
         );
       }
     } catch (error) {
-      console.error('[useRefreshControl] Refresh failed:', error);
-    } finally {
+      } finally {
       setIsRefreshing(false);
     }
   }, [isRefreshing, minRefreshTime, onRefresh]);

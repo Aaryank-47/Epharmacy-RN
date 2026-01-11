@@ -15,15 +15,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 
-// Constants
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HEADER_BASE_HEIGHT = 28;
 const LOGO_LETTERS = ['M', 'E', 'D', 'I', 'C', 'A', 'R', 'E', '+'] as const;
 
-// Types
 type LogoLetterType = typeof LOGO_LETTERS[number];
 
-// Define your navigation types
 type RootStackParamList = {
   Home: undefined;
   CheckoutPage: undefined;
@@ -33,12 +30,10 @@ type RootStackParamList = {
   ForgotPassword: undefined;
   Profile: undefined;
   Notifications: undefined;
-  // Add other screens as needed
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Interface for LogoLetter component
 interface LogoLetterProps {
   letter: LogoLetterType;
   index: number;
@@ -46,13 +41,11 @@ interface LogoLetterProps {
   isDark: boolean;
 }
 
-// Gradient Colors - Matching app theme
 const GRADIENT_COLORS = {
   light: ['#FFFFFF', '#F3F4F6'] as [string, string], // White to gray-100
   dark: ['#000000', '#2A2D35'] as [string, string], // Dark task bar to lighter dark
 };
 
-// Text Colors - Matching useThemePalette
 const TEXT_COLORS = {
   light: {
     primary: '#0e0e0eff',
@@ -66,7 +59,7 @@ const TEXT_COLORS = {
   },
 } as const;
 
-// Memoized Logo Letter Component
+
 const LogoLetter = memo<LogoLetterProps>(({ letter, index, translateY, isDark }) => {
   const isPrimary = index < 4;
   const colors = TEXT_COLORS[isDark ? 'dark' : 'light'];
@@ -86,13 +79,11 @@ const LogoLetter = memo<LogoLetterProps>(({ letter, index, translateY, isDark })
 
 LogoLetter.displayName = 'LogoLetter';
 
-// Main Header Component
 const HeaderScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { isDark } = useThemePalette();
   const insets = useSafeAreaInsets();
 
-  // Create animated values
   const logoAnimations = useRef<Animated.Value[]>(
     Array.from({ length: LOGO_LETTERS.length }, () => new Animated.Value(-100))
   ).current;
@@ -100,10 +91,8 @@ const HeaderScreen: React.FC = () => {
   const leftLogoAnim = useRef(new Animated.Value(-50)).current;
   const rightIconsAnim = useRef(new Animated.Value(50)).current;
 
-  // Animation cleanup ref
   const animationRefs = useRef<Animated.CompositeAnimation[]>([]);
 
-  // Calculate header height
   const statusBarHeight = useMemo(() =>
     Platform.select({
       android: StatusBar.currentHeight || 24,
@@ -118,9 +107,8 @@ const HeaderScreen: React.FC = () => {
     [statusBarHeight]
   );
 
-  // Animation setup
   useEffect(() => {
-    // Create letter animations
+
     const letterAnimations = logoAnimations.map((anim, index) =>
       Animated.timing(anim, {
         toValue: 0,
@@ -130,7 +118,6 @@ const HeaderScreen: React.FC = () => {
       })
     );
 
-    // Create side animations
     const sideAnimations = [
       Animated.timing(leftLogoAnim, {
         toValue: 0,
@@ -146,7 +133,6 @@ const HeaderScreen: React.FC = () => {
       }),
     ];
 
-    // Combine all animations
     const allAnimations = [...letterAnimations, ...sideAnimations];
     animationRefs.current = allAnimations;
 
@@ -158,12 +144,12 @@ const HeaderScreen: React.FC = () => {
       animationRefs.current.forEach(anim => anim.stop());
       animationRefs.current = [];
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Navigation handlers
-  const handleCartPress = useCallback(() => {
-    navigation.navigate('CheckoutPage');
-  }, [navigation]);
+  // const handleCartPress = useCallback(() => {
+  //   navigation.navigate('CheckoutPage');
+  // }, [navigation]);
 
   const handleSearchPress = useCallback(() => {
     navigation.navigate('Search');
@@ -211,7 +197,7 @@ const HeaderScreen: React.FC = () => {
         justifyContent: 'space-between',
       }}
     >
-      {/* Left Side Profile Avatar */}
+
       <Animated.View
         style={{
           transform: [{ translateX: leftLogoAnim }, { translateY: -4 }],
@@ -235,7 +221,6 @@ const HeaderScreen: React.FC = () => {
 
       </Animated.View>
 
-      {/* Center Animated Logo */}
       <View
         style={{
           flex: 1,
@@ -258,7 +243,6 @@ const HeaderScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Right Side Icons */}
       <Animated.View
         style={{
           transform: [{ translateX: rightIconsAnim }, { translateY: -15 }],
@@ -297,5 +281,4 @@ const HeaderScreen: React.FC = () => {
   );
 };
 
-// Performance optimization
 export default memo(HeaderScreen);

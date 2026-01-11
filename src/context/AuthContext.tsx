@@ -99,7 +99,6 @@ const decodeJWT = (
     // Parse the decoded JSON
     return JSON.parse(decoded);
   } catch (error) {
-    console.warn('[AuthContext] Failed to decode JWT:', error);
     return null;
   }
 };
@@ -188,7 +187,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             if (isMounted) setIsInitialized(true);
           }, AUTH_INIT_DELAY_MS);
         } catch (parseError) {
-          console.error('[AuthContext] Failed to parse user data:', parseError);
           await AsyncStorage.multiRemove([
             STORAGE_KEYS.TOKEN,
             STORAGE_KEYS.USER,
@@ -198,7 +196,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           setIsInitialized(true);
         }
       } catch (error) {
-        console.error('[AuthContext] Initialization failed:', error);
         dispatch(clearSession());
         setIsInitialized(true);
       }
@@ -237,7 +234,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         // Update Redux state
         dispatch(setCredentials(payload));
       } catch (error) {
-        console.error('[AuthContext] Login failed:', error);
         throw error;
       }
     },
@@ -263,7 +259,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Clear Redux state
       dispatch(clearSession());
     } catch (error) {
-      console.error('[AuthContext] Logout failed:', error);
       // Ensure Redux is cleared even if storage fails
       dispatch(clearSession());
     }

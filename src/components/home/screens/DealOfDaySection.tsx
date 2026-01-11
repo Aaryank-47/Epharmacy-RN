@@ -13,15 +13,11 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { useDealsOfTheDay } from '../../../hooks/useDealsOfTheDay';
-import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// ============================================================================
-// SKELETON SHIMMER COMPONENT (Generic - Matches CategoriesSection)
-// ============================================================================
 interface SkeletonShimmerProps {
   width: number | string;
   height: number;
@@ -59,6 +55,8 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
     outputRange: [0.3, 0.8],
   });
 
+  const { isDark } = useThemePalette();
+
   return (
     <Animated.View
       style={[
@@ -67,25 +65,28 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
           height,
           borderRadius,
           opacity,
+          backgroundColor: isDark ? '#374151' : '#E5E7EB',
         },
         style,
       ]}
-      className="bg-gray-200 dark:bg-gray-700"
     />
   );
 };
 
-// ============================================================================
-// DEAL OF DAY SECTION
-// ============================================================================
 const DealOfDaySection: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isDark, accentColor } = useThemePalette();
 
-  const { data: deals, isLoading, error } = useDealsOfTheDay();
+  const { data, isLoading, error } = useDealsOfTheDay();
+  const deals = data?.deals || [];
+  const totalDeals = data?.totalDeals || 0;
+
+  if (!isLoading && totalDeals < 3) {
+    return null;
+  }
 
   // Persistent shimmer logic
-  const showShimmer = isLoading || error || !deals || deals.length === 0;
+  const showShimmer = isLoading || error || deals.length === 0;
 
   const renderShimmerPlaceholders = () => (
     <FlatList
@@ -96,17 +97,23 @@ const DealOfDaySection: React.FC = () => {
       contentContainerStyle={{ paddingHorizontal: 12 }}
       renderItem={() => (
         <View
-          className="mr-3 bg-white dark:bg-[#1A1C23] rounded-xl p-2 border border-gray-100 dark:border-gray-800"
-          style={{ width: screenWidth * 0.46 }}
+          style={{
+            width: screenWidth * 0.46,
+            marginRight: 12,
+            backgroundColor: isDark ? '#1A1C23' : '#FFFFFF',
+            borderRadius: 12,
+            padding: 8,
+            borderWidth: 1,
+            borderColor: isDark ? '#2D3038' : '#F3F4F6',
+          }}
         >
-          {/* Image */}
+
           <SkeletonShimmer width="100%" height={120} borderRadius={8} />
 
-          {/* Title */}
+
           <SkeletonShimmer width="80%" height={14} borderRadius={4} style={{ marginTop: 12 }} />
 
-          {/* Price & Icon Row */}
-          <View className="flex-row justify-between items-center mt-3">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             <View>
               <SkeletonShimmer width={60} height={16} borderRadius={4} />
               <SkeletonShimmer width={40} height={10} borderRadius={4} style={{ marginTop: 4 }} />
@@ -120,12 +127,9 @@ const DealOfDaySection: React.FC = () => {
 
   const handleProductPress = (item: any) => {
     const itemId = item._id || item.id;
-    console.log('Product selected:', item.title || item.itemName, '| ID:', itemId);
 
     if (itemId) {
       navigation.navigate('ProductDetail', { productId: itemId });
-    } else {
-      console.warn('[DealOfDaySection] Product ID is undefined for item:', item);
     }
   };
 
@@ -134,23 +138,51 @@ const DealOfDaySection: React.FC = () => {
       colors={isDark ? ['#181A20', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
-      className="mt-0 py-6"
+      style={{ marginTop: 0, paddingVertical: 24 }}
     >
       {/* Header */}
-      <View className="mx-4 flex-row justify-between items-center mb-4">
-        <View className="flex-row items-center">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white italic tracking-tighter">
+      <View style={{
+        marginHorizontal: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{
+            fontSize: 20,
+            fontWeight: '700',
+            color: isDark ? '#FFFFFF' : '#111827',
+            fontStyle: 'italic',
+            letterSpacing: -0.5,
+          }}>
             DEAL OF THE DAY
           </Text>
           {/* Timer Badge */}
-          <View className="ml-3 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800">
-            <Text className="text-xs font-bold text-red-600 dark:text-red-400">
+          <View style={{
+            marginLeft: 12,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            backgroundColor: isDark ? 'rgba(127, 29, 29, 0.3)' : '#FEE2E2',
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: isDark ? '#991B1B' : '#FECACA',
+          }}>
+            <Text style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: isDark ? '#FCA5A5' : '#DC2626',
+            }}>
               Ends in 12:00:00
             </Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => console.log('View all deals')}>
-          <Text style={{ color: accentColor }} className="text-sm font-bold">
+        <TouchableOpacity onPress={() => {}}>
+          <Text style={{
+            color: accentColor,
+            fontSize: 14,
+            fontWeight: '700',
+          }}>
             View All
           </Text>
         </TouchableOpacity>
@@ -162,66 +194,122 @@ const DealOfDaySection: React.FC = () => {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={deals} // Ensure backend sends 10-12 items or slice here if needed: deals.slice(0, 12)
-          keyExtractor={(item) => item._id || item.itemName}
+          data={deals}
+          keyExtractor={(item) => item._id || item.itemName || String(Math.random())}
           contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 10 }}
           renderItem={({ item }) => (
             <TouchableOpacity
               activeOpacity={0.95}
               onPress={() => handleProductPress(item)}
-              className="mx-1.5 bg-white dark:bg-[#1A1C23] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden"
               style={{
-                width: screenWidth * 0.46, // ~2 cards per frame
+                width: screenWidth * 0.46,
+                marginHorizontal: 6,
+                backgroundColor: isDark ? '#1A1C23' : '#FFFFFF',
+                borderRadius: 12,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
                 elevation: 3,
+                borderWidth: 1,
+                borderColor: isDark ? '#2D3038' : '#E5E7EB',
+                overflow: 'hidden',
               }}
             >
               {/* Image Area - Compact & Clean */}
-              <View className="h-32 w-full bg-white p-2 justify-center items-center relative border-b border-gray-100 dark:border-gray-800">
+              <View style={{
+                height: 128,
+                width: '100%',
+                backgroundColor: '#FFFFFF',
+                padding: 8,
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'relative',
+                borderBottomWidth: 1,
+                borderBottomColor: isDark ? '#2D3038' : '#F3F4F6',
+              }}>
                 <Image
-                  source={{ uri: (item.itemImages && item.itemImages[0]) || item.imageUrl }}
-                  className="w-full h-full"
+                  source={{ uri: (item.itemImages && item.itemImages[0]) || '' }}
+                  style={{ width: '100%', height: '100%' }}
                   resizeMode="contain"
                 />
 
                 {/* Discount Badge - Minimalist */}
                 {item.itemDiscount && (
-                  <View className="absolute top-2 left-2 bg-red-600 px-1.5 py-0.5 rounded text-center">
-                    <Text className="text-white text-[10px] font-bold">
+                  <View style={{
+                    position: 'absolute',
+                    top: 8,
+                    left: 8,
+                    backgroundColor: '#DC2626',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    alignItems: 'center',
+                  }}>
+                    <Text style={{
+                      color: '#FFFFFF',
+                      fontSize: 10,
+                      fontWeight: '700',
+                    }}>
                       -{item.itemDiscount}%
                     </Text>
                   </View>
                 )}
               </View>
 
-              {/* Content Area */}
-              <View className="p-3">
-                {/* Title */}
+              <View style={{ padding: 12 }}>
                 <Text
                   numberOfLines={1}
-                  className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: isDark ? '#F3F4F6' : '#1F2937',
+                    marginBottom: 4,
+                  }}
                 >
-                  {item.itemName || item.title}
+                  {item.itemName}
                 </Text>
 
                 {/* Price & Action Row */}
-                <View className="flex-row items-center justify-between mt-1">
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 4,
+                }}>
                   <View>
-                    <Text className="text-base font-bold text-gray-900 dark:text-white">
-                      ₹{item.itemFinalPrice || item.price || 0}
+                    <Text style={{
+                      fontSize: 16,
+                      fontWeight: '700',
+                      color: isDark ? '#FFFFFF' : '#111827',
+                    }}>
+                      ₹{item.itemFinalPrice || 0}
                     </Text>
                     {item.itemInitialPrice && (
-                      <Text className="text-[10px] text-gray-400 line-through">
+                      <Text style={{
+                        fontSize: 10,
+                        color: '#9CA3AF',
+                        textDecorationLine: 'line-through',
+                      }}>
                         ₹{item.itemInitialPrice}
                       </Text>
                     )}
                   </View>
 
-
-
-                  {/* Add Button - Cart Icon */}
                   <TouchableOpacity
-                    style={{ backgroundColor: accentColor }}
-                    className="w-10 h-10 rounded-2xl items-center justify-center shadow-sm"
+                    style={{
+                      backgroundColor: accentColor,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                      elevation: 2,
+                    }}
                     onPress={() => handleProductPress(item)}
                   >
                     <Ionicons name="cart-outline" size={24} color="#FFFFFF" />

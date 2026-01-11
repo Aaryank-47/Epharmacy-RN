@@ -13,8 +13,8 @@ const loadIconFonts = (): void => {
     Ionicons.loadFont?.();
     fontsLoaded = true;
   } catch (error) {
-    console.warn("Failed to load icon fonts", error);
-  }
+    error;
+    }
 };
 
 export default loadIconFonts;

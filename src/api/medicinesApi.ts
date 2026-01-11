@@ -19,6 +19,22 @@ interface Medicine {
   category?: string;
 }
 
+interface DealItem {
+  _id: string;
+  itemName: string;
+  itemInitialPrice: number;
+  itemDiscount: number;
+  itemDescription?: string;
+  gstRate: number;
+  discountPrice: number;
+  gstAmount: number;
+  itemFinalPrice: number;
+  itemImages: string[];
+  itemCategory?: string;
+  itemCompany?: string;
+  updatedAt?: string;
+}
+
 
 
 interface Advertisement {
@@ -61,8 +77,6 @@ export const getFeaturedMedicines = async (): Promise<
     const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.catalog.featuredMedicines
     );
-    console.log('[medicinesApi] Featured medicines response:', response.data);
-
     // Handle different response structures from backend
     const data = response.data;
     const medicines = data?.data?.data || data?.data || data || [];
@@ -73,7 +87,6 @@ export const getFeaturedMedicines = async (): Promise<
       data: { data: Array.isArray(medicines) ? medicines : [] },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch featured medicines:', error);
     throw error;
   }
 };
@@ -85,8 +98,6 @@ export const getRunningAdvertisements = async (): Promise<
     const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.advertisements.running
     );
-    console.log('[medicinesApi] Running advertisements response:', response.data);
-
     // Handle different response structures from backend
     const data = response.data;
     const ads = data?.data?.data || data?.data || data || [];
@@ -97,7 +108,6 @@ export const getRunningAdvertisements = async (): Promise<
       data: { data: Array.isArray(ads) ? ads : [] },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch advertisements:', error);
     throw error;
   }
 };
@@ -117,7 +127,6 @@ export const trackAdvertisementClick = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to track advertisement click:', error);
     throw error;
   }
 };
@@ -135,7 +144,6 @@ export const updateUserProfile = async (
 
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to update user profile:', error);
     throw error;
   }
 };
@@ -149,22 +157,26 @@ export const getAllMedicines = async (): Promise<
     );
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch all medicines:', error);
     throw error;
   }
 };
 
 
+export interface DealsOfTheDayResponse {
+  deals: DealItem[];
+  totalDeals: number;
+  displayedDeals: number;
+}
+
 export const getDealsOfTheDay = async (): Promise<
-  ApiResponse<{ data: Medicine[] }>
+  ApiResponse<DealsOfTheDayResponse>
 > => {
   try {
-    const response = await httpClient.get<ApiResponse<{ data: Medicine[] }>>(
+    const response = await httpClient.get<ApiResponse<DealsOfTheDayResponse>>(
       API_ROUTES.items.dealsOfTheDay
     );
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch deals of the day:', error);
     throw error;
   }
 };
@@ -177,8 +189,6 @@ export const getTrendingMedicines = async (): Promise<
     const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.items.trending
     );
-    console.log('[medicinesApi] Trending medicines response:', response.data);
-
     // Handle response structure
     const data = response.data;
     const trending = data?.data || [];
@@ -189,7 +199,6 @@ export const getTrendingMedicines = async (): Promise<
       data: { data: Array.isArray(trending) ? trending : [] },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch trending medicines:', error);
     throw error;
   }
 };
@@ -204,7 +213,6 @@ export const getCategories = async (): Promise<
     );
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch categories:', error);
     throw error;
   }
 };
@@ -222,7 +230,6 @@ export const addCategoryToRecentlyViewed = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to add category to recently viewed:', error);
     throw error;
   }
 };
@@ -237,7 +244,6 @@ export const addItemToRecentlyViewed = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[medicinesApi] Failed to add item to recently viewed:', error);
     throw error;
   }
 };
@@ -249,8 +255,6 @@ export const getRecentlyViewedItems = async (): Promise<
     const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.recentlyViewed.get
     );
-    console.log('[medicinesApi] Recently viewed items response:', response.data);
-
     // Handle response structure
     const data = response.data;
     const items = data?.data || [];
@@ -261,7 +265,6 @@ export const getRecentlyViewedItems = async (): Promise<
       data: { data: Array.isArray(items) ? items : [] },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch recently viewed items:', error);
     throw error;
   }
 };
@@ -273,8 +276,6 @@ export const getRecentlyViewedCategories = async (): Promise<
     const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.recentlyViewed.getCategories
     );
-    console.log('[medicinesApi] Recently viewed categories response:', response.data);
-
     const data = response.data;
     const items = data?.data || [];
 
@@ -284,7 +285,6 @@ export const getRecentlyViewedCategories = async (): Promise<
       data: { data: Array.isArray(items) ? items : [] },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch recently viewed categories:', error);
     throw error;
   }
 };
@@ -300,8 +300,6 @@ export const getItemFeed = async (): Promise<
     const response = await httpClient.get<ApiResponse<any>>(
       API_ROUTES.items.itemFeed
     );
-    console.log('[medicinesApi] GetItemFeed response:', response.data);
-
     // Handle response structure
     const data = response.data;
     const items = data?.data || [];
@@ -312,7 +310,6 @@ export const getItemFeed = async (): Promise<
       data: { data: Array.isArray(items) ? items : [] },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch item feed:', error);
     throw error;
   }
 };
@@ -328,8 +325,6 @@ export const getItemDetails = async (
     const response = await httpClient.get<ApiResponse<any>>(
       `${API_ROUTES.items.details}/${itemId}`
     );
-    console.log('[medicinesApi] GetItemDetails response:', response.data);
-
     const data = response.data;
     const item = data?.data || {};
 
@@ -339,7 +334,6 @@ export const getItemDetails = async (
       data: { data: item },
     };
   } catch (error) {
-    console.error('[medicinesApi] Failed to fetch item details:', error);
     throw error;
   }
 };

@@ -104,10 +104,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
   // Track Recently Viewed
   React.useEffect(() => {
     if (productId) {
-      console.log('[ProductDetail] Tracking view for:', productId);
       addItemToRecentlyViewed(productId)
-        .then(() => console.log('[ProductDetail] Successfully added to recently viewed:', productId))
-        .catch((err) => console.error('[ProductDetail] Failed to track view:', err));
+        .then(() => {})
+        .catch(() => {});
     }
   }, [productId]);
 
@@ -178,8 +177,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
 
   const handleShare = (platform: string) => {
     setShowShareOptions(false);
-    console.log(`Sharing product on ${platform}`);
-  };
+    };
 
   const renderImage: ListRenderItem<string> = ({ item }) => (
     <View className="items-center justify-center p-2" style={{ width: screenWidth, height: screenWidth * 0.80 }}>
@@ -679,10 +677,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
           </Animated.View>
           <ShareOverlay
             onClose={() => setShowShareArcOverlay(false)}
-            onShareWhatsapp={() => console.log('Share WA')}
-            onShareInsta={() => console.log('Share Insta')}
-            onShareFB={() => console.log('Share FB')}
-            onShareTelegram={() => console.log('Share TG')}
+            onShareWhatsapp={() => {}}
+            onShareInsta={() => {}}
+            onShareFB={() => {}}
+            onShareTelegram={() => {}}
           />
         </View>
       )}

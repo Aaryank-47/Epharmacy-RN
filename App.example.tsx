@@ -33,7 +33,7 @@ const App = () => {
         [
           {
             text: 'OK',
-            onPress: () => console.log('Notification dismissed'),
+            onPress: () => ,
           },
         ]
       );
@@ -41,20 +41,15 @@ const App = () => {
     
     // Handle notification taps (background/quit state)
     onNotificationOpened: (message) => {
-      console.log('Notification opened:', message);
-      
       // Navigate based on notification data
       if (message.data?.screen) {
         // navigation.navigate(message.data.screen, { id: message.data.id });
-        console.log('Navigate to:', message.data.screen);
-      }
+        }
     },
   });
 
   useEffect(() => {
     if (token) {
-      console.log('✅ FCM Token received:', token);
-      
       // Optional: Subscribe to topics
       // subscribeToTopic('all-users');
       // subscribeToTopic('promotions');
@@ -63,8 +58,7 @@ const App = () => {
 
   useEffect(() => {
     if (error) {
-      console.error('❌ Notification error:', error);
-    }
+      }
   }, [error]);
 
   if (loading) {

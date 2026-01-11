@@ -1,33 +1,37 @@
 import { useQuery } from '@tanstack/react-query';
-import { getDealsOfTheDay } from '../api/medicinesApi';
+import { getDealsOfTheDay, DealsOfTheDayResponse } from '../api/medicinesApi';
 
 export const useDealsOfTheDay = () => {
-  return useQuery({
+  return useQuery<DealsOfTheDayResponse>({
     queryKey: ['dealsOfTheDay'],
     queryFn: async () => {
       const response = await getDealsOfTheDay();
       
-      // Robust data extraction
+      // Extract data from response
       const data = response.data;
       
-      if (data && Array.isArray(data)) {
-          return data;
-      }
-      
-      // Handle nested data structure if present (common in this API)
-      if (data && typeof data === 'object' && 'data' in data) {
-           const innerData = (data as any).data;
-           if (Array.isArray(innerData)) return innerData;
+      // Handle the new response structure
+      if (data && typeof data === 'object' && 'deals' in data) {
+        return {
+          deals: data.deals || [],
+          totalDeals: data.totalDeals || 0,
+          displayedDeals: data.displayedDeals || 0,
+        };
       }
 
-      return [];
+      // Fallback for empty response
+      return {
+        deals: [],
+        totalDeals: 0,
+        displayedDeals: 0,
+      };
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
     retry: true,
     retryDelay: 3000,
     refetchInterval: (query) => {
       // Poll if no data found yet
-      if (!query.state.data || (Array.isArray(query.state.data) && query.state.data.length === 0)) {
+      if (!query.state.data || query.state.data.totalDeals === 0) {
         return 3000;
       }
       return false;

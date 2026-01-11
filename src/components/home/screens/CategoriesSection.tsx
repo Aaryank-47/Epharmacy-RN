@@ -1,11 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
-  useColorScheme,
   Animated,
   Image,
   StyleProp,
@@ -14,7 +12,6 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useCategories } from '../../../hooks/useCategories';
-import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { addCategoryToRecentlyViewed } from '../../../api/medicinesApi';
 
@@ -81,30 +78,19 @@ interface Category {
 }
 
 const CategoriesSection: React.FC = () => {
-  const { isDark, accentColor } = useThemePalette();
-  const navigation = useNavigation();
+  const { isDark } = useThemePalette();
+  const [Error, setError] = useState<any>(null);
   const { width: screenWidth } = useWindowDimensions();
-
-  const { data: items, isLoading, error } = useCategories();
-
-  // Show shimmer if loading OR if we have an error (retry logic handles refetching) OR if data is empty
-  // The user wants to keep showing shimmer until data is found
-  const showShimmer = isLoading || error || !items || items.length === 0;
-
-  // Calculate Item Width for 4 items per row
-  // Padding Horizontal = 8 (left) + 8 (right) = 16
+  const { data: items, isLoading, error: categoriesError } = useCategories();
+  const showShimmer = isLoading || categoriesError || !items || items.length === 0;
   const ITEM_WIDTH = (screenWidth - 16) / 4;
 
-  const handleSelectCategory = async (categoryId: string, categoryName: string) => {
-    // Navigate to category page or filter
-    console.log('Selected category:', categoryName);
+  const handleSelectCategory = async (categoryId: string, _categoryName?: string) => {
     try {
       await addCategoryToRecentlyViewed(categoryId);
-      console.log('[CategoriesSection] Added to recently viewed:', categoryId);
     } catch (error) {
-      console.error('[CategoriesSection] Error adding to recently viewed:', error);
+      setError(error);
     }
-    // navigation.navigate('Category', { name: categoryName });
   };
 
   const renderList = (list: Category[]) => (

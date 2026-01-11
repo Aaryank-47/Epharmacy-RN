@@ -25,7 +25,7 @@ import ActionGrid from './ActionGrid';
 import PrivacyTermsPage from './PrivacyTermsPage';
 import { notificationService } from '../../services/notificationService';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import { RefreshControlWrapper } from '../../components/RefreshControlWrapper';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import RecentlyViewedSection from '../../components/home/screens/RecentlyViewedSection';
 import RecentlyViewedCategory from '../../components/home/screens/RecentlyViewedCategory';
 
@@ -111,42 +111,27 @@ const ProfilePage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
   // Fetch user profile data with React Query
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: async () => {
-      const response = await getUserProfile();
+  const { data: apiData, isLoading, isError, error, refetch, isRefetching } = useUserProfile();
 
-      if (!response.success || !response.data) {
-        throw new Error(response.message || 'Failed to load profile');
-      }
+  const userData: UserData = useMemo(() => {
+    if (!apiData) return initialUserData;
 
-      // Map API response to UserData interface
-      const apiData: UserProfilePayload = response.data;
-      const mappedUserData: UserData = {
-        name: apiData.name,
-        email: apiData.email,
-        phone: apiData.phone,
-        age: apiData.age,
-        dob: apiData.dob,
-        role: apiData.role,
-        address: apiData.address,
-        profileImage: apiData.profileImage,
-        wishlistCount: apiData.wishlistCount,
-        viewedItemsCount: apiData.viewedItemsCount,
-        itemsPurchasedCount: apiData.itemsPurchasedCount,
-        lastLogin: apiData.lastLogin,
-        fcmToken: apiData.fcmToken,
-      };
-
-      return mappedUserData;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const userData = data || initialUserData;
+    return {
+      name: apiData.name,
+      email: apiData.email,
+      phone: apiData.phone,
+      age: apiData.age,
+      dob: apiData.dob,
+      role: apiData.role,
+      address: apiData.address as Address,
+      profileImage: apiData.profileImage,
+      wishlistCount: apiData.wishlistCount,
+      viewedItemsCount: apiData.viewedItemsCount,
+      itemsPurchasedCount: apiData.itemsPurchasedCount,
+      lastLogin: apiData.lastLogin,
+      fcmToken: apiData.fcmToken,
+    };
+  }, [apiData]);
 
   // Handle JWT expiry or errors
   React.useEffect(() => {
@@ -163,7 +148,6 @@ const ProfilePage: React.FC = () => {
         );
 
       if (isJWTExpired) {
-        console.log('JWT expired caught in profile API - Auto logout');
         logout();
       }
     }
@@ -222,20 +206,17 @@ const ProfilePage: React.FC = () => {
         {
           text: 'Stay Logged In',
           style: 'cancel',
-          onPress: () => console.log('Logout cancelled'),
+          onPress: () => { },
         },
         {
           text: 'Logout Safely',
           style: 'destructive',
           onPress: async () => {
-            console.log('User logged out securely');
-
             // Delete FCM token before logout
             try {
               await notificationService.deleteToken();
-              console.log('✅ FCM token deleted');
             } catch (error) {
-              console.error('❌ Error deleting FCM token:', error);
+              throw error;
             }
 
             logout();
@@ -244,7 +225,7 @@ const ProfilePage: React.FC = () => {
       ],
       {
         cancelable: true,
-        onDismiss: () => console.log('Alert dismissed'),
+        onDismiss: () => { },
       }
     );
   }, [logout]);

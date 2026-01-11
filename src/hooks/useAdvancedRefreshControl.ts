@@ -101,7 +101,6 @@ export const useAdvancedRefreshControl = ({
       // Sab API calls ko retry logic ke saath run karo
       const promises = onRefresh.map(fn =>
         callWithRetry(fn).catch(err => {
-          console.error('[useAdvancedRefreshControl] Refresh failed:', err);
           setErrorMessage(err.message || 'Refresh failed');
           setIsError(true);
           onError?.(err);

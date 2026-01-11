@@ -8,7 +8,6 @@ import './global.css';
 
 // Background message handler
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  console.log('📩 Background message received:', remoteMessage);
   
   // Display notification using Notifee
   await notifee.displayNotification({
@@ -31,7 +30,6 @@ messaging().setBackgroundMessageHandler(async (remoteMessage) => {
 
 // Background event handler for Notifee
 notifee.onBackgroundEvent(async ({ type, detail }) => {
-  console.log('🔔 Background notification event:', type, detail);
   // Handle notification events in background
 });
 

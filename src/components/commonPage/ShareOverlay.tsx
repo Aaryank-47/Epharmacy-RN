@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Animated, TouchableOpacity, Dimensions } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
-
-const { width } = Dimensions.get('window');
 
 interface ShareOverlayProps {
     onClose: () => void;
@@ -28,7 +26,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, o
             Animated.spring(anim3, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
             Animated.spring(anim4, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
         ]).start();
-    }, []);
+    }, [anim1, anim2, anim3, anim4]);
 
     const { width, height } = Dimensions.get('window');
 

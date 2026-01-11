@@ -22,12 +22,6 @@ export const mapApiError = (error: unknown): NormalizedError => {
       axiosError.message ||
       "We ran into a server issue. Please try again.";
 
-    console.error('[mapApiError] Axios error:', {
-      status: statusCode,
-      message,
-      data: axiosError.response?.data,
-    });
-
     return {
       message,
       statusCode,
@@ -37,18 +31,15 @@ export const mapApiError = (error: unknown): NormalizedError => {
 
   // Handle standard JavaScript errors
   if (error instanceof Error) {
-    console.error('[mapApiError] Error instance:', error.message);
     return { message: error.message };
   }
 
   // Handle string errors
   if (typeof error === 'string') {
-    console.error('[mapApiError] String error:', error);
     return { message: error };
   }
 
   // Handle unknown errors
-  console.error('[mapApiError] Unknown error type:', error);
   return { message: "Something went wrong. Please try again." };
 };
 
@@ -63,7 +54,6 @@ export const toHumanReadableError = (error: unknown): string => {
 
   // If error is a string, return as-is
   if (typeof error === 'string') {
-    console.log('[toHumanReadableError] String error:', error);
     return error || "Unable to complete the request.";
   }
 
@@ -81,6 +71,5 @@ export const toHumanReadableError = (error: unknown): string => {
   }
 
   // Fallback for any other type
-  console.log('[toHumanReadableError] Unknown error type:', error);
   return "Unable to complete the request.";
 };

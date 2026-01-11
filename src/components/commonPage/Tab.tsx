@@ -76,8 +76,6 @@ const getInitials = (name: string): string => {
  */
 const fetchUserDataFromStorage = async (): Promise<UserData> => {
   try {
-    console.log('[UserData] Fetching from localStorage first...');
-
     // Try multiple localStorage sources for initial data
     const sources = await Promise.all([
       AsyncStorage.getItem('auth_user'),
@@ -91,7 +89,6 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
     if (userProfileData) {
       try {
         const profile = JSON.parse(userProfileData);
-        console.log('[UserData] Initial data from userProfile');
         return {
           name: profile.name || 'User',
           profileImage: Array.isArray(profile.profileImage)
@@ -99,22 +96,19 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
             : profile.profileImage || profile.avatar || null,
         };
       } catch (parseError) {
-        console.error('[UserData] Failed to parse userProfile:', parseError);
-      }
+        }
     }
 
     // Check auth_user
     if (authUserData) {
       try {
         const user = JSON.parse(authUserData);
-        console.log('[UserData] Initial data from auth_user');
         return {
           name: user.name || 'User',
           profileImage: user.avatar || user.profileImage?.[0] || null,
         };
       } catch (parseError) {
-        console.error('[UserData] Failed to parse auth_user:', parseError);
-      }
+        }
     }
 
     // Check jwtToken
@@ -122,22 +116,18 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
       try {
         const parsedData = JSON.parse(jwtData);
         if (parsedData.user) {
-          console.log('[UserData] Initial data from jwtToken');
           return {
             name: parsedData.user.name || 'User',
             profileImage: parsedData.user.profileImage?.[0] || null,
           };
         }
       } catch (parseError) {
-        console.error('[UserData] Failed to parse jwtToken:', parseError);
-      }
+        }
     }
 
-    console.warn('[UserData] No initial data found in localStorage');
     return { name: 'User', profileImage: null };
   } catch (error) {
     const err = error as AsyncStorageError;
-    console.error('[UserData] Storage access error:', err.message);
     return { name: 'User', profileImage: null };
   }
 };
@@ -147,16 +137,10 @@ const fetchUserDataFromStorage = async (): Promise<UserData> => {
  */
 const fetchUserDataFromAPI = async (): Promise<UserData> => {
   try {
-    console.log('[UserData] Fetching latest data from API...');
     const response = await getUserProfile();
 
     if (response.success && response.data) {
       const apiData = response.data;
-      console.log('[UserData] API data received:', {
-        name: apiData.name,
-        hasImage: !!apiData.profileImage
-      });
-
       // Save updated data to localStorage for next time
       const updatedProfile = {
         name: apiData.name,
@@ -173,10 +157,8 @@ const fetchUserDataFromAPI = async (): Promise<UserData> => {
       };
     }
 
-    console.warn('[UserData] API response unsuccessful');
     return { name: 'User', profileImage: null };
   } catch (error) {
-    console.error('[UserData] API fetch error:', error);
     // Return localStorage data as fallback
     return fetchUserDataFromStorage();
   }
@@ -243,8 +225,7 @@ const ProfileTabIcon = memo<ProfileTabIconProps>(({
             borderRadius: (size - 4) / 2,
           }}
           onError={() => {
-            console.error('[ProfileTabIcon] Image loading error');
-          }}
+            }}
         />
       ) : (
         <View
@@ -331,8 +312,7 @@ const TabBar = memo<TabBarProps>(({
           onNavigate(tab.screenName);
         }
       } catch (error) {
-        console.error('[TabBar] Navigation error:', error);
-      }
+        }
     },
     [setActiveTab, onNavigate, isLoading, activeTab, onTabReselect]
   );
@@ -533,7 +513,6 @@ const Tabs = memo<TabsProps>(({
   // Refetch API data when screen is focused
   useFocusEffect(
     useCallback(() => {
-      console.log('[Tabs] Screen focused - syncing tab state');
       apiQuery.refetch();
       setActiveTab(currentActiveTab); // Force active tab to match the current page
     }, [apiQuery, currentActiveTab])
@@ -543,10 +522,6 @@ const Tabs = memo<TabsProps>(({
   useEffect(() => {
     // Show localStorage data immediately (if available)
     if (localStorageQuery.data) {
-      console.log('[Tabs] Setting initial localStorage data:', {
-        name: localStorageQuery.data.name,
-        hasImage: !!localStorageQuery.data.profileImage
-      });
       setUserData(localStorageQuery.data);
     }
   }, [localStorageQuery.data]);
@@ -554,18 +529,12 @@ const Tabs = memo<TabsProps>(({
   useEffect(() => {
     // Update with API data when it arrives
     if (apiQuery.data) {
-      console.log('[Tabs] Updating with API data:', {
-        name: apiQuery.data.name,
-        hasImage: !!apiQuery.data.profileImage,
-        imageUrl: apiQuery.data.profileImage
-      });
       setUserData(apiQuery.data);
     }
   }, [apiQuery.data]);
 
   useEffect(() => {
     if (apiQuery.error) {
-      console.error('[Tabs] Failed to load user data from API:', apiQuery.error);
       onError(apiQuery.error as Error);
     }
   }, [apiQuery.error, onError]);
@@ -590,9 +559,7 @@ const Tabs = memo<TabsProps>(({
 
       setShowExploreOverlay(false); // Close overlay if switching tabs
       setActiveTab(tabName);
-      console.log('[Tabs] Tab changed to:', tabName);
-    } catch (error) {
-      console.error('[Tabs] Error changing tab:', error);
+      } catch (error) {
       onError(error as Error);
     }
   }, [onError]);
@@ -606,7 +573,6 @@ const Tabs = memo<TabsProps>(({
       }
       onNavigate(screenName);
     } catch (error) {
-      console.error('[Tabs] Navigation error:', error);
       onError(error as Error);
     }
   }, [onNavigate, onError]);
