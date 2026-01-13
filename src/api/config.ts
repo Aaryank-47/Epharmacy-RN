@@ -1,8 +1,5 @@
-// Production backend for all features including notifications
-// export const API_BASE_URL = "https://phrma-production-app-backend-main.onrender.com";
-export const API_BASE_URL = "https://phrma-production-app-backend-main-qbt9.onrender.com";
-// export const API_BASE_URL = "http://10.10.124.123:5000";
-// export const API_BASE_URL = "http://10.41.89.226:5000";
+
+export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
 
 export const API_TIMEOUT = 60000; // Increased timeout to 60 seconds for file uploads
 
@@ -62,11 +59,5 @@ export const API_ROUTES = {
     ocrExtract: "/api/v1/prescriptions/upload",
   },
 } as const;
-
-export const AI_SERVER_URL = 'https://ai-server-1-xzqm.onrender.com';
-export const AI_ENDPOINTS = {
-  REGISTER: `${AI_SERVER_URL}/register`,
-  PREDICT: `${AI_SERVER_URL}/predict`,
-};
 
 export type ApiRouteTree = typeof API_ROUTES;

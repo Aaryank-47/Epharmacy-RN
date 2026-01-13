@@ -22,19 +22,16 @@ export const ExampleSimpleRefresh = () => {
 
   // API functions - ye sab refresh hoga
   const fetchProducts = useCallback(async () => {
-    console.log('[Refresh] Fetching products...');
     // Your API call here
     // const response = await api.getProducts();
     // setProducts(response);
   }, []);
 
   const fetchBanner = useCallback(async () => {
-    console.log('[Refresh] Fetching banner...');
     // Your banner API call
   }, []);
 
   const fetchCategories = useCallback(async () => {
-    console.log('[Refresh] Fetching categories...');
     // Your categories API call
   }, []);
 
@@ -78,7 +75,6 @@ export const ExampleFlatListRefresh = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('[Refresh] Fetching products...');
       // const response = await api.getProducts();
       // setProducts(response);
     } finally {
@@ -87,8 +83,7 @@ export const ExampleFlatListRefresh = () => {
   }, []);
 
   const fetchBanner = useCallback(async () => {
-    console.log('[Refresh] Fetching banner...');
-  }, []);
+    }, []);
 
   // useRefreshControl hook
   const { isRefreshing, handleRefresh } = useRefreshControl({
@@ -137,12 +132,10 @@ export const ExampleAdvancedRefresh = () => {
   const [products, setProducts] = useState<any[]>([]);
 
   const fetchProducts = useCallback(async () => {
-    console.log('[Refresh] Fetching products...');
-  }, []);
+    }, []);
 
   const fetchBanner = useCallback(async () => {
-    console.log('[Refresh] Fetching banner...');
-  }, []);
+    }, []);
 
   // Advanced refresh with auto-refresh
   const {
@@ -159,11 +152,9 @@ export const ExampleAdvancedRefresh = () => {
     retryCount: 2,
     retryDelay: 1000,
     onRefreshComplete: (success) => {
-      console.log('[Refresh] Complete:', success ? 'Success' : 'Failed');
-    },
+      },
     onError: (error) => {
-      console.error('[Refresh] Error:', error);
-    },
+      },
   });
 
   return (
@@ -214,20 +205,16 @@ export const ExampleMultipleSectionsRefresh = () => {
 
   // Separate API functions for different sections
   const fetchBanner = useCallback(async () => {
-    console.log('[Refresh] Fetching banner...');
-  }, []);
+    }, []);
 
   const fetchProducts = useCallback(async () => {
-    console.log('[Refresh] Fetching products...');
-  }, []);
+    }, []);
 
   const fetchDeals = useCallback(async () => {
-    console.log('[Refresh] Fetching deals...');
-  }, []);
+    }, []);
 
   const fetchCategories = useCallback(async () => {
-    console.log('[Refresh] Fetching categories...');
-  }, []);
+    }, []);
 
   // Single refresh call - sab kuch together refresh hoga
   const { isRefreshing, handleRefresh } = useRefreshControl({

@@ -14,19 +14,13 @@ export const mapApiError = (error: unknown): NormalizedError => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<{ message?: string; error?: string } & Record<string, unknown>>;
     const statusCode = axiosError.response?.status;
-    
+
     // Try multiple sources for error message
     const message =
       axiosError.response?.data?.message ||
       axiosError.response?.data?.error ||
       axiosError.message ||
       "We ran into a server issue. Please try again.";
-
-    console.error('[mapApiError] Axios error:', {
-      status: statusCode,
-      message,
-      data: axiosError.response?.data,
-    });
 
     return {
       message,
@@ -37,18 +31,25 @@ export const mapApiError = (error: unknown): NormalizedError => {
 
   // Handle standard JavaScript errors
   if (error instanceof Error) {
-    console.error('[mapApiError] Error instance:', error.message);
     return { message: error.message };
   }
 
   // Handle string errors
   if (typeof error === 'string') {
-    console.error('[mapApiError] String error:', error);
     return { message: error };
   }
 
+  // Handle already normalized error
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as any).message === 'string'
+  ) {
+    return error as NormalizedError;
+  }
+
   // Handle unknown errors
-  console.error('[mapApiError] Unknown error type:', error);
   return { message: "Something went wrong. Please try again." };
 };
 
@@ -63,14 +64,13 @@ export const toHumanReadableError = (error: unknown): string => {
 
   // If error is a string, return as-is
   if (typeof error === 'string') {
-    console.log('[toHumanReadableError] String error:', error);
     return error || "Unable to complete the request.";
   }
 
   // If error is a NormalizedError object
   if (typeof error === 'object' && 'message' in error) {
     const normalizedError = error as NormalizedError;
-    
+
     // Server errors (5xx)
     if (normalizedError.statusCode && normalizedError.statusCode >= 500) {
       return "Our servers are busy right now. Please try again in a bit.";
@@ -81,6 +81,5 @@ export const toHumanReadableError = (error: unknown): string => {
   }
 
   // Fallback for any other type
-  console.log('[toHumanReadableError] Unknown error type:', error);
   return "Unable to complete the request.";
 };

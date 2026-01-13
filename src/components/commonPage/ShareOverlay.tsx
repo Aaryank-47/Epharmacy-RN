@@ -1,40 +1,37 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Animated, TouchableOpacity, Dimensions } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 
-// Keep this if used in styles/constants outside component, otherwise remove. 
-// Wait, is it used outside? 
-// Checking file content from Step 634:
-// Line 33 re-declares it. 
-// Line 6 declares it.
-// No other usage outside component.
-// So I will remove line 6.
+const { width } = Dimensions.get('window');
 
 interface ShareOverlayProps {
     onClose: () => void;
     onShareWhatsapp: () => void;
     onShareInsta: () => void;
     onShareFB: () => void;
+    onShareX: () => void;
     onShareTelegram: () => void;
 }
 
-const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, onShareInsta, onShareFB, onShareTelegram }) => {
+const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, onShareInsta, onShareFB, onShareX, onShareTelegram }) => {
 
     // Animation values
     const anim1 = useRef(new Animated.Value(0)).current;
     const anim2 = useRef(new Animated.Value(0)).current;
     const anim3 = useRef(new Animated.Value(0)).current;
     const anim4 = useRef(new Animated.Value(0)).current;
+    const anim5 = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        Animated.stagger(80, [
+        Animated.stagger(60, [
             Animated.spring(anim1, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
             Animated.spring(anim2, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
             Animated.spring(anim3, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
             Animated.spring(anim4, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
+            Animated.spring(anim5, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
         ]).start();
-    }, []);
+    }, [anim1, anim2, anim3, anim4, anim5]);
 
     const { width, height } = Dimensions.get('window');
 
@@ -99,18 +96,21 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, o
         <View className="absolute inset-0" pointerEvents="box-none">
             <TouchableOpacity className="absolute inset-0" activeOpacity={1} onPress={onClose} />
 
-            {/* Left Arc Fan Out - More Curved */}
-            {/* Top-Left */}
-            {renderFab(anim1, -70, -130, 'whatsapp', 'WhatsApp', ['#25D366', '#128C7E'], onShareWhatsapp)}
+            {/* Left Arc Fan Out - 5 Icons Semi-Circle */}
+            {/* Top-Left (High) */}
+            {renderFab(anim1, -60, -140, 'whatsapp', 'WhatsApp', ['#25D366', '#128C7E'], onShareWhatsapp)}
 
-            {/* Mid-Left Upper */}
-            {renderFab(anim2, -135, -50, 'instagram', 'Instagram', ['#833AB4', '#E1306C', '#FDB500'], onShareInsta)}
+            {/* Mid-Top Left */}
+            {renderFab(anim2, -120, -90, 'instagram', 'Instagram', ['#833AB4', '#E1306C', '#FDB500'], onShareInsta)}
 
-            {/* Mid-Left Lower */}
-            {renderFab(anim3, -135, 50, 'facebook', 'Facebook', ['#1877F2', '#0e52b5'], onShareFB)}
+            {/* Middle Left */}
+            {renderFab(anim3, -150, 0, 'facebook', 'Facebook', ['#1877F2', '#0e52b5'], onShareFB)}
 
-            {/* Bottom-Left */}
-            {renderFab(anim4, -70, 130, 'send', 'Telegram', ['#229ED9', '#0088cc'], onShareTelegram)}
+            {/* Mid-Bottom Left */}
+            {renderFab(anim4, -120, 90, 'twitter', 'X', ['#000000', '#333333'], onShareX)}
+
+            {/* Bottom-Left (Low) */}
+            {renderFab(anim5, -60, 140, 'send', 'Telegram', ['#229ED9', '#0088cc'], onShareTelegram)}
         </View>
     );
 };

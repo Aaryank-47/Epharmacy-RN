@@ -9,19 +9,17 @@ import {
   Image,
   StyleProp,
   ViewStyle,
+  ToastAndroid,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { useDealsOfTheDay } from '../../../hooks/useDealsOfTheDay';
-import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
+import { useCart } from '../../../context/CartContext';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// ============================================================================
-// SKELETON SHIMMER COMPONENT (Generic - Matches CategoriesSection)
-// ============================================================================
 interface SkeletonShimmerProps {
   width: number | string;
   height: number;
@@ -59,6 +57,8 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
     outputRange: [0.3, 0.8],
   });
 
+  const { isDark } = useThemePalette();
+
   return (
     <Animated.View
       style={[
@@ -67,25 +67,44 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
           height,
           borderRadius,
           opacity,
+          backgroundColor: isDark ? '#374151' : '#E5E7EB',
         },
         style,
       ]}
-      className="bg-gray-200 dark:bg-gray-700"
     />
   );
 };
 
-// ============================================================================
-// DEAL OF DAY SECTION
-// ============================================================================
 const DealOfDaySection: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isDark, accentColor } = useThemePalette();
+  const { addToCart, isInCart } = useCart();
 
-  const { data: deals, isLoading, error } = useDealsOfTheDay();
+  const handleAddToCart = (item: any) => {
+    if (isInCart((item as any)._id || (item as any).id)) {
+      ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+      return;
+    }
+
+    addToCart({
+      id: item._id || item.id,
+      name: item.itemName,
+      price: item.itemFinalPrice || 0,
+      quantity: 1,
+    });
+    ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
+  };
+
+  const { data, isLoading, error } = useDealsOfTheDay();
+  const deals = data?.deals || [];
+  const totalDeals = data?.totalDeals || 0;
+
+  if (!isLoading && totalDeals < 3) {
+    return null;
+  }
 
   // Persistent shimmer logic
-  const showShimmer = isLoading || error || !deals || deals.length === 0;
+  const showShimmer = isLoading || error || deals.length === 0;
 
   const renderShimmerPlaceholders = () => (
     <FlatList
@@ -96,17 +115,23 @@ const DealOfDaySection: React.FC = () => {
       contentContainerStyle={{ paddingHorizontal: 12 }}
       renderItem={() => (
         <View
-          className="mr-3 bg-white dark:bg-[#1A1C23] rounded-xl p-2 border border-gray-100 dark:border-gray-800"
-          style={{ width: screenWidth * 0.46 }}
+          style={{
+            width: screenWidth * 0.46,
+            marginRight: 12,
+            backgroundColor: isDark ? '#1A1C23' : '#FFFFFF',
+            borderRadius: 12,
+            padding: 8,
+            borderWidth: 1,
+            borderColor: isDark ? '#2D3038' : '#F3F4F6',
+          }}
         >
-          {/* Image */}
+
           <SkeletonShimmer width="100%" height={120} borderRadius={8} />
 
-          {/* Title */}
+
           <SkeletonShimmer width="80%" height={14} borderRadius={4} style={{ marginTop: 12 }} />
 
-          {/* Price & Icon Row */}
-          <View className="flex-row justify-between items-center mt-3">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             <View>
               <SkeletonShimmer width={60} height={16} borderRadius={4} />
               <SkeletonShimmer width={40} height={10} borderRadius={4} style={{ marginTop: 4 }} />
@@ -120,40 +145,69 @@ const DealOfDaySection: React.FC = () => {
 
   const handleProductPress = (item: any) => {
     const itemId = item._id || item.id;
-    console.log('Product selected:', item.title || item.itemName, '| ID:', itemId);
 
     if (itemId) {
       navigation.navigate('ProductDetail', { productId: itemId });
-    } else {
-      console.warn('[DealOfDaySection] Product ID is undefined for item:', item);
     }
   };
 
   return (
     <LinearGradient
-      colors={isDark ? ['#181A20', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']}
+      colors={isDark ? ['#181A20', '#2A2D35'] : ['#F9FAFB', '#F3F4F6']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
-      className="mt-0 py-6"
+      style={{ marginTop: 0, paddingVertical: 24 }}
     >
       {/* Header */}
-      <View className="mx-4 flex-row justify-between items-center mb-4">
-        <View className="flex-row items-center">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white italic tracking-tighter">
-            DEAL OF THE DAY
-          </Text>
-          {/* Timer Badge */}
-          <View className="ml-3 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800">
-            <Text className="text-xs font-bold text-red-600 dark:text-red-400">
-              Ends in 12:00:00
+      <View style={{
+        marginHorizontal: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+      }}>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Ionicons name="flash" size={18} color={isDark ? '#FBBF24' : '#F59E0B'} style={{ marginRight: 6 }} />
+            <Text style={{
+              fontSize: 22,
+              fontWeight: '800',
+              color: isDark ? '#FFFFFF' : '#111827',
+              letterSpacing: -0.5,
+            }}>
+              DEAL OF THE DAY
             </Text>
           </View>
-        </View>
-        <TouchableOpacity onPress={() => console.log('View all deals')}>
-          <Text style={{ color: accentColor }} className="text-sm font-bold">
-            View All
+          <Text style={{
+            fontSize: 13,
+            color: isDark ? '#9CA3AF' : '#6B7280',
+            fontWeight: '500',
+            marginLeft: 24
+          }}>
+            Prices slashed for 24 hours!
           </Text>
-        </TouchableOpacity>
+        </View>
+
+        {/* Timer Badge */}
+        <LinearGradient
+          colors={isDark ? ['#7F1D1D', '#991B1B'] : ['#FEE2E2', '#FECACA']}
+          style={{
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: isDark ? '#B91C1C' : '#FCA5A5',
+          }}
+        >
+          <Text style={{
+            fontSize: 12,
+            fontWeight: '800',
+            color: isDark ? '#FECACA' : '#DC2626',
+            fontVariant: ['tabular-nums']
+          }}>
+            12:00:00 LEFT
+          </Text>
+        </LinearGradient>
       </View>
 
       {showShimmer ? (
@@ -162,69 +216,163 @@ const DealOfDaySection: React.FC = () => {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={deals} // Ensure backend sends 10-12 items or slice here if needed: deals.slice(0, 12)
-          keyExtractor={(item) => item._id || item.itemName}
-          contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 10 }}
+          data={deals}
+          keyExtractor={(item) => item._id || item.itemName || String(Math.random())}
+          contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 15 }}
           renderItem={({ item }) => (
             <TouchableOpacity
-              activeOpacity={0.95}
+              activeOpacity={0.92}
               onPress={() => handleProductPress(item)}
-              className="mx-1.5 bg-white dark:bg-[#1A1C23] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden"
               style={{
-                width: screenWidth * 0.46, // ~2 cards per frame
-                elevation: 3,
+                width: screenWidth * 0.48,
+                marginHorizontal: 8,
+                backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
+                borderRadius: 20,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: isDark ? 0.4 : 0.08,
+                shadowRadius: 12,
+                elevation: 6,
+                borderWidth: isDark ? 1 : 0,
+                borderColor: isDark ? '#2D3038' : 'transparent',
+                overflow: 'hidden',
               }}
             >
-              {/* Image Area - Compact & Clean */}
-              <View className="h-32 w-full bg-white p-2 justify-center items-center relative border-b border-gray-100 dark:border-gray-800">
-                <Image
-                  source={{ uri: (item.itemImages && item.itemImages[0]) || item.imageUrl }}
-                  className="w-full h-full"
-                  resizeMode="contain"
-                />
-
-                {/* Discount Badge - Minimalist */}
+              {/* Image Area - Classy & Modern */}
+              <View style={{
+                height: 160,
+                width: '100%',
+                backgroundColor: isDark ? '#2A2D35' : '#F8FAFC',
+                padding: 12,
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'relative',
+              }}>
+                {/* Discount Tag */}
                 {item.itemDiscount && (
-                  <View className="absolute top-2 left-2 bg-red-600 px-1.5 py-0.5 rounded text-center">
-                    <Text className="text-white text-[10px] font-bold">
+                  <View style={{
+                    position: 'absolute',
+                    top: 12,
+                    left: 12,
+                    backgroundColor: '#EF4444',
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 8,
+                    zIndex: 10,
+                    shadowColor: '#EF4444',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}>
+                    <Text style={{
+                      color: '#FFFFFF',
+                      fontSize: 11,
+                      fontWeight: '800',
+                      letterSpacing: 0.5
+                    }}>
                       -{item.itemDiscount}%
                     </Text>
                   </View>
                 )}
+
+                <Image
+                  source={{ uri: (item.itemImages && item.itemImages[0]) || '' }}
+                  style={{ width: '90%', height: '90%' }}
+                  resizeMode="contain"
+                />
+
+                {/* Rating Badge */}
+                <View style={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 6,
+                }}>
+                  <Ionicons name="star" size={10} color="#FBBF24" />
+                  <Text style={{
+                    fontSize: 10,
+                    fontWeight: '700',
+                    color: isDark ? '#FFF' : '#1F2937',
+                    marginLeft: 3
+                  }}>
+                    {(item as any).itemRatings ? (item as any).itemRatings.toFixed(1) : '4.5'}
+                  </Text>
+                </View>
               </View>
 
-              {/* Content Area */}
-              <View className="p-3">
-                {/* Title */}
+              <View style={{ padding: 14 }}>
+
+
                 <Text
-                  numberOfLines={1}
-                  className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1"
+                  numberOfLines={2}
+                  style={{
+                    fontSize: 15,
+                    fontWeight: '700',
+                    color: isDark ? '#F3F4F6' : '#111827',
+                    marginBottom: 8,
+                    lineHeight: 20
+                  }}
                 >
-                  {item.itemName || item.title}
+                  {item.itemName}
                 </Text>
 
                 {/* Price & Action Row */}
-                <View className="flex-row items-center justify-between mt-1">
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  marginTop: 4,
+                }}>
                   <View>
-                    <Text className="text-base font-bold text-gray-900 dark:text-white">
-                      ₹{item.itemFinalPrice || item.price || 0}
-                    </Text>
                     {item.itemInitialPrice && (
-                      <Text className="text-[10px] text-gray-400 line-through">
+                      <Text style={{
+                        fontSize: 11,
+                        color: isDark ? '#6B7280' : '#9CA3AF',
+                        textDecorationLine: 'line-through',
+                        marginBottom: 1,
+                        fontWeight: '500'
+                      }}>
                         ₹{item.itemInitialPrice}
                       </Text>
                     )}
+                    <Text style={{
+                      fontSize: 18,
+                      fontWeight: '800',
+                      color: isDark ? '#FFFFFF' : '#1F2937',
+                      letterSpacing: -0.5
+                    }}>
+                      ₹{item.itemFinalPrice || 0}
+                    </Text>
                   </View>
 
-
-
-                  {/* Add Button - Cart Icon */}
                   <TouchableOpacity
-                    style={{ backgroundColor: accentColor }}
-                    className="w-10 h-10 rounded-2xl items-center justify-center shadow-sm"
-                    onPress={() => handleProductPress(item)}
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: isInCart((item as any)._id || (item as any).id) ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
+                      shadowColor: isInCart((item as any)._id || (item as any).id) ? 'transparent' : accentColor,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 4,
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => handleAddToCart(item)}
                   >
-                    <Ionicons name="cart-outline" size={24} color="#FFFFFF" />
+                    <Ionicons
+                      name={isInCart((item as any)._id || (item as any).id) ? "checkmark" : "add"}
+                      size={24}
+                      color="#FFFFFF"
+                    />
                   </TouchableOpacity>
                 </View>
               </View>

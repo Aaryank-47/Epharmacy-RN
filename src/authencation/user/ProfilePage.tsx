@@ -25,7 +25,7 @@ import ActionGrid from './ActionGrid';
 import PrivacyTermsPage from './PrivacyTermsPage';
 import { notificationService } from '../../services/notificationService';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import { RefreshControlWrapper } from '../../components/RefreshControlWrapper';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import RecentlyViewedSection from '../../components/home/screens/RecentlyViewedSection';
 import RecentlyViewedCategory from '../../components/home/screens/RecentlyViewedCategory';
 
@@ -111,42 +111,27 @@ const ProfilePage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
   // Fetch user profile data with React Query
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: async () => {
-      const response = await getUserProfile();
+  const { data: apiData, isLoading, isError, error, refetch, isRefetching } = useUserProfile();
 
-      if (!response.success || !response.data) {
-        throw new Error(response.message || 'Failed to load profile');
-      }
+  const userData: UserData = useMemo(() => {
+    if (!apiData) return initialUserData;
 
-      // Map API response to UserData interface
-      const apiData: UserProfilePayload = response.data;
-      const mappedUserData: UserData = {
-        name: apiData.name,
-        email: apiData.email,
-        phone: apiData.phone,
-        age: apiData.age,
-        dob: apiData.dob,
-        role: apiData.role,
-        address: apiData.address,
-        profileImage: apiData.profileImage,
-        wishlistCount: apiData.wishlistCount,
-        viewedItemsCount: apiData.viewedItemsCount,
-        itemsPurchasedCount: apiData.itemsPurchasedCount,
-        lastLogin: apiData.lastLogin,
-        fcmToken: apiData.fcmToken,
-      };
-
-      return mappedUserData;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const userData = data || initialUserData;
+    return {
+      name: apiData.name,
+      email: apiData.email,
+      phone: apiData.phone,
+      age: apiData.age,
+      dob: apiData.dob,
+      role: apiData.role,
+      address: apiData.address as Address,
+      profileImage: apiData.profileImage,
+      wishlistCount: apiData.wishlistCount,
+      viewedItemsCount: apiData.viewedItemsCount,
+      itemsPurchasedCount: apiData.itemsPurchasedCount,
+      lastLogin: apiData.lastLogin,
+      fcmToken: apiData.fcmToken,
+    };
+  }, [apiData]);
 
   // Handle JWT expiry or errors
   React.useEffect(() => {
@@ -163,7 +148,6 @@ const ProfilePage: React.FC = () => {
         );
 
       if (isJWTExpired) {
-        console.log('JWT expired caught in profile API - Auto logout');
         logout();
       }
     }
@@ -222,20 +206,17 @@ const ProfilePage: React.FC = () => {
         {
           text: 'Stay Logged In',
           style: 'cancel',
-          onPress: () => console.log('Logout cancelled'),
+          onPress: () => { },
         },
         {
           text: 'Logout Safely',
           style: 'destructive',
           onPress: async () => {
-            console.log('User logged out securely');
-
             // Delete FCM token before logout
             try {
               await notificationService.deleteToken();
-              console.log('✅ FCM token deleted');
             } catch (error) {
-              console.error('❌ Error deleting FCM token:', error);
+              throw error;
             }
 
             logout();
@@ -244,7 +225,7 @@ const ProfilePage: React.FC = () => {
       ],
       {
         cancelable: true,
-        onDismiss: () => console.log('Alert dismissed'),
+        onDismiss: () => { },
       }
     );
   }, [logout]);
@@ -818,6 +799,59 @@ const ProfilePage: React.FC = () => {
         </View>
 
 
+
+
+        {/* Wishlist Section */}
+        <TouchableOpacity
+          style={{
+            marginHorizontal: screenWidth * 0.04,
+            marginBottom: 20,
+            padding: screenWidth * 0.05,
+            borderRadius: 16,
+            backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 2,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+          onPress={() => navigation.navigate('Wishlist')}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{
+              width: 40, height: 40, borderRadius: 20,
+              backgroundColor: isDark ? '#3A3A3A' : '#FEE2E2',
+              alignItems: 'center', justifyContent: 'center', marginRight: 15
+            }}>
+              <MaterialCommunityIcons name="heart" size={20} color="#EF4444" />
+            </View>
+            <View>
+              <Text style={{
+                fontSize: getResponsiveSize(18),
+                fontWeight: 'bold',
+                color: isDark ? '#FFFFFF' : '#1F2937'
+              }}>
+                My Wishlist
+              </Text>
+              <Text style={{
+                marginTop: 2,
+                fontSize: getResponsiveSize(12),
+                color: isDark ? '#9CA3AF' : '#6B7280'
+              }}>
+                {userData.wishlistCount || 0} items waiting
+              </Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={getResponsiveSize(24)}
+            color={isDark ? '#FFFFFF' : '#1F2937'}
+          />
+        </TouchableOpacity>
 
         {/* Privacy & Terms - Collapsible */}
         <View style={{

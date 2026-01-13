@@ -15,8 +15,6 @@ import DealOfDaySection from './screens/DealOfDaySection';
 import OfferBannerSection from './screens/OfferBannerSection';
 import ItemFeedSection from './screens/ItemFeedSection';
 import RecentlyViewedSection from './screens/RecentlyViewedSection';
-import ScrollToTopButton from '../commonPage/ScrollToTopButton';
-import AiChatSupport from '../AiChatSupport';
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -42,25 +40,22 @@ const Home: React.FC = () => {
 
 
     if (currentY > 50) {
-      if (dy > 10 && !isTabBarHidden.current) { // Lower threshold (10) for easier hide
-        // Scrolling Down -> Hide
+      if (dy > 10 && !isTabBarHidden.current) { 
         isTabBarHidden.current = true;
         Animated.timing(translateY, {
           toValue: 100,
-          duration: 200, // Faster hide (200ms)
+          duration: 200,
           useNativeDriver: true,
         }).start();
       } else if (dy < -5 && isTabBarHidden.current) {
-        // Scrolling Up -> Show
         isTabBarHidden.current = false;
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 150, // Instant show (150ms)
+          duration: 150,
           useNativeDriver: true,
         }).start();
       }
     } else if (currentY <= 50 && isTabBarHidden.current) {
-      // Near top -> Always Show
       isTabBarHidden.current = false;
       Animated.timing(translateY, {
         toValue: 0,
@@ -72,65 +67,51 @@ const Home: React.FC = () => {
     lastScrollY.current = currentY;
   };
 
-  // Fetch Data & Handle Refresh Logic
   const fetchData = useCallback(async (isRefresh = false): Promise<void> => {
     try {
       if (isRefresh) {
         setRefreshKey((prev) => prev + 1);
-        // User wants to see shimmers ("semeres"), so we must clear data to trigger loading states
         await queryClient.resetQueries();
-        // Add a delay so the shimmer and spinner are visible and smooth
         await new Promise<void>((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
-      console.error('[HomePage] Error:', error);
+      error;
     }
   }, [queryClient]);
 
-  // Initial load
   useEffect(() => {
-    // Immediate load without delay
     setLoading(false);
   }, []);
 
-  // Refresh control hook
   const { isRefreshing, handleRefresh } = useRefreshControl({
     onRefresh: [() => fetchData(true)],
-    minRefreshTime: 2000, // Increased to 2000ms for smoother loader visibility
+    minRefreshTime: 2000,
   });
 
-  // Handle tab navigation
   const handleNavigate = useCallback((screenName: string) => {
     try {
-      console.log('[HomePage] Navigating to:', screenName);
       navigation.navigate(screenName as keyof RootStackParamList);
     } catch (error) {
-      console.error('[HomePage] Navigation error:', error);
+      error;
     }
   }, [navigation]);
 
   const lastTapRef = useRef<number>(0);
 
-  // Handle Tab Reselect (Scroll to top or Refresh)
   const handleTabReselect = useCallback((tabName: string) => {
     if (tabName !== 'Home') return;
 
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
 
-    // Check if scrolled down OR double tap
-    // @ts-ignore - _value is internal but often accessible, or use a listener
     const currentScrollY = (scrollY as any)._value || 0;
 
     if (currentScrollY > 100) {
-      // Not at top -> Scroll to top
       handleScrollToTop();
     } else {
-      // At top -> Check for double tap to refresh
       if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
         handleRefresh();
       } else {
-        // Single tap at top -> Ensure exactly 0
         handleScrollToTop();
       }
     }
@@ -157,7 +138,6 @@ const Home: React.FC = () => {
           scrollY={scrollY}
           onScrollToTop={handleScrollToTop}
         >
-          {/* Header */}
           <HeaderScreen />
 
           <RefreshControlWrapper
@@ -178,9 +158,7 @@ const Home: React.FC = () => {
               removeClippedSubviews: true, // Optimize offscreen rendering
             }}
           >
-            {/* Main Content */}
             <View className="flex-1 bg-white dark:bg-gray-900">
-              {/* Hero Section with Featured Products and Ads */}
               <HeroSection key={`hero-${refreshKey}`} navigation={navigation} />
               <CategoriesSection key={`cat-${refreshKey}`} />
               <DealOfDaySection key={`deal-${refreshKey}`} />

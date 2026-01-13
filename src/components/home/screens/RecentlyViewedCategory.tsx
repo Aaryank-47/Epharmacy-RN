@@ -1,10 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useQuery } from '@tanstack/react-query';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { getRecentlyViewedCategories } from '../../../api/medicinesApi';
+import { useRecentlyViewedCategories } from '../../../hooks/useRecentlyViewed';
 import useThemePalette from '../../../hooks/useThemePalette';
 
 const { width } = Dimensions.get('window');
@@ -15,25 +13,15 @@ interface RecentlyViewedCategoryProps {
 }
 
 const RecentlyViewedCategory = ({ transparentBackground = false }: RecentlyViewedCategoryProps) => {
-    const navigation = useNavigation<any>();
     const { isDark } = useThemePalette();
 
-    const { data: apiResponse, isLoading } = useQuery({
-        queryKey: ['recentlyViewedCategories'],
-        queryFn: getRecentlyViewedCategories,
-        staleTime: 5 * 60 * 1000,
-        gcTime: 10 * 60 * 1000,
-    });
+    const { data: apiResponse, isLoading } = useRecentlyViewedCategories();
 
-    const categories = useMemo(() => apiResponse?.data?.data || [], [apiResponse]);
+    const categories = useMemo(() => apiResponse?.data || [], [apiResponse]);
 
     const renderItem = ({ item }: { item: any }) => (
         <TouchableOpacity
-            onPress={() => {
-                // Assuming navigation logic similar to CategoriesSection
-                // navigation.navigate('Category', { name: item.name, id: item._id });
-                console.log('Navigating to category:', item.name);
-            }}
+            onPress={() => { }}
             style={{
                 width: ITEM_WIDTH,
                 alignItems: 'center',

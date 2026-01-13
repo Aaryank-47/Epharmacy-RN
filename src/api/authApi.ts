@@ -49,7 +49,6 @@ const normalizeLoginResponse = (
   response: ApiResponse<any>
 ): LoginResponsePayload => {
   const { data } = response;
-  console.log('[authApi] Normalizing login response data:', data);
   // Handle case where data IS the user object (direct response)
   const user = data.user || data;
   const token = data.token || null;
@@ -85,11 +84,8 @@ export const loginRequest = async (
     let fcmToken = null;
     try {
       fcmToken = await notificationService.getToken();
-      if (fcmToken) {
-        console.log('📱 FCM Token obtained for login:', fcmToken.substring(0, 20) + '...');
-      }
     } catch (tokenError) {
-      console.warn('⚠️ Could not get FCM token, continuing without it:', tokenError);
+      // Failed to get FCM token, continue without it
     }
 
     // Add FCM token to login payload
@@ -105,7 +101,6 @@ export const loginRequest = async (
 
     return normalizeLoginResponse(response.data);
   } catch (error) {
-    console.error('[authApi] Login failed:', error);
     throw error;
   }
 };
@@ -125,7 +120,6 @@ export const signupUser = async (
 
     return normalizeLoginResponse(response.data);
   } catch (error) {
-    console.error('[authApi] Signup failed:', error);
     throw error;
   }
 };
@@ -138,7 +132,6 @@ export const logoutRequest = async (): Promise<void> => {
   try {
     await httpClient.post(API_ROUTES.auth.logout);
   } catch (error) {
-    console.error('[authApi] Logout failed:', error);
     throw error;
   }
 };
@@ -157,7 +150,6 @@ export const forgotPasswordRequest = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[authApi] Forgot password request failed:', error);
     throw error;
   }
 };
@@ -176,7 +168,6 @@ export const verifyOtpRequest = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[authApi] OTP verification failed:', error);
     throw error;
   }
 };
@@ -195,7 +186,6 @@ export const resetPasswordRequest = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[authApi] Password reset failed:', error);
     throw error;
   }
 };
@@ -209,29 +199,15 @@ export const googleLoginRequest = async (
   idToken: string
 ): Promise<LoginResponsePayload> => {
   try {
-
-    console.log('idToken received in googleLoginRequest:', idToken)
     if (!idToken) {
-      console.error('[authApi] No ID token provided for Google login');
       throw new Error('No ID token provided to googleLoginRequest');
     }
 
-    console.log('🔐 Google Login Request starting...');
-    console.log('📝 ID Token received:', {
-      exists: !!idToken,
-      length: idToken?.length,
-      preview: idToken?.substring(0, 50) + '...'
-    });
-
-    // Get FCM token before login
     let fcmToken = null;
     try {
       fcmToken = await notificationService.getToken();
-      if (fcmToken) {
-        console.log('📱 FCM Token obtained for Google login:', fcmToken.substring(0, 20) + '...');
-      }
     } catch (tokenError) {
-      console.warn('⚠️ Could not get FCM token, continuing without it:', tokenError);
+      throw tokenError;
     }
 
     const payload = {
@@ -239,22 +215,10 @@ export const googleLoginRequest = async (
       ...(fcmToken && { fcmToken })
     };
 
-    console.log('🔐 Sending Google login request to backend...');
-    console.log('📦 Payload:', {
-      userToken: payload.userToken ? payload.userToken.substring(0, 50) + '...' : 'missing',
-      fcmToken: payload.fcmToken ? 'present' : 'missing'
-    });
-
     const response = await httpClient.post<ApiResponse<any>>(
       API_ROUTES.auth.googleLogin,
       payload
     );
-
-    console.log('✅ Google login response received:', {
-      status: response.status,
-      hasData: !!response.data,
-      hasUser: !!response.data?.data?.user
-    });
 
     if (!response.data) {
       throw new Error('Invalid response from server');
@@ -262,14 +226,6 @@ export const googleLoginRequest = async (
 
     return normalizeLoginResponse(response.data);
   } catch (error: any) {
-    console.error('[authApi] Google login failed:', {
-      message: error?.message,
-      response: error?.response?.data,
-      status: error?.response?.status,
-      code: error?.code,
-    });
-    
-    // Re-throw with proper error structure for frontend handling
     throw error;
   }
 };
@@ -287,7 +243,6 @@ export const getUserProfile = async (): Promise<ApiResponse<UserProfilePayload>>
     );
     return response.data;
   } catch (error) {
-    console.error('[authApi] Get user profile failed:', error);
     throw error;
   }
 };
@@ -321,7 +276,6 @@ export const updateUserProfile = async (
     );
     return response.data;
   } catch (error) {
-    console.error('[authApi] Update user profile failed:', error);
     throw error;
   }
 };

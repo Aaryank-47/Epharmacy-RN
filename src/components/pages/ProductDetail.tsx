@@ -22,6 +22,7 @@ import { useColorScheme } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { CartContext } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 import { getItemDetails, addItemToRecentlyViewed } from '../../api/medicinesApi';
 import { ItemDetails } from '../../api/types';
 import ShareOverlay from '../commonPage/ShareOverlay';
@@ -71,6 +72,7 @@ interface ProductDetailProps {
 const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
   // @ts-ignore - CartContext is now exported but types might need checking if strict
   const { addToCart } = useContext(CartContext) || {};
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -104,10 +106,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
   // Track Recently Viewed
   React.useEffect(() => {
     if (productId) {
-      console.log('[ProductDetail] Tracking view for:', productId);
       addItemToRecentlyViewed(productId)
-        .then(() => console.log('[ProductDetail] Successfully added to recently viewed:', productId))
-        .catch((err) => console.error('[ProductDetail] Failed to track view:', err));
+        .then(() => { })
+        .catch(() => { });
     }
   }, [productId]);
 
@@ -178,7 +179,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
 
   const handleShare = (platform: string) => {
     setShowShareOptions(false);
-    console.log(`Sharing product on ${platform}`);
   };
 
   const renderImage: ListRenderItem<string> = ({ item }) => (
@@ -317,6 +317,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
     );
   }
 
+  const handleToggleWishlist = () => {
+    if (!product) return;
+
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist({
+        _id: product.id,
+        itemName: product.name,
+        itemDescription: product.description,
+        image: product.images[0],
+        itemFinalPrice: product.finalPrice,
+        itemRatings: product.rating,
+        itemDiscount: Number(product.discountPercent) || 0,
+        itemInitialPrice: product.price
+      });
+    }
+  };
+
   return (
     <View className="flex-1 bg-gray-50 dark:bg-[#0B0B0B]">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -331,8 +350,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
         </TouchableOpacity>
         <Text className="text-lg font-bold text-black dark:text-white">Product Details</Text>
         <View className="flex-row items-center">
-          <TouchableOpacity className="p-2 ml-2" onPress={() => { }}>
-            <Icon name="heart-outline" size={22} color={isDark ? '#fff' : '#000'} />
+          <TouchableOpacity className="p-2 ml-2" onPress={handleToggleWishlist}>
+            <Icon
+              name={product && isInWishlist(product.id) ? "heart" : "heart-outline"}
+              size={22}
+              color={product && isInWishlist(product.id) ? "#EF4444" : (isDark ? '#fff' : '#000')}
+            />
           </TouchableOpacity>
           <TouchableOpacity className="p-2 ml-2" onPress={() => navigation.navigate('Cart')}>
             <Icon name="cart-outline" size={22} color={isDark ? '#fff' : '#000'} />
@@ -397,8 +420,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
           </View>
 
           {/* Thumbnails - Left Aligned */}
-          {/* {product.images.length > 1 && (
-            <View className="w-full px-4 items-start">
+          {product.images.length > 1 && (
+            <View className="w-full px-4 items-start mt-2">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -419,7 +442,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
                 ))}
               </ScrollView>
             </View>
-          )} */}
+          )}
         </View>
 
         {/* Product details card */}
@@ -487,19 +510,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
             </View>
           </View>
 
-          {/* Safety Advice Card (New) */}
+          {/* Safety Advice Card (Professional redesign) */}
           {product.safetyAdvice.length > 0 && (
-            <View className="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <View className="flex-row items-center mb-2">
-                <Icon name="warning-outline" size={20} color="#F59F00" />
-                <Text className="ml-2 text-base font-bold text-amber-900 dark:text-amber-500">
+            <View className="mb-6 bg-white dark:bg-[#1A1A1A] rounded-lg  p-4 border border-gray-200 dark:border-neutral-900 ">
+              <View className="flex-row items-center mb-3">
+                <Icon name="shield-checkmark" size={20} color="#3B82F6" />
+                <Text className="ml-2 text-base font-bold text-neutral-800 dark:text-gray-100 uppercase tracking-wide">
                   Safety Advice
                 </Text>
               </View>
               {product.safetyAdvice.map((advice, idx) => (
-                <View key={idx} className="flex-row items-start mt-1.5">
-                  <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 mr-2" />
-                  <Text className="text-sm text-amber-800 dark:text-amber-200 flex-1 leading-5">
+                <View key={idx} className="flex-row items-start mb-2 last:mb-0">
+                  <Text className="text-sm font-bold text-blue-500 mr-2 mt-0.5 min-w-[16px]">
+                    {idx + 1}.
+                  </Text>
+                  <Text className="text-sm text-gray-600 dark:text-gray-300 flex-1 leading-5 font-medium">
                     {advice}
                   </Text>
                 </View>
@@ -518,10 +543,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
               <View className="flex-row items-center justify-between mb-2">
                 <Text className="text-lg font-bold text-neutral-900 dark:text-white">Key Benefits</Text>
                 <TouchableOpacity
-                  className="w-9 h-9 rounded-full border justify-center items-center ml-3 border-black dark:border-[#FF69B4]"
-                  onPress={() => setShowShareOptions(true)}
+                  className="w-9 h-9 rounded-full border justify-center items-center ml-3 border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800"
+                  onPress={() => setShowShareArcOverlay(true)}
                 >
-                  <Icon name="share-social" size={16} color={isDark ? '#FF69B4' : '#000'} />
+                  <Icon name="share-social-outline" size={18} color="#40C057" />
                 </TouchableOpacity>
               </View>
               {product.benefits.map((benefit, index) => (
@@ -551,18 +576,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
             </View>
           )}
 
-          {/* Side Effects (New) */}
+          {/* Side Effects (Simple List - Matching Key Benefits) */}
           {product.sideEffects.length > 0 && (
-            <View className="mb-5">
-              <Text className="text-lg font-bold text-neutral-900 dark:text-white mb-2">Side Effects</Text>
-              <View className="bg-rose-50 dark:bg-rose-900/10 rounded-xl p-4 border border-rose-100 dark:border-rose-900/30">
-                {product.sideEffects.map((effect, idx) => (
-                  <View key={idx} className="flex-row items-center mb-1">
-                    <Icon name="alert-circle" size={14} color="#FA5252" />
-                    <Text className="text-sm text-gray-600 dark:text-gray-300 ml-2">{effect}</Text>
+            <View className="mb-6">
+              <Text className="text-lg font-bold text-neutral-900 dark:text-white mb-2">
+                Possible Side Effects
+              </Text>
+              {product.sideEffects.map((effect, idx) => (
+                <View key={idx} className="flex-row items-center mt-2.5">
+                  <View className="w-6 h-6 rounded-full justify-center items-center mr-2.5 bg-red-50 dark:bg-red-900/20">
+                    <Icon name="alert-circle-outline" size={16} color="#EF4444" />
                   </View>
-                ))}
-              </View>
+                  <Text className="text-sm flex-1 text-gray-500 dark:text-gray-400">
+                    {effect}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -572,14 +601,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
               <Text className="text-lg font-bold text-neutral-900 dark:text-white">
                 Select Unit
               </Text>
-              <TouchableOpacity
-                className={`w-10 h-10 rounded-full justify-center items-center border ${isDark ? 'border-neutral-700 bg-neutral-800' : 'border-gray-200 bg-white'
-                  }`}
-                style={{ marginTop: 8 }}
-                onPress={() => setShowShareArcOverlay(true)}
-              >
-                <Icon name="share-social-outline" size={22} color="#40C057" />
-              </TouchableOpacity>
             </View>
             <ScrollView
               horizontal
@@ -672,20 +693,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
       </Modal>
 
       {/* ARC Share Overlay */}
-      {/* {showShareArcOverlay && (
+      {showShareArcOverlay && (
         <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]} pointerEvents="box-none">
           <Animated.View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' }}>
             <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowShareArcOverlay(false)} />
           </Animated.View>
           <ShareOverlay
             onClose={() => setShowShareArcOverlay(false)}
-            onShareWhatsapp={() => console.log('Share WA')}
-            onShareInsta={() => console.log('Share Insta')}
-            onShareFB={() => console.log('Share FB')}
-            onShareTelegram={() => console.log('Share TG')}
+            onShareWhatsapp={() => handleShare('whatsapp')}
+            onShareInsta={() => handleShare('instagram')}
+            onShareFB={() => handleShare('facebook')}
+            onShareX={() => handleShare('x')}
+            onShareTelegram={() => handleShare('telegram')}
           />
         </View>
-      )} */}
+      )}
 
       {/* Floating Premium Bottom Bar */}
       <Animated.View

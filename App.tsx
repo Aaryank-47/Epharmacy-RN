@@ -10,6 +10,7 @@ import { AuthProvider } from "./src/context/AuthContext";
 import { CartProvider } from "./src/context/CartContext";
 import QueryProvider from "./src/providers/QueryProvider";
 import { store } from "./src/store";
+import { WishlistProvider } from "./src/context/WishlistContext";
 
 import AppNavigator from "./AppNavigator";
 import loadIconFonts from "./src/utils/loadIconFonts";
@@ -45,11 +46,13 @@ export default function App() {
               <CartProvider>
                 <AuthProvider>
                   {/* Initialize Notification System */}
-                  {/* <NotificationSetup /> */}
+                  <NotificationSetup />
 
-                  <NavigationContainer>
-                    <AppNavigator />
-                  </NavigationContainer>
+                  <WishlistProvider>
+                    <NavigationContainer>
+                      <AppNavigator />
+                    </NavigationContainer>
+                  </WishlistProvider>
                 </AuthProvider>
               </CartProvider>
             </QueryProvider>

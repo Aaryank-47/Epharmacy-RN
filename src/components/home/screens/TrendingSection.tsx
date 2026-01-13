@@ -1,5 +1,4 @@
-import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { memo, useEffect, useRef } from 'react';
 import { useTrendingProducts } from '../../../hooks/useTrendingProducts';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -10,13 +9,11 @@ import {
     Image,
     FlatList,
     Animated,
-    Easing,
+    ToastAndroid,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-
-import { addItemToRecentlyViewed } from '../../../api/medicinesApi';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -147,16 +144,21 @@ interface TrendingProductCardProps {
     item: TrendingProduct;
     accentColor: string;
     onPress: () => void;
+    onAddToCart: () => void;
     isDark: boolean;
+    isInCart: boolean;
+    onToggleWishlist: () => void;
+    isInWishlist: boolean;
 }
 
 const TrendingProductCard = memo<TrendingProductCardProps>(
-    ({ item, accentColor, onPress, isDark }) => (
+    ({ item, accentColor, onPress, onAddToCart, isDark, isInCart, onToggleWishlist, isInWishlist }) => (
         <TouchableOpacity
             activeOpacity={0.92}
             onPress={onPress}
             className="mr-3 mb-2"
             style={{
+                // ... same styles
                 width: (screenWidth - 28) / 2,
                 borderRadius: 12,
                 backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
@@ -187,7 +189,7 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                         colors={['#44ef4fff', '#1ac352ff']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        className="absolute top-2 right-2 px-2 py-1 rounded-lg"
+                        className="absolute top-2 left-2 px-2 py-1 rounded-lg"
                         style={{
                             shadowColor: '#44ef47ff',
                             shadowOffset: { width: 0, height: 2 },
@@ -203,13 +205,14 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                     </LinearGradient>
                 )}
 
-                {/* Wishlist Icon - Top Left */}
+                {/* Wishlist Icon - Top Right */}
                 <TouchableOpacity
                     activeOpacity={0.7}
+                    onPress={onToggleWishlist}
                     style={{
                         position: 'absolute',
                         top: 8,
-                        left: 8,
+                        right: 8,
                         width: 32,
                         height: 32,
                         borderRadius: 16,
@@ -223,13 +226,11 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                         elevation: 3,
                     }}
                 >
-                    <Icon name="heart-outline" size={18} color="#EF4444" />
+                    <Icon name={isInWishlist ? "heart" : "heart-outline"} size={18} color="#EF4444" />
                 </TouchableOpacity>
             </View>
 
-            {/* Content Area - Compact */}
             <View className="px-2.5 py-2">
-                {/* Title */}
                 <Text
                     className="font-bold text-gray-900 dark:text-white mb-1"
                     numberOfLines={1}
@@ -241,7 +242,6 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                     {item.itemName}
                 </Text>
 
-                {/* Description */}
                 {item.itemDescription && (
                     <Text
                         className="text-gray-500 dark:text-gray-400 mb-1.5"
@@ -298,24 +298,24 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                         )}
                     </View>
 
-                    {/* Add to Cart Button */}
                     <TouchableOpacity
                         activeOpacity={0.8}
+                        onPress={onAddToCart}
                         style={{
                             width: 34,
                             height: 34,
                             borderRadius: 10,
-                            backgroundColor: accentColor,
+                            backgroundColor: isInCart ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
                             justifyContent: 'center',
                             alignItems: 'center',
-                            shadowColor: accentColor,
+                            shadowColor: isInCart ? 'transparent' : accentColor,
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.3,
                             shadowRadius: 4,
                             elevation: 3,
                         }}
                     >
-                        <Icon name="cart-outline" size={20} color="#FFFFFF" />
+                        <Icon name={isInCart ? "checkmark" : "add"} size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -329,19 +329,54 @@ TrendingProductCard.displayName = 'TrendingProductCard';
 // MAIN TRENDING SECTION
 // ============================================================================
 
+import { useCart } from '../../../context/CartContext';
+import { useWishlist } from '../../../context/WishlistContext';
+
 const TrendingSection: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
+    const { addToCart, isInCart } = useCart();
+    const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
-    // React Query for trending products
     const { data: trendingProducts, isLoading } = useTrendingProducts();
 
     const handleProductPress = async (item: TrendingProduct) => {
         const itemId = item._id;
-        console.log('[TrendingSection] Product selected:', item.itemName, '| ID:', itemId);
         if (itemId) {
             navigation.navigate('ProductDetail', { productId: itemId });
         }
+    };
+
+    const handleToggleWishlist = (item: TrendingProduct) => {
+        if (isInWishlist(item._id)) {
+            removeFromWishlist(item._id);
+        } else {
+            addToWishlist({
+                _id: item._id,
+                itemName: item.itemName,
+                itemDescription: item.itemDescription,
+                image: item.image,
+                itemFinalPrice: item.itemFinalPrice,
+                itemRatings: item.itemRatings,
+                itemDiscount: item.itemDiscount,
+                itemInitialPrice: item.itemInitialPrice
+            });
+        }
+    };
+
+    const handleAddToCart = (item: TrendingProduct) => {
+        if (isInCart(item._id)) {
+            ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+            return;
+        }
+
+        addToCart({
+            id: item._id,
+            name: item.itemName,
+            price: item.itemFinalPrice,
+            quantity: 1,
+        });
+        ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
     };
 
     return (
@@ -351,7 +386,7 @@ const TrendingSection: React.FC = () => {
             end={{ x: 0, y: 1 }}
             className="py-4 mt-0"
         >
-            {/* Header */}
+            {/* ... Header and Skeleton Logic ... */}
             <View className="flex-row justify-between items-center px-4 mb-5">
                 <View>
                     <Text className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -368,7 +403,6 @@ const TrendingSection: React.FC = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Multiple Rows or Loading Skeleton */}
             <View>
                 {isLoading || !trendingProducts || trendingProducts.length === 0 ? (
                     // Render Skeletons
@@ -387,7 +421,6 @@ const TrendingSection: React.FC = () => {
                         </View>
                     ))
                 ) : (
-                    // Render Real Data from API
                     <View className="mb-2">
                         <FlatList
                             horizontal
@@ -401,6 +434,10 @@ const TrendingSection: React.FC = () => {
                                     accentColor={accentColor}
                                     isDark={isDark}
                                     onPress={() => handleProductPress(item)}
+                                    onAddToCart={() => handleAddToCart(item)}
+                                    isInCart={isInCart(item._id)}
+                                    onToggleWishlist={() => handleToggleWishlist(item)}
+                                    isInWishlist={isInWishlist(item._id)}
                                 />
                             )}
                         />

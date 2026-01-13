@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, Dimensions, Animated, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, Dimensions, Animated, StyleSheet, ToastAndroid } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { getRecentlyViewedItems } from '../../../api/medicinesApi';
+import { useRecentlyViewedItems } from '../../../hooks/useRecentlyViewed';
 import useThemePalette from '../../../hooks/useThemePalette';
 
 const { width } = Dimensions.get('window');
@@ -14,18 +15,18 @@ interface RecentlyViewedSectionProps {
     transparentBackground?: boolean;
 }
 
+import { useCart } from '../../../context/CartContext';
+
 const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewedSectionProps) => {
     const navigation = useNavigation<any>();
-    const { isDark, accentColor, surfaceColor } = useThemePalette();
+    const { isDark, accentColor } = useThemePalette();
+    const { addToCart, isInCart } = useCart();
 
-    const { data: apiResponse, isLoading } = useQuery({
-        queryKey: ['recentlyViewed'],
-        queryFn: getRecentlyViewedItems,
-    });
+    const { data: apiResponse, isLoading } = useRecentlyViewedItems();
 
-    const recentlyViewedItems = apiResponse?.data?.data || [];
+    const recentlyViewedItems = apiResponse?.data || [];
 
-    // Skeleton Animation Hooks - Must be before early return!
+    // ... skeleton setup ...
     const opacityValue = React.useRef(new Animated.Value(0.3)).current;
     React.useEffect(() => {
         Animated.loop(
@@ -39,6 +40,21 @@ const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewed
     if (recentlyViewedItems.length === 0 && !isLoading) {
         return null;
     }
+
+    const handleAddToCart = (item: any) => {
+        if (isInCart(item._id)) {
+            ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+            return;
+        }
+
+        addToCart({
+            id: item._id,
+            name: item.itemName,
+            price: item.itemFinalPrice || 0,
+            quantity: 1,
+        });
+        ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
+    };
 
     const renderItem = ({ item }: { item: any }) => (
         <TouchableOpacity
@@ -73,13 +89,14 @@ const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewed
                         <Icon name="image-outline" size={32} color={isDark ? '#555' : '#DDD'} />
                     )}
 
-                    {/* Floating 'View' Action */}
-                    <View
+                    {/* Floating 'Add to Cart' Action */}
+                    <TouchableOpacity
                         className="absolute bottom-2 right-2 w-8 h-8 rounded-full items-center justify-center shadow-sm"
-                        style={{ backgroundColor: isDark ? '#3A3A3A' : '#FFF' }}
+                        style={{ backgroundColor: isInCart(item._id) ? (isDark ? '#374151' : '#9CA3AF') : accentColor }}
+                        onPress={() => handleAddToCart(item)}
                     >
-                        <Icon name="arrow-forward" size={14} color={accentColor} />
-                    </View>
+                        <Icon name={isInCart(item._id) ? "checkmark" : "add"} size={18} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -124,9 +141,8 @@ const RecentlyViewedSection = ({ transparentBackground = false }: RecentlyViewed
         </TouchableOpacity>
     );
 
-    // Skeleton Animation Hooks moved to top
-
     const renderSkeleton = () => (
+        // ... (rest of the code is same or similar)
         <View className="flex-row px-5">
             {[1, 2, 3].map((i) => (
                 <View

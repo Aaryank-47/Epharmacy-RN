@@ -69,13 +69,11 @@ const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
         try {
             const storedId = await AsyncStorage.getItem(AI_USER_ID_KEY);
             if (storedId) {
-                console.log('Found stored AI User ID:', storedId);
                 setAiUserId(parseInt(storedId, 10));
                 return;
             }
         } catch (e) {
-            console.error('Error reading stored AI User ID', e);
-        }
+            }
 
         if (!aiUserId) {
             registerUser();
@@ -105,34 +103,24 @@ const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
                         };
                     }
                 } catch (err) {
-                    console.log('Failed to fetch full profile, using auth basics', err);
-                }
+                    }
             }
 
-            console.log('Registering with AI server:', profileData);
             const response = await axios.post(AI_ENDPOINTS.REGISTER, profileData);
 
             if (response.data && response.data.user_id) {
                 const newUserId = response.data.user_id;
                 setAiUserId(newUserId);
                 await AsyncStorage.setItem(AI_USER_ID_KEY, newUserId.toString());
-                console.log('Registration successful, AI User ID saved:', newUserId);
-            } else {
-                console.error('Registration failed: No user_id', response.data);
+                } else {
                 Alert.alert("Connection Problem", "Could not connect to AI service.");
             }
 
         } catch (error: any) {
-            console.error('Failed to register user with AI server:', error);
             if (error.response) {
                 const detail = error.response.data?.detail || '';
-                console.log('Error Data:', error.response.data);
-                console.log('Error Status:', error.response.status);
-
                 // Handle "User already exists" (500 Unique Constraint)
                 if (String(detail).includes('UNIQUE constraint failed') || String(detail).includes('users.phone_number')) {
-                    console.log('User already exists. Attempting to recover session using Phone Number as ID.');
-
                     // Fallback: If user exists, we assume we can proceed. 
                     // PROBLEM: We don't know the Server-Side ID.
                     // ATTEMPT: Use numeric phone number as a 'best guess' or just default to 1 for testing if phone fails?
@@ -185,10 +173,7 @@ const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
                 text: userMsg.text,
             };
 
-            console.log('Sending message to AI:', payload);
             const response = await axios.post(AI_ENDPOINTS.PREDICT, payload);
-            console.log('AI Response:', response.data);
-
             const aiResponseText = response.data.message || "I didn't catch that.";
 
             const aiMsg: Message = {
@@ -201,7 +186,6 @@ const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
             setMessages((prev) => [...prev, aiMsg]);
 
         } catch (error) {
-            console.error('Failed to send message:', error);
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 text: "Sorry, I couldn't reach the server. Please try again.",

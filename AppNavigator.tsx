@@ -28,6 +28,7 @@ import PaymentScreen from "./src/components/commonPage/PaymentScreen";
 import QRScannerScreen from "./src/components/qr/QRScannerScreen";
 import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
 import HistoryPage from "./src/components/commonPage/HistoryPage";
+import WishlistScreen from "./src/components/pages/WishlistScreen";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -58,6 +59,7 @@ export type RootStackParamList = {
   OfferBannerSection: undefined;
   PDFUploadScreen: undefined;
   HistoryPage: undefined;
+  Wishlist: undefined;
   Welcome: undefined;
   Start: undefined;
   SignIn: undefined;
@@ -83,6 +85,7 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "PaymentScreen", component: PaymentScreen },
   { name: "PDFUploadScreen", component: PDFUploadScreen },
   { name: "HistoryPage", component: HistoryPage },
+  { name: "Wishlist", component: WishlistScreen },
   { name: "QRScannerScreen", component: QRScannerScreen },
   { name: "OfferBannerSection", component: OfferBannerSection },
 ];

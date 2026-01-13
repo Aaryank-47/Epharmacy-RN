@@ -28,8 +28,6 @@ class LocationService {
         const fineLocation = granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
         const coarseLocation = granted[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION];
 
-        console.log('[LocationService] Permissions result:', granted);
-
         if (
           fineLocation === PermissionsAndroid.RESULTS.GRANTED ||
           coarseLocation === PermissionsAndroid.RESULTS.GRANTED
@@ -54,7 +52,6 @@ class LocationService {
 
         return false;
       } catch (err) {
-        console.warn('[LocationService] Permission Error:', err);
         return false;
       }
     }
@@ -94,7 +91,6 @@ class LocationService {
 
       // 2. Try High Accuracy (GPS)
       try {
-        console.log('[LocationService] Trying GPS...');
         const location = await getPosition({
           enableHighAccuracy: true,
           timeout: 10000, // 10s for GPS
@@ -103,8 +99,6 @@ class LocationService {
         });
         resolve(location);
       } catch (error: any) {
-        console.log('[LocationService] GPS failed, trying Network...', error.message);
-
         // 3. Fallback to Low Accuracy (Network/WiFi)
         try {
           const location = await getPosition({
@@ -115,7 +109,6 @@ class LocationService {
           });
           resolve(location);
         } catch (finalError: any) {
-          console.log('[LocationService] All providers failed:', finalError.code, finalError.message);
           if (finalError.code === 1) reject(new Error('PERMISSION_DENIED'));
           else if (finalError.code === 2) reject(new Error('GPS_DISABLED'));
           else reject(new Error(finalError.message));
@@ -163,7 +156,6 @@ class LocationService {
 
       return 'Unknown Location';
     } catch (error) {
-      console.warn('[LocationService] Reverse Geocoding Error:', error);
       return 'Location Updated';
     }
   }

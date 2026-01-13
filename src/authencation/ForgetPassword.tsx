@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -51,23 +51,16 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
   const {
     surfaceColor,
     ctaGradient,
-    iconMutedBackground,
-    statusBarStyle,
     serifFontFamily,
     isDark,
   } = useThemePalette();
 
-  // Timer for OTP resend
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => setTimer(t => t - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Auto-dismiss error after 5 seconds
-
-
-  // Keyboard listener for animation
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () =>
       setKeyboardVisible(true),
@@ -116,7 +109,7 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
     }
   };
 
-  const handleVerifyOTP = async (): Promise<void> => {
+  const handleVerifyOTP = useCallback(async (): Promise<void> => {
     const otpCode = otp.join('');
     if (otpCode.length !== 4) {
       showErrorAlert('Please enter 4-digit OTP');
@@ -142,14 +135,14 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, otp]);
 
   // Auto-verify when OTP is filled
   useEffect(() => {
     if (step === 1 && otp.every(digit => digit !== '')) {
       handleVerifyOTP();
     }
-  }, [otp, step]);
+  }, [otp, step, handleVerifyOTP]);
 
   const handleResendOTP = async (): Promise<void> => {
     if (timer > 0) return;
@@ -231,17 +224,10 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
           className="px-5 py-0"
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
           <View className="flex-row items-center justify-between mb-6 mt-[-5px]">
-            {/* <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2 border rounded-full border-slate-200 dark:border-white/30">
-              <MaterialCommunityIcons name="arrow-left" size={24}  color={
-                      statusBarStyle === 'light-content' ? '#FFFFFF' : '#111827'
-                    }/>
-            </TouchableOpacity> */}
             <View className="w-10" />
           </View>
 
-          {/* Step Indicator */}
           <View className="flex-row items-center justify-center mb-6 gap-1.5">
             <View
               className={`w-3 h-3 rounded-full ${step >= 0 ? 'bg-black' : 'bg-gray-300'
@@ -265,7 +251,6 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
             />
           </View>
 
-          {/* Step 1: Email */}
           {step === 0 && (
             <View className="gap-3 flex-1 justify-start">
               {!keyboardVisible && (
@@ -383,7 +368,6 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
                 })}
               </View>
 
-              {/* Timer & Resend */}
               <View className="items-center py-2 mb-2">
                 {timer > 0 ? (
                   <View className="flex-row items-center gap-1.5">
@@ -445,7 +429,6 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
             </View>
           )}
 
-          {/* Step 3: Password */}
           {step === 2 && (
             <View className="gap-3 flex-1 justify-center pb-4">
               <View className="items-center mb-2">
@@ -547,8 +530,6 @@ const ForgetPasswordScreen: React.FC<ForgetPasswordScreenProps> = ({
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Beautiful Error Alert Popup */}
 
     </SafeAreaView>
   );

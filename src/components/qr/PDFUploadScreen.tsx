@@ -164,13 +164,6 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
         // Construct backend URL - adjust if using local backend
         const backendUrl = `${API_BASE_URL}/api/v1/prescriptions/upload`;
 
-        console.log('[OCR] Sending to:', backendUrl);
-        console.log('[OCR] File:', {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        });
-
         const response = await fetch(backendUrl, {
           method: 'POST',
           body: formData,
@@ -178,8 +171,6 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
             'Accept': 'application/json',
           },
         });
-
-        console.log('[OCR] Response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -189,12 +180,6 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
         }
 
         const responseData: OcrResponse = await response.json();
-
-        console.log('[OCR] Success:', {
-          textLength: responseData.text?.length,
-          medicinesCount: responseData.medicines?.length,
-          detectedCount: responseData.meta?.detectedCount,
-        });
 
         // Process and store extracted medicines with editable state
         const editableMedicines: EditableMedicine[] = (responseData.medicines || []).map(
@@ -212,7 +197,6 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
         const errorMessage =
           err instanceof Error ? err.message : 'Unknown error during OCR extraction';
 
-        console.error('[OCR] Error:', errorMessage);
         setError(errorMessage);
 
         // Provide detailed error feedback
@@ -298,7 +282,6 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       });
 
       if (result.didCancel) {
-        console.log('User cancelled image picker');
         return;
       }
 
@@ -324,8 +307,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to pick document');
-      console.error('Image picker error:', err);
-    }
+      }
   }, [handleOcrExtraction]);
 
   const handleTakePhoto = useCallback(async () => {
@@ -337,7 +319,6 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       });
 
       if (result.didCancel) {
-        console.log('User cancelled camera');
         return;
       }
 
@@ -362,8 +343,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to take photo');
-      console.error('Camera error:', err);
-    }
+      }
   }, [handleOcrExtraction]);
 
   const getFileIcon = (type: string): string => {

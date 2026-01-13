@@ -20,7 +20,6 @@ import {
 import type { NavigationProp } from '@react-navigation/native';
 import {
   SafeAreaView,
-  useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -55,7 +54,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
   // Refs & Hooks
   const scrollRef = useRef<ScrollView | null>(null);
-  const insets = useSafeAreaInsets();
   const { login: persistSession } = useAuth();
   const {
     statusBarBackground,
@@ -75,7 +73,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
       } else {
         // Signup successful but no token (requires manual login)
         // Show success message (using console for now or navigation params if needed)
-        console.log('Signup successful, redirecting to login');
         navigation.navigate('SignIn');
       }
     },
@@ -176,26 +173,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
               keyboardShouldPersistTaps="handled"
               scrollEnabled={true}
             >
-              {/* Header */}
-              {/* <View className="flex-row items-center pt-6 pb-4">
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  className="p-2 -ml-2"
-                >
-                  <MaterialCommunityIcons
-                    name="arrow-left"
-                    size={24}
-                    color={ctaGradient[0]}
-                  />
-                </TouchableOpacity>
-                <Text
-                  className="text-lg font-bold flex-1 text-center"
-                  style={{ color: ctaGradient[0], fontFamily: serifFontFamily }}
-                >
-                  Create Account
-                </Text>
-                <View className="w-10" />
-              </View> */}
 
               {/* Main Content */}
               <View className="flex-1 justify-center py-1 -mt-12">

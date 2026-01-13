@@ -112,7 +112,6 @@ const readTokenFromStorage = async (): Promise<{
 
     return { token, expiry };
   } catch (error) {
-    console.error('[httpClient] Failed to read token from storage:', error);
     return { token: null, expiry: null };
   }
 };
@@ -185,9 +184,7 @@ httpClient.interceptors.response.use(
       : 0;
 
     if (__DEV__ && duration > SLOW_REQUEST_THRESHOLD_MS) {
-      console.warn(
-        `[httpClient] Slow request (${duration}ms): ${response.config.method?.toUpperCase()} ${response.config.url}`
-      );
+      console.warn(`[HTTP] Slow request (${duration}ms): ${response.config.method?.toUpperCase()} ${response.config.url}`);
     }
 
     return response;
@@ -219,7 +216,6 @@ export const persistAuthToken = async (
       AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryMs.toString()),
     ]);
   } catch (error) {
-    console.error('[httpClient] Failed to persist auth token:', error);
     throw error;
   }
 };
@@ -235,25 +231,16 @@ export const clearAuthToken = async (): Promise<void> => {
       STORAGE_KEYS.TOKEN_EXPIRY,
     ]);
   } catch (error) {
-    console.error('[httpClient] Failed to clear auth token:', error);
     // Don't throw - clear succeeded even if storage failed
   }
 };
 
-/**
- * 
- * 
- * 
- * 
- * Get current token expiry time
- */
 export const getTokenExpiry = async (): Promise<number | null> => {
   try {
     const expiryStr = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
     if (!expiryStr) return null;
     return parseInt(expiryStr, 10);
   } catch (error) {
-    console.error('[httpClient] Failed to get token expiry:', error);
     return null;
   }
 };

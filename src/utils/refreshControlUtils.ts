@@ -45,7 +45,6 @@ export const createBatchedRefresh = (
         await new Promise<void>((resolve) => setTimeout(resolve, minTime - elapsed));
       }
     } catch (error) {
-      console.error('[RefreshControl] Batch refresh failed:', error);
       throw error;
     }
   };
@@ -159,8 +158,7 @@ export const createSequentialRefresh = (
         try {
           await call();
         } catch (error) {
-          console.error('[RefreshControl] Sequential call failed:', error);
-        }
+          }
       }
 
       const elapsed = Date.now() - startTime;
@@ -168,7 +166,6 @@ export const createSequentialRefresh = (
         await new Promise<void>((resolve) => setTimeout(resolve, minTime - elapsed));
       }
     } catch (error) {
-      console.error('[RefreshControl] Sequential refresh failed:', error);
       throw error;
     }
   };

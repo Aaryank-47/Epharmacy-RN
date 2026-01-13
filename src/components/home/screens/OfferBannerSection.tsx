@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, FlatList, Dimensions, TouchableOpacity, Image, Animated, StyleProp, ViewStyle } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, Dimensions, TouchableOpacity, Image, Animated, StyleProp, ViewStyle } from 'react-native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { useRunningAdvertisements } from '../../../hooks/useRunningAdvertisements';
 import LinearGradient from 'react-native-linear-gradient';
@@ -65,7 +64,6 @@ const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
 
 const OfferBannerSection: React.FC = () => {
   const { isDark, accentColor } = useThemePalette();
-  const navigation = useNavigation();
   const scrollX = useRef(new Animated.Value(0)).current;
 
   const { data: ads, isLoading, error } = useRunningAdvertisements();
@@ -96,8 +94,6 @@ const OfferBannerSection: React.FC = () => {
   ];
 
   const displayAds = (ads && (ads as any[]).length > 0) ? ads : staticOffers;
-
-  // Show shimmer if loading or error or no data yet (persistent shimmer)
   const showShimmer = isLoading || (!ads && !error);
 
   const renderShimmerPlaceholders = () => (
@@ -118,7 +114,7 @@ const OfferBannerSection: React.FC = () => {
 
   const ITEM_WIDTH = screenWidth * 0.94;
   const SPACING = 10;
-  const SNAP_INTERVAL = ITEM_WIDTH + SPACING * 2; // Total width of one item including margins
+  const SNAP_INTERVAL = ITEM_WIDTH + SPACING * 2;
 
   return (
     <LinearGradient
@@ -132,7 +128,7 @@ const OfferBannerSection: React.FC = () => {
         <Text className="text-xl font-bold text-gray-900 dark:text-white italic tracking-tighter">
           SPECIAL OFFERS
         </Text>
-        <TouchableOpacity onPress={() => console.log('See all offers')}>
+        <TouchableOpacity onPress={() => {}}>
           <Text style={{ color: accentColor }} className="text-sm font-bold">
             See All
           </Text>
@@ -211,25 +207,56 @@ const OfferBannerSection: React.FC = () => {
                 >
                   <View className="flex-1 pr-2 justify-center">
                     <Text
-                      className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
                       numberOfLines={2}
-                      style={{ textShadowColor: 'rgba(0,0,0,0.1)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }}
+                      style={{
+                        fontSize: 24,
+                        fontWeight: '900',
+                        marginBottom: 8,
+                        color: isDark ? '#FFFFFF' : '#111827',
+                        textShadowColor: 'rgba(0,0,0,0.1)',
+                        textShadowOffset: { width: 1, height: 1 },
+                        textShadowRadius: 2,
+                      }}
                     >
                       {item.title}
                     </Text>
                     <Text
-                      className={`text-base font-medium mb-5 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}
                       numberOfLines={2}
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '500',
+                        marginBottom: 20,
+                        color: isDark ? '#D1D5DB' : '#1F2937',
+                      }}
                     >
                       {item.description || item.offerText || ''}
                     </Text>
 
                     <TouchableOpacity
-                      className={`self-start px-6 py-3 rounded-full shadow-md ${isDark ? 'bg-[#cf7393ff]' : 'bg-[#22C55E]'}`}
-                      onPress={() => console.log('Shop offer:', item.title)}
+                      onPress={() => {}}
                       activeOpacity={0.8}
+                      style={{
+                        alignSelf: 'flex-start',
+                        paddingHorizontal: 24,
+                        paddingVertical: 12,
+                        borderRadius: 9999,
+                        backgroundColor: isDark ? '#cf7393ff' : '#22C55E',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        elevation: 5,
+                      }}
                     >
-                      <Text className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                          letterSpacing: 1,
+                          color: '#FFFFFF',
+                        }}
+                      >
                         Shop Now
                       </Text>
                     </TouchableOpacity>

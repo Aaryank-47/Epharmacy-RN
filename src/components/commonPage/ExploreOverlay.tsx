@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Animated, TouchableOpacity, Dimensions } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { useThemePalette } from '../../hooks/useThemePalette';
 
 const { width } = Dimensions.get('window');
 
@@ -14,7 +13,6 @@ interface ExploreOverlayProps {
 }
 
 const ExploreOverlay: React.FC<ExploreOverlayProps> = ({ onClose, onOpenAiChat, onOpenScanner }) => {
-    const { isDark } = useThemePalette();
     const navigation = useNavigation();
 
     // Animation values
@@ -28,7 +26,7 @@ const ExploreOverlay: React.FC<ExploreOverlayProps> = ({ onClose, onOpenAiChat, 
             Animated.spring(anim2, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true }),
             Animated.spring(anim3, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true }),
         ]).start();
-    }, []);
+    }, [anim1, anim2, anim3]);
 
     const TAB_CENTER_X = width * 0.5;
     const BOTTOM_OFFSET = 70;

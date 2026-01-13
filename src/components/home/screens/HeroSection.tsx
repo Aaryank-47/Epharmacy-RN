@@ -10,29 +10,26 @@ import {
   FlatList,
   Alert,
   Animated,
-  Modal,
   ActivityIndicator,
   Platform,
   Linking,
   ToastAndroid,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import LocationService from '../../../services/LocationService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import { useQuery } from '@tanstack/react-query';
+import { useFeaturedMedicines } from '../../../hooks/useFeaturedMedicines';
+import { useRunningAdvertisements } from '../../../hooks/useRunningAdvertisements';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import {
-  getFeaturedMedicines,
-  getRunningAdvertisements,
   trackAdvertisementClick,
   updateUserProfile,
-  addItemToRecentlyViewed,
+  getFeaturedMedicines,
+  getRunningAdvertisements,
 } from '../../../api/medicinesApi';
 import QROptionsBottomSheet from '../../qr/QROptionsBottomSheet';
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 interface Medicine {
   _id: string;
@@ -172,6 +169,8 @@ const SkeletonShimmer = memo<SkeletonShimmerProps>(
       outputRange: [0.3, 0.8],
     });
 
+    const backgroundColor = isDark ? '#3A3A3A' : '#E5E7EB';
+
     return (
       <Animated.View
         style={[
@@ -179,7 +178,7 @@ const SkeletonShimmer = memo<SkeletonShimmerProps>(
             width,
             height,
             borderRadius,
-            backgroundColor: isDark ? '#3A3A3A' : '#E5E7EB',
+            backgroundColor,
             opacity,
           },
           style,
@@ -342,7 +341,7 @@ interface AdvertisementCardProps {
   onPress: (id: string, title: string) => void;
 }
 
-const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, accentColor, onPress }) => {
+const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, onPress }) => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -468,10 +467,6 @@ const AdvertisementCard = memo<AdvertisementCardProps>(({ ad, isDark, accentColo
 
 AdvertisementCard.displayName = 'AdvertisementCard';
 
-// ============================================================================
-// PROGRESS DOT COMPONENT
-// ============================================================================
-
 const ProgressDot = memo(({ isActive, isDark, duration = 3000 }: { isActive: boolean; isDark: boolean; duration?: number }) => {
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -487,7 +482,7 @@ const ProgressDot = memo(({ isActive, isDark, duration = 3000 }: { isActive: boo
     } else {
       progress.setValue(0);
     }
-  }, [isActive, duration]);
+  }, [isActive, duration, progress]);
 
   return (
     <View
@@ -556,7 +551,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     retry: 1,
     retryDelay: 1000,
     enabled: true,
-    placeholderData: MOCK_MEDICINES,
   });
 
   // Advertisements - Moderate cache for freshness
@@ -577,7 +571,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     retry: 1,
     retryDelay: 1000,
     enabled: true,
-    placeholderData: MOCK_ADS,
     // Auto-poll if no ads found, as requested by user ("har kuch time interval me api call hota rhna cahiye")
     refetchInterval: (query) => (!query.state.data?.length ? 3000 : false),
   });
@@ -586,42 +579,29 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   const medicines: Medicine[] = useMemo(() => medicinesData || MOCK_MEDICINES, [medicinesData]);
   const advertisements: Advertisement[] = useMemo(() => adsData || MOCK_ADS, [adsData]);
 
-  // Infinite scroll optimization - Create a large dataset for "one direction" loop illusion
   const infiniteOffers = useMemo(() => {
     if (advertisements.length === 0) return [];
-    // Create 100 copies of the data to simulate infinite scrolling
-    // This allows smooth "left to right" transition for a very long time
     return Array(100).fill(advertisements).flat();
   }, [advertisements]);
 
-  // Safe start index calculation
-  // We start at 0. Since we have 100 copies, user can scroll right for a long time.
-  const startIndex = 0;
-
-  // ========== LOCATION HANDLER ==========
   // ========== LOCATION HANDLER ==========
   const handleLocationPress = useCallback(async () => {
     setLocationLoading(true);
 
     try {
-      // Get location using consolidated service (handles permission & GPS enable)
       const { latitude, longitude } = await LocationService.getCurrentLocation();
-
-      // Get readable address
       const addressString = await LocationService.getAddressFromCoordinates(latitude, longitude);
 
-      // Store location data
       const locationData: LocationData = {
         latitude,
         longitude,
         address: addressString,
-        city: 'Current City', // In a real app, parse this from address components
+        city: 'Current City',
         state: 'India',
       };
 
       setUserLocation(locationData);
 
-      // Update profile with location
       const addressData = {
         address: {
           street: addressString,
@@ -643,7 +623,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
 
       setLocationLoading(false);
     } catch (error: any) {
-      console.error('[HeroSection] Location Error:', error);
       setLocationLoading(false);
 
       let message = 'Error updating location';
@@ -678,9 +657,9 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     }
   }, []);
 
-  const handleQRScannerToggle = useCallback(() => {
-    setBottomSheetVisible(true);
-  }, []);
+  // const handleQRScannerToggle = useCallback(() => {
+  //   setBottomSheetVisible(true);
+  // }, []);
 
   const handleScanQR = useCallback(() => {
     navigation.navigate('QRScannerScreen');
@@ -691,15 +670,14 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
   }, [navigation]);
 
   const handleMedicinePress = useCallback(async (medicine: Medicine) => {
-    console.log('Medicine selected:', medicine.title);
     navigation.navigate('ProductDetail', { productId: medicine._id });
   }, [navigation]);
 
-  const handleAdvertisementClick = useCallback(async (adId: string, adTitle: string) => {
+  const handleAdvertisementClick = useCallback(async (adId: string) => {
     try {
       await trackAdvertisementClick(adId);
     } catch (error) {
-      console.error('Error tracking click:', error);
+      error;
     }
   }, []);
 
@@ -712,7 +690,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
       const maxIndex = infiniteOffers.length - 1;
       const nextIndex = scrollIndexRef.current + 1;
 
-      // If we somehow reach the true end (unlikely in normal usage), reset to 0
       const targetIndex = nextIndex > maxIndex ? 0 : nextIndex;
 
       if (flatListRef.current) {
@@ -726,7 +703,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     return () => clearInterval(interval);
   }, [advertisements.length, infiniteOffers.length]);
 
-  // Initialize scroll position
   useEffect(() => {
     if (advertisements.length === 0) return;
     scrollIndexRef.current = 0;
@@ -734,21 +710,17 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     setCurrentOffer(0);
   }, [advertisements.length]);
 
-  // ========== SCROLL HANDLER FOR DOTS SYNC ==========
   const handleScroll = useCallback((event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const itemWidth = screenWidth; // Full width
     const index = Math.round(offsetX / itemWidth);
 
-    // Update ref for auto-scroll
     scrollIndexRef.current = index;
 
-    // Update state for dots
     setCurrentScrollIndex(index);
     setCurrentOffer(index % Math.max(advertisements.length, 1));
   }, [advertisements.length]);
 
-  // Show skeleton only on first load
   if (medicinesLoading && adsLoading && medicinesData === undefined && adsData === undefined) {
     return <HeroSectionSkeleton isDark={isDark} />;
   }
@@ -828,7 +800,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
           </View>
         </View>
 
-        {/* Beautiful Location Display Card */}
+
         {userLocation && (
           <LinearGradient
             colors={isDark ? ['#1F4788', '#0D47A1'] : ['#E3F2FD', '#BBDEFB']}
@@ -903,7 +875,6 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
           </LinearGradient>
         )}
 
-        {/* Categories (Featured Medicines as Circles) */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
