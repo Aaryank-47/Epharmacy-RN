@@ -556,6 +556,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     retry: 1,
     retryDelay: 1000,
     enabled: true,
+    placeholderData: MOCK_MEDICINES,
   });
 
   // Advertisements - Moderate cache for freshness
@@ -576,6 +577,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({ navigation }) => {
     retry: 1,
     retryDelay: 1000,
     enabled: true,
+    placeholderData: MOCK_ADS,
     // Auto-poll if no ads found, as requested by user ("har kuch time interval me api call hota rhna cahiye")
     refetchInterval: (query) => (!query.state.data?.length ? 3000 : false),
   });

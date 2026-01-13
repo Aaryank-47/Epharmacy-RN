@@ -23,7 +23,6 @@ export interface Shop {
   longitude: number;
   availableMedicines: Medicine[]; // Generic medicine names available with price
 }
-
 export const RAIPUR_SHOPS: Shop[] = [
   {
     id: 'shop_SN_001',

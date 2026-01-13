@@ -49,6 +49,7 @@ const normalizeLoginResponse = (
   response: ApiResponse<any>
 ): LoginResponsePayload => {
   const { data } = response;
+  console.log('[authApi] Normalizing login response data:', data);
   // Handle case where data IS the user object (direct response)
   const user = data.user || data;
   const token = data.token || null;
@@ -199,8 +200,80 @@ export const resetPasswordRequest = async (
   }
 };
 
-// ============================================================================
-// USER PROFILE API FUNCTIONS
+/**
+ * Login with Google ID token
+ * @param idToken - Google ID token from Google Sign-In
+ * @throws Error if login fails
+ */
+export const googleLoginRequest = async (
+  idToken: string
+): Promise<LoginResponsePayload> => {
+  try {
+
+    console.log('idToken received in googleLoginRequest:', idToken)
+    if (!idToken) {
+      console.error('[authApi] No ID token provided for Google login');
+      throw new Error('No ID token provided to googleLoginRequest');
+    }
+
+    console.log('🔐 Google Login Request starting...');
+    console.log('📝 ID Token received:', {
+      exists: !!idToken,
+      length: idToken?.length,
+      preview: idToken?.substring(0, 50) + '...'
+    });
+
+    // Get FCM token before login
+    let fcmToken = null;
+    try {
+      fcmToken = await notificationService.getToken();
+      if (fcmToken) {
+        console.log('📱 FCM Token obtained for Google login:', fcmToken.substring(0, 20) + '...');
+      }
+    } catch (tokenError) {
+      console.warn('⚠️ Could not get FCM token, continuing without it:', tokenError);
+    }
+
+    const payload = {
+      userToken: idToken,
+      ...(fcmToken && { fcmToken })
+    };
+
+    console.log('🔐 Sending Google login request to backend...');
+    console.log('📦 Payload:', {
+      userToken: payload.userToken ? payload.userToken.substring(0, 50) + '...' : 'missing',
+      fcmToken: payload.fcmToken ? 'present' : 'missing'
+    });
+
+    const response = await httpClient.post<ApiResponse<any>>(
+      API_ROUTES.auth.googleLogin,
+      payload
+    );
+
+    console.log('✅ Google login response received:', {
+      status: response.status,
+      hasData: !!response.data,
+      hasUser: !!response.data?.data?.user
+    });
+
+    if (!response.data) {
+      throw new Error('Invalid response from server');
+    }
+
+    return normalizeLoginResponse(response.data);
+  } catch (error: any) {
+    console.error('[authApi] Google login failed:', {
+      message: error?.message,
+      response: error?.response?.data,
+      status: error?.response?.status,
+      code: error?.code,
+    });
+    
+    // Re-throw with proper error structure for frontend handling
+    throw error;
+  }
+};
+
 // ============================================================================
 
 /**

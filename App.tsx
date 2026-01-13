@@ -21,6 +21,8 @@ loadIconFonts();
 export default function App() {
   const colorScheme = useColorScheme();
 
+  console.log('[App] Startup - Bundle Loaded');
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -43,8 +45,8 @@ export default function App() {
               <CartProvider>
                 <AuthProvider>
                   {/* Initialize Notification System */}
-                  <NotificationSetup />
-                  
+                  {/* <NotificationSetup /> */}
+
                   <NavigationContainer>
                     <AppNavigator />
                   </NavigationContainer>

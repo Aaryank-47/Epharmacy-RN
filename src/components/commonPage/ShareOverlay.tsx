@@ -3,7 +3,13 @@ import { View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions } from '
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 
-const { width } = Dimensions.get('window');
+// Keep this if used in styles/constants outside component, otherwise remove. 
+// Wait, is it used outside? 
+// Checking file content from Step 634:
+// Line 33 re-declares it. 
+// Line 6 declares it.
+// No other usage outside component.
+// So I will remove line 6.
 
 interface ShareOverlayProps {
     onClose: () => void;

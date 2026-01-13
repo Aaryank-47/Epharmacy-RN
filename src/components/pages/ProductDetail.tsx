@@ -397,7 +397,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
           </View>
 
           {/* Thumbnails - Left Aligned */}
-          {product.images.length > 1 && (
+          {/* {product.images.length > 1 && (
             <View className="w-full px-4 items-start">
               <ScrollView
                 horizontal
@@ -419,7 +419,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
                 ))}
               </ScrollView>
             </View>
-          )}
+          )} */}
         </View>
 
         {/* Product details card */}
@@ -672,7 +672,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
       </Modal>
 
       {/* ARC Share Overlay */}
-      {showShareArcOverlay && (
+      {/* {showShareArcOverlay && (
         <View style={[StyleSheet.absoluteFill, { zIndex: 999 }]} pointerEvents="box-none">
           <Animated.View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' }}>
             <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowShareArcOverlay(false)} />
@@ -685,7 +685,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
             onShareTelegram={() => console.log('Share TG')}
           />
         </View>
-      )}
+      )} */}
 
       {/* Floating Premium Bottom Bar */}
       <Animated.View
