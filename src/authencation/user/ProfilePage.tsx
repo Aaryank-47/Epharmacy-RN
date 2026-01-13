@@ -800,6 +800,59 @@ const ProfilePage: React.FC = () => {
 
 
 
+
+        {/* Wishlist Section */}
+        <TouchableOpacity
+          style={{
+            marginHorizontal: screenWidth * 0.04,
+            marginBottom: 20,
+            padding: screenWidth * 0.05,
+            borderRadius: 16,
+            backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 2,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+          onPress={() => navigation.navigate('Wishlist')}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{
+              width: 40, height: 40, borderRadius: 20,
+              backgroundColor: isDark ? '#3A3A3A' : '#FEE2E2',
+              alignItems: 'center', justifyContent: 'center', marginRight: 15
+            }}>
+              <MaterialCommunityIcons name="heart" size={20} color="#EF4444" />
+            </View>
+            <View>
+              <Text style={{
+                fontSize: getResponsiveSize(18),
+                fontWeight: 'bold',
+                color: isDark ? '#FFFFFF' : '#1F2937'
+              }}>
+                My Wishlist
+              </Text>
+              <Text style={{
+                marginTop: 2,
+                fontSize: getResponsiveSize(12),
+                color: isDark ? '#9CA3AF' : '#6B7280'
+              }}>
+                {userData.wishlistCount || 0} items waiting
+              </Text>
+            </View>
+          </View>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={getResponsiveSize(24)}
+            color={isDark ? '#FFFFFF' : '#1F2937'}
+          />
+        </TouchableOpacity>
+
         {/* Privacy & Terms - Collapsible */}
         <View style={{
           marginHorizontal: screenWidth * 0.04,

@@ -4,7 +4,7 @@
 // Production backend for all features including notifications
 // export const API_BASE_URL = "https://phrma-production-app-backend-main.onrender.com";
 // export const API_BASE_URL = "https://phrma-production-app-backend-main-qbt9.onrender.com";
-export const API_BASE_URL = "http://10.41.89.226:5000";
+export const API_BASE_URL = "http://10.235.16.226:5000";
 
 export const API_TIMEOUT = 60000; // Increased timeout to 60 seconds for file uploads
 

@@ -22,6 +22,7 @@ import { useColorScheme } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { CartContext } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 import { getItemDetails, addItemToRecentlyViewed } from '../../api/medicinesApi';
 import { ItemDetails } from '../../api/types';
 import ShareOverlay from '../commonPage/ShareOverlay';
@@ -71,6 +72,7 @@ interface ProductDetailProps {
 const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
   // @ts-ignore - CartContext is now exported but types might need checking if strict
   const { addToCart } = useContext(CartContext) || {};
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -105,8 +107,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
   React.useEffect(() => {
     if (productId) {
       addItemToRecentlyViewed(productId)
-        .then(() => {})
-        .catch(() => {});
+        .then(() => { })
+        .catch(() => { });
     }
   }, [productId]);
 
@@ -177,7 +179,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
 
   const handleShare = (platform: string) => {
     setShowShareOptions(false);
-    };
+  };
 
   const renderImage: ListRenderItem<string> = ({ item }) => (
     <View className="items-center justify-center p-2" style={{ width: screenWidth, height: screenWidth * 0.80 }}>
@@ -315,6 +317,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
     );
   }
 
+  const handleToggleWishlist = () => {
+    if (!product) return;
+
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist({
+        _id: product.id,
+        itemName: product.name,
+        itemDescription: product.description,
+        image: product.images[0],
+        itemFinalPrice: product.finalPrice,
+        itemRatings: product.rating,
+        itemDiscount: Number(product.discountPercent) || 0,
+        itemInitialPrice: product.price
+      });
+    }
+  };
+
   return (
     <View className="flex-1 bg-gray-50 dark:bg-[#0B0B0B]">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -329,8 +350,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
         </TouchableOpacity>
         <Text className="text-lg font-bold text-black dark:text-white">Product Details</Text>
         <View className="flex-row items-center">
-          <TouchableOpacity className="p-2 ml-2" onPress={() => { }}>
-            <Icon name="heart-outline" size={22} color={isDark ? '#fff' : '#000'} />
+          <TouchableOpacity className="p-2 ml-2" onPress={handleToggleWishlist}>
+            <Icon
+              name={product && isInWishlist(product.id) ? "heart" : "heart-outline"}
+              size={22}
+              color={product && isInWishlist(product.id) ? "#EF4444" : (isDark ? '#fff' : '#000')}
+            />
           </TouchableOpacity>
           <TouchableOpacity className="p-2 ml-2" onPress={() => navigation.navigate('Cart')}>
             <Icon name="cart-outline" size={22} color={isDark ? '#fff' : '#000'} />
@@ -677,10 +702,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ navigation, route }) => {
           </Animated.View>
           <ShareOverlay
             onClose={() => setShowShareArcOverlay(false)}
-            onShareWhatsapp={() => {}}
-            onShareInsta={() => {}}
-            onShareFB={() => {}}
-            onShareTelegram={() => {}}
+            onShareWhatsapp={() => { }}
+            onShareInsta={() => { }}
+            onShareFB={() => { }}
+            onShareTelegram={() => { }}
           />
         </View>
       )}

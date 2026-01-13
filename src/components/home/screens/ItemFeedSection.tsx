@@ -95,9 +95,11 @@ interface ItemCardProps {
     onPress: () => void;
     onAddToCart: () => void;
     isInCart: boolean;
+    onToggleWishlist: () => void;
+    isInWishlist: boolean;
 }
 
-const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAddToCart, isInCart }) => {
+const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAddToCart, isInCart, onToggleWishlist, isInWishlist }) => {
     // ... logic ...
     const hasDiscount = item.itemDiscount && item.itemDiscount > 0;
 
@@ -181,17 +183,18 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAd
                 {/* Wishlist Heart */}
                 <TouchableOpacity
                     activeOpacity={0.7}
+                    onPress={onToggleWishlist}
                     style={{
                         position: 'absolute',
-                        top: 10,
-                        right: 10,
-                        width: 30,
-                        height: 30,
-                        borderRadius: 15,
+                        top: 8,
+                        right: 8,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
                         alignItems: 'center',
                         justifyContent: 'center',
                         zIndex: 10,
-                        backgroundColor: isDark ? 'rgba(30, 32, 40, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
                         shadowColor: '#000',
                         shadowOffset: { width: 0, height: 1 },
                         shadowOpacity: 0.1,
@@ -199,7 +202,7 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAd
                         elevation: 2,
                     }}
                 >
-                    <Icon name="heart-outline" size={16} color={isDark ? '#FFFFFF' : '#EF4444'} />
+                    <Icon name={isInWishlist ? "heart" : "heart-outline"} size={16} color="#EF4444" />
                 </TouchableOpacity>
             </View>
 
@@ -331,7 +334,7 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAd
 // ROW CONTAINER
 // ============================================================================
 
-const HorizontalRow = memo(({ items, isDark, accentColor, handlePress, handleAddToCart, checkIsInCart }: { items: ItemFeedItem[], isDark: boolean, accentColor: string, handlePress: (item: ItemFeedItem) => void, handleAddToCart: (item: ItemFeedItem) => void, checkIsInCart: (id: string) => boolean }) => {
+const HorizontalRow = memo(({ items, isDark, accentColor, handlePress, handleAddToCart, checkIsInCart, handleToggleWishlist, checkIsInWishlist }: { items: ItemFeedItem[], isDark: boolean, accentColor: string, handlePress: (item: ItemFeedItem) => void, handleAddToCart: (item: ItemFeedItem) => void, checkIsInCart: (id: string) => boolean, handleToggleWishlist: (item: ItemFeedItem) => void, checkIsInWishlist: (id: string) => boolean }) => {
     return (
         <View style={{ marginBottom: 12 }}>
             <FlatList
@@ -348,6 +351,8 @@ const HorizontalRow = memo(({ items, isDark, accentColor, handlePress, handleAdd
                         onPress={() => handlePress(item)}
                         onAddToCart={() => handleAddToCart(item)}
                         isInCart={checkIsInCart(item._id)}
+                        onToggleWishlist={() => handleToggleWishlist(item)}
+                        isInWishlist={checkIsInWishlist(item._id)}
                     />
                 )}
                 snapToInterval={CARD_WIDTH + GAP}
@@ -362,16 +367,35 @@ const HorizontalRow = memo(({ items, isDark, accentColor, handlePress, handleAdd
 // ============================================================================
 
 import { useCart } from '../../../context/CartContext';
+import { useWishlist } from '../../../context/WishlistContext';
 
 const ItemFeedSection = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
     const { data: items, isLoading } = useItemFeed();
     const { addToCart, isInCart } = useCart();
+    const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
     const handlePress = async (item: ItemFeedItem) => {
         if (item._id) {
             navigation.navigate('ProductDetail', { productId: item._id });
+        }
+    };
+
+    const handleToggleWishlist = (item: ItemFeedItem) => {
+        if (isInWishlist(item._id)) {
+            removeFromWishlist(item._id);
+        } else {
+            addToWishlist({
+                _id: item._id,
+                itemName: item.itemName || 'Unknown Item',
+                itemDescription: item.itemDescription,
+                image: item.image || '',
+                itemFinalPrice: Number(item.itemFinalPrice) || 0,
+                itemRatings: item.itemRatings,
+                itemDiscount: item.itemDiscount,
+                itemInitialPrice: Number(item.itemInitialPrice) || 0
+            });
         }
     };
 
@@ -474,6 +498,8 @@ const ItemFeedSection = () => {
                             handlePress={handlePress}
                             handleAddToCart={handleAddToCart}
                             checkIsInCart={isInCart}
+                            handleToggleWishlist={handleToggleWishlist}
+                            checkIsInWishlist={isInWishlist}
                         />
                     ))
                 )}

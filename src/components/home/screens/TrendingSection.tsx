@@ -147,10 +147,12 @@ interface TrendingProductCardProps {
     onAddToCart: () => void;
     isDark: boolean;
     isInCart: boolean;
+    onToggleWishlist: () => void;
+    isInWishlist: boolean;
 }
 
 const TrendingProductCard = memo<TrendingProductCardProps>(
-    ({ item, accentColor, onPress, onAddToCart, isDark, isInCart }) => (
+    ({ item, accentColor, onPress, onAddToCart, isDark, isInCart, onToggleWishlist, isInWishlist }) => (
         <TouchableOpacity
             activeOpacity={0.92}
             onPress={onPress}
@@ -187,7 +189,7 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                         colors={['#44ef4fff', '#1ac352ff']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        className="absolute top-2 right-2 px-2 py-1 rounded-lg"
+                        className="absolute top-2 left-2 px-2 py-1 rounded-lg"
                         style={{
                             shadowColor: '#44ef47ff',
                             shadowOffset: { width: 0, height: 2 },
@@ -203,13 +205,14 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                     </LinearGradient>
                 )}
 
-                {/* Wishlist Icon - Top Left */}
+                {/* Wishlist Icon - Top Right */}
                 <TouchableOpacity
                     activeOpacity={0.7}
+                    onPress={onToggleWishlist}
                     style={{
                         position: 'absolute',
                         top: 8,
-                        left: 8,
+                        right: 8,
                         width: 32,
                         height: 32,
                         borderRadius: 16,
@@ -223,7 +226,7 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                         elevation: 3,
                     }}
                 >
-                    <Icon name="heart-outline" size={18} color="#EF4444" />
+                    <Icon name={isInWishlist ? "heart" : "heart-outline"} size={18} color="#EF4444" />
                 </TouchableOpacity>
             </View>
 
@@ -327,11 +330,13 @@ TrendingProductCard.displayName = 'TrendingProductCard';
 // ============================================================================
 
 import { useCart } from '../../../context/CartContext';
+import { useWishlist } from '../../../context/WishlistContext';
 
 const TrendingSection: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
     const { addToCart, isInCart } = useCart();
+    const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
     const { data: trendingProducts, isLoading } = useTrendingProducts();
 
@@ -339,6 +344,23 @@ const TrendingSection: React.FC = () => {
         const itemId = item._id;
         if (itemId) {
             navigation.navigate('ProductDetail', { productId: itemId });
+        }
+    };
+
+    const handleToggleWishlist = (item: TrendingProduct) => {
+        if (isInWishlist(item._id)) {
+            removeFromWishlist(item._id);
+        } else {
+            addToWishlist({
+                _id: item._id,
+                itemName: item.itemName,
+                itemDescription: item.itemDescription,
+                image: item.image,
+                itemFinalPrice: item.itemFinalPrice,
+                itemRatings: item.itemRatings,
+                itemDiscount: item.itemDiscount,
+                itemInitialPrice: item.itemInitialPrice
+            });
         }
     };
 
@@ -414,6 +436,8 @@ const TrendingSection: React.FC = () => {
                                     onPress={() => handleProductPress(item)}
                                     onAddToCart={() => handleAddToCart(item)}
                                     isInCart={isInCart(item._id)}
+                                    onToggleWishlist={() => handleToggleWishlist(item)}
+                                    isInWishlist={isInWishlist(item._id)}
                                 />
                             )}
                         />
