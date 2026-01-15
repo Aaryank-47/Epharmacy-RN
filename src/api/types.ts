@@ -163,3 +163,132 @@ export interface ItemDetails {
   formula?: string;
   deliveryTime?: string; // Not in schema but used in UI
 }
+
+export interface Advertisement {
+  _id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  startDate: string;
+  endDate: string;
+  offerText?: string;
+  link?: string;
+}
+
+export interface Medicine {
+  _id: string;
+  title: string;
+  imageUrl: string;
+  price?: number;
+  originalPrice?: number;
+  discount?: number;
+  rating?: number;
+  description?: string;
+  category?: string;
+}
+
+export interface DealItem {
+  _id: string;
+  itemName: string;
+  itemInitialPrice: number;
+  itemDiscount: number;
+  itemDescription?: string;
+  gstRate: number;
+  discountPrice: number;
+  gstAmount: number;
+  itemFinalPrice: number;
+  itemImages: string[];
+  itemCategory?: string;
+  itemCompany?: string;
+  updatedAt?: string;
+}
+
+export interface UserAddress {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+// ============================================================================
+// NOTIFICATION TYPES
+// ============================================================================
+
+export interface NotificationLog {
+  _id: string;
+  type: string;
+  title: string;
+  body: string;
+  relatedEntityType?: string;
+  status: string;
+  payload?: Record<string, any>;
+  sentAt: string;
+  readAt?: string;
+  isRead: boolean;
+  createdAt: string;
+  relatedEntity?: {
+    _id: string;
+    name: string;
+    isActive?: boolean;
+  };
+  userInfo?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface NotificationLogsResponse {
+  logs: NotificationLog[];
+  pagination: PaginationInfo;
+  filters?: Record<string, any>;
+  meta?: Record<string, any>;
+  stats?: {
+    totalLogs: number;
+    unreadLogs: number;
+    readLogs: number;
+  };
+}
+
+export interface NotificationStats {
+  totalNotifications: number;
+  unreadCount: number;
+  readCount: number;
+  notificationsByType: Array<{
+    type: string;
+    count: number;
+  }>;
+  recentActivity: Array<{
+    date: string;
+    count: number;
+  }>;
+}
+
+export interface GetNotificationsParams {
+  page?: number;
+  limit?: number;
+  type?: string;
+  isRead?: boolean;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: string;
+  order?: 'asc' | 'desc';
+}
+
+export interface MarkMultipleAsReadParams {
+  logIds: string[];
+}

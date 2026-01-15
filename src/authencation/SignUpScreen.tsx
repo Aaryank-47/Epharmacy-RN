@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -18,9 +13,7 @@ import {
   View,
 } from 'react-native';
 import type { NavigationProp } from '@react-navigation/native';
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useMutation } from '@tanstack/react-query';
@@ -31,6 +24,9 @@ import { mapApiError, toHumanReadableError } from '../utils/errorHandler';
 import useThemePalette from '../hooks/useThemePalette';
 import { useAuth } from '../context/AuthContext';
 
+// ============================================================================
+// TYPES
+// ============================================================================
 interface SignUpScreenProps {
   navigation: NavigationProp<any, 'SignUp'>;
 }
@@ -42,316 +38,181 @@ interface FormErrors {
   password?: string;
 }
 
+// ============================================================================
+// SUB-COMPONENTS
+// ============================================================================
+
+const Header = memo(({ theme }: { theme: any }) => (
+  <>
+    <Text className="text-3xl font-bold text-center mb-2" style={{ color: theme.ctaGradient[0], fontFamily: theme.serifFontFamily }}>
+      Join Us
+    </Text>
+    <Text className="text-sm text-center text-gray-600 dark:text-slate-400 mb-8">
+      Create your account for personalized healthcare
+    </Text>
+  </>
+));
+
+const InputField = memo(({
+  icon, placeholder, value, onChangeText, error, theme,
+  secureTextEntry = false, keyboardType = 'default',
+  autoCapitalize = 'sentences', showPasswordToggle = false,
+  onTogglePassword, showPassword
+}: any) => (
+  <View className="mb-4">
+    <View className="flex-row items-center border border-gray-300 dark:border-white/20 rounded-full px-4 py-3 bg-gray-50 dark:bg-white/5">
+      <MaterialCommunityIcons name={icon} size={20} color={theme.ctaGradient[0]} />
+      <TextInput
+        className="flex-1 ml-3 text-base text-slate-900 dark:text-white"
+        placeholder={placeholder}
+        placeholderTextColor="#999"
+        style={{ fontFamily: theme.serifFontFamily }}
+        value={value} onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        secureTextEntry={secureTextEntry}
+        returnKeyType="next"
+      />
+      {showPasswordToggle && (
+        <TouchableOpacity onPress={onTogglePassword} className="ml-2">
+          <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.ctaGradient[0]} />
+        </TouchableOpacity>
+      )}
+    </View>
+    {error && <Text className="text-xs text-red-500 mt-1">{error}</Text>}
+  </View>
+));
+
+const SubmitButton = memo(({ onPress, loading, theme }: any) => (
+  <LinearGradient colors={theme.ctaGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} className="rounded-full overflow-hidden mb-4">
+    <TouchableOpacity onPress={onPress} disabled={loading} activeOpacity={0.8} className="flex-row items-center justify-center py-4">
+      {loading ? <ActivityIndicator color="#fff" size="small" /> : (
+        <>
+          <MaterialCommunityIcons name="account-plus" size={18} color="#fff" />
+          <Text className="ml-2 text-white font-semibold text-base" style={{ fontFamily: theme.serifFontFamily }}>
+            Create Account
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
+  </LinearGradient>
+));
+
+const Footer = memo(({ onNavigate, theme }: any) => (
+  <TouchableOpacity onPress={onNavigate} className="items-center py-3">
+    <Text className="text-sm text-gray-600 dark:text-slate-400">
+      Already have an account?{' '}
+      <Text className="font-semibold" style={{ color: theme.ctaGradient[0] }}>Sign In</Text>
+    </Text>
+  </TouchableOpacity>
+));
+
+// ============================================================================
+// MAIN SCREEN
+// ============================================================================
+
 const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
-  // State Management
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const { login: persistSession } = useAuth();
+  const theme = useThemePalette();
+  const scrollRef = useRef<ScrollView | null>(null);
+
+  // State
+  const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
-  // Refs & Hooks
-  const scrollRef = useRef<ScrollView | null>(null);
-  const { login: persistSession } = useAuth();
-  const {
-    statusBarBackground,
-    statusBarStyle,
-    ctaGradient,
-    surfaceColor,
-    serifFontFamily,
-  } = useThemePalette();
-
-  // API Mutation
-  const mutation = useMutation({
-    mutationFn: (payload: SignUpPayload) => signupUser(payload),
-    onSuccess: async data => {
-      if (data.token && data.user) {
-        // Full login response received
-        await persistSession(data);
-      } else {
-        // Signup successful but no token (requires manual login)
-        // Show success message (using console for now or navigation params if needed)
-        navigation.navigate('SignIn');
-      }
-    },
-    onError: (error: any) => {
-      const normalizedError = mapApiError(error);
-      const message = toHumanReadableError(normalizedError);
-
-      // Check for specific "User exists" error to assign to email field
-      if (
-        normalizedError.message?.toLowerCase().includes('already exists') ||
-        normalizedError.statusCode === 400
-      ) {
-        setFormErrors({ email: message || 'Email already registered' });
-      } else {
-        // Generic error - you might want to show a toast or a general error field
-        // For now, assigning to email if it looks like an auth error, or logging
-        setFormErrors({ email: message || 'Signup failed' });
-      }
-    },
-  });
-
-  // Keyboard Listeners
-  useEffect(() => {
-    const showListener = Keyboard.addListener('keyboardDidShow', () =>
-      setKeyboardVisible(true),
-    );
-    const hideListener = Keyboard.addListener('keyboardDidHide', () =>
-      setKeyboardVisible(false),
-    );
-
-    return () => {
-      showListener.remove();
-      hideListener.remove();
-    };
+  // Handlers
+  const updateField = useCallback((field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  // Form Validation
-  const validateForm = useCallback((): boolean => {
+  const togglePassword = useCallback(() => setShowPassword(prev => !prev), []);
+
+  const validateForm = useCallback(() => {
     const errors: FormErrors = {};
-
-    if (!fullName.trim()) {
-      errors.fullName = 'Full name is required';
-    }
-
-    if (!email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Invalid email format';
-    }
-
-    if (!phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else if (!/^\d{10}$/.test(phone.replace(/\D/g, ''))) {
-      errors.phone = 'Phone must be 10 digits';
-    }
-
-    if (!password.trim()) {
-      errors.password = 'Password is required';
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-
+    const { fullName, email, phone, password } = formData;
+    if (!fullName.trim()) errors.fullName = 'Full name is required';
+    if (!email.trim()) errors.email = 'Email required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Invalid email';
+    if (!phone.trim()) errors.phone = 'Phone required';
+    else if (!/^\d{10}$/.test(phone.replace(/\D/g, ''))) errors.phone = 'Must be 10 digits';
+    if (!password.trim()) errors.password = 'Password required';
+    else if (password.length < 6) errors.password = 'Min 6 chars';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [fullName, email, phone, password]);
+  }, [formData]);
 
-  // Handle SignUp
-  const handleSignUp = useCallback(async () => {
+  // Mutation
+  const mutation = useMutation({
+    mutationFn: (payload: SignUpPayload) => signupUser(payload),
+    onSuccess: async (data) => {
+      if (data.token && data.user) await persistSession(data);
+      else navigation.navigate('SignIn');
+    },
+    onError: (error: any) => {
+      const normalized = mapApiError(error);
+      const msg = toHumanReadableError(normalized);
+      if (normalized.message?.toLowerCase().includes('already exists') || normalized.statusCode === 400) {
+        setFormErrors({ email: msg || 'Email already registered' });
+      } else {
+        setFormErrors({ email: msg || 'Signup failed' });
+      }
+    }
+  });
+
+  const handleSignUp = useCallback(() => {
     if (!validateForm()) return;
-
+    const { fullName, email, phone, password } = formData;
     mutation.mutate({
       name: fullName,
-      email: email.toLowerCase(),
+      email: email.toLowerCase().trim(),
       phone: phone.replace(/\D/g, ''),
-      password,
+      password
     });
-  }, [fullName, email, phone, password, validateForm, mutation]);
-
-  const isLoading = mutation.isPending;
+  }, [formData, validateForm, mutation]);
 
   return (
     <>
-      <StatusBar
-        barStyle={statusBarStyle}
-        backgroundColor={statusBarBackground}
-      />
-      <SafeAreaView className="flex-1" style={{ backgroundColor: surfaceColor }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          className="flex-1"
-        >
+      <StatusBar barStyle={theme.statusBarStyle} backgroundColor={theme.statusBarBackground} />
+      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.surfaceColor }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <ScrollView
-              ref={scrollRef}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ flexGrow: 1 }}
-              className="px-6"
+              ref={scrollRef} showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ flexGrow: 1 }} className="px-6"
               keyboardShouldPersistTaps="handled"
-              scrollEnabled={true}
             >
-
-              {/* Main Content */}
               <View className="flex-1 justify-center py-1 -mt-12">
-                {/* Title Section */}
-                <Text
-                  className="text-3xl font-bold text-center mb-2"
-                  style={{ color: ctaGradient[0], fontFamily: serifFontFamily }}
-                >
-                  Join Us
-                </Text>
-                <Text className="text-sm text-center text-gray-600 dark:text-slate-400 mb-8">
-                  Create your account for personalized healthcare
-                </Text>
+                <Header theme={theme} />
 
-                <View className="mb-4">
-                  <View className="flex-row items-center border border-gray-300 dark:border-white/20 rounded-full px-4 py-3 bg-gray-50 dark:bg-white/5">
-                    <MaterialCommunityIcons
-                      name="account-outline"
-                      size={20}
-                      color={ctaGradient[0]}
-                    />
-                    <TextInput
-                      className="flex-1 ml-3 text-base text-slate-900 dark:text-white"
-                      placeholder="Full Name"
-                      placeholderTextColor="#999"
-                      style={{ fontFamily: serifFontFamily }}
-                      value={fullName}
-                      onChangeText={setFullName}
-                      editable={!isLoading}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                    />
-                  </View>
-                  {formErrors.fullName && (
-                    <Text className="text-xs text-red-500 mt-1">
-                      {formErrors.fullName}
-                    </Text>
-                  )}
-                </View>
+                <InputField
+                  icon="account-outline" placeholder="Full Name"
+                  value={formData.fullName} onChangeText={(t: string) => updateField('fullName', t)}
+                  error={formErrors.fullName} theme={theme} autoCapitalize="words"
+                />
 
-                <View className="mb-4">
-                  <View className="flex-row items-center border border-gray-300 dark:border-white/20 rounded-full px-4 py-3 bg-gray-50 dark:bg-white/5">
-                    <MaterialCommunityIcons
-                      name="email-outline"
-                      size={20}
-                      color={ctaGradient[0]}
-                    />
-                    <TextInput
-                      className="flex-1 ml-3 text-base text-slate-900 dark:text-white"
-                      placeholder="Email Address"
-                      placeholderTextColor="#999"
-                      style={{ fontFamily: serifFontFamily }}
-                      value={email}
-                      onChangeText={setEmail}
-                      editable={!isLoading}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      returnKeyType="next"
-                    />
-                  </View>
-                  {formErrors.email && (
-                    <Text className="text-xs text-red-500 mt-1">
-                      {formErrors.email}
-                    </Text>
-                  )}
-                </View>
+                <InputField
+                  icon="email-outline" placeholder="Email Address"
+                  value={formData.email} onChangeText={(t: string) => updateField('email', t)}
+                  error={formErrors.email} theme={theme} keyboardType="email-address" autoCapitalize="none"
+                />
 
-                <View className="mb-4">
-                  <View className="flex-row items-center border border-gray-300 dark:border-white/20 rounded-full px-4 py-3 bg-gray-50 dark:bg-white/5">
-                    <MaterialCommunityIcons
-                      name="phone-outline"
-                      size={20}
-                      color={ctaGradient[0]}
-                    />
-                    <TextInput
-                      className="flex-1 ml-3 text-base text-slate-900 dark:text-white"
-                      placeholder="Phone Number"
-                      placeholderTextColor="#999"
-                      style={{ fontFamily: serifFontFamily }}
-                      value={phone}
-                      onChangeText={setPhone}
-                      editable={!isLoading}
-                      keyboardType="phone-pad"
-                      returnKeyType="next"
-                    />
-                  </View>
-                  {formErrors.phone && (
-                    <Text className="text-xs text-red-500 mt-1">
-                      {formErrors.phone}
-                    </Text>
-                  )}
-                </View>
+                <InputField
+                  icon="phone-outline" placeholder="Phone Number"
+                  value={formData.phone} onChangeText={(t: string) => updateField('phone', t)}
+                  error={formErrors.phone} theme={theme} keyboardType="phone-pad"
+                />
 
-                <View className="mb-6">
-                  <View className="flex-row items-center border border-gray-300 dark:border-white/20 rounded-full px-4 py-3 bg-gray-50 dark:bg-white/5">
-                    <MaterialCommunityIcons
-                      name="lock-outline"
-                      size={20}
-                      color={ctaGradient[0]}
-                    />
-                    <TextInput
-                      className="flex-1 ml-3 text-base text-slate-900 dark:text-white"
-                      placeholder="Password"
-                      placeholderTextColor="#999"
-                      style={{ fontFamily: serifFontFamily }}
-                      value={password}
-                      onChangeText={setPassword}
-                      editable={!isLoading}
-                      secureTextEntry={!showPassword}
-                      returnKeyType="next"
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      className="ml-2"
-                    >
-                      <MaterialCommunityIcons
-                        name={showPassword ? 'eye-off' : 'eye'}
-                        size={20}
-                        color={ctaGradient[0]}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  {formErrors.password && (
-                    <Text className="text-xs text-red-500 mt-1">
-                      {formErrors.password}
-                    </Text>
-                  )}
-                </View>
+                <InputField
+                  icon="lock-outline" placeholder="Password"
+                  value={formData.password} onChangeText={(t: string) => updateField('password', t)}
+                  error={formErrors.password} theme={theme} secureTextEntry={!showPassword}
+                  showPasswordToggle={true} onTogglePassword={togglePassword} showPassword={showPassword}
+                />
 
+                <SubmitButton onPress={handleSignUp} loading={mutation.isPending} theme={theme} />
 
-
-                {/* Sign Up Button */}
-                <LinearGradient
-                  colors={ctaGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className="rounded-full overflow-hidden mb-4"
-                >
-                  <TouchableOpacity
-                    onPress={handleSignUp}
-                    disabled={isLoading}
-                    activeOpacity={0.8}
-                    className="flex-row items-center justify-center py-4"
-                  >
-                    {isLoading ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <>
-                        <MaterialCommunityIcons
-                          name="account-plus"
-                          size={18}
-                          color="#fff"
-                        />
-                        <Text
-                          className="ml-2 text-white font-semibold text-base"
-                          style={{ fontFamily: serifFontFamily }}
-                        >
-                          Create Account
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </LinearGradient>
-
-                {/* Already Have Account */}
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('SignIn')}
-                  className="items-center py-3"
-                >
-                  <Text className="text-sm text-gray-600 dark:text-slate-400">
-                    Already have an account?{' '}
-                    <Text
-                      className="font-semibold"
-                      style={{ color: ctaGradient[0] }}
-                    >
-                      Sign In
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
+                <Footer onNavigate={() => navigation.navigate('SignIn')} theme={theme} />
               </View>
             </ScrollView>
           </TouchableWithoutFeedback>
@@ -361,4 +222,4 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
   );
 };
 
-export default SignUpScreen;
+export default memo(SignUpScreen);

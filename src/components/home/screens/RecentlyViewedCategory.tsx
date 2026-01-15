@@ -17,7 +17,14 @@ const RecentlyViewedCategory = ({ transparentBackground = false }: RecentlyViewe
 
     const { data: apiResponse, isLoading } = useRecentlyViewedCategories();
 
-    const categories = useMemo(() => apiResponse?.data || [], [apiResponse]);
+    const categories = useMemo(() => {
+        const rawData = apiResponse?.data || [];
+        // Deduplicate based on _id to prevent "same key" errors
+        const uniqueData = rawData.filter((item: any, index: number, self: any[]) =>
+            index === self.findIndex((t) => t._id === item._id)
+        );
+        return uniqueData;
+    }, [apiResponse]);
 
     const renderItem = ({ item }: { item: any }) => (
         <TouchableOpacity

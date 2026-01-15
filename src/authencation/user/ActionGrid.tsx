@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
@@ -8,20 +8,39 @@ import { useThemePalette } from '../../hooks/useThemePalette';
 const { width: screenWidth } = Dimensions.get('window');
 const getResponsiveSize = (size: number): number => (screenWidth / 375) * size;
 
+interface MenuItem {
+  id: number;
+  title: string;
+  icon: string;
+  route: string;
+  color: string;
+  badge?: number;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  { id: 1, title: 'Orders', icon: 'shopping-outline', route: 'Orders', color: '#EF4444' },
+  { id: 2, title: 'History', icon: 'history', route: 'HistoryPage', color: '#F59E0B' },
+  { id: 3, title: 'Notify', icon: 'bell-outline', route: 'Notifications', color: '#8B5CF6', badge: 3 },
+  { id: 4, title: 'Settings', icon: 'cog-outline', route: 'Settings', color: '#10B981' },
+  { id: 5, title: 'Wishlist', icon: 'heart-outline', route: 'Wishlist', color: '#EC4899' },
+];
+
 const ActionGrid = memo(() => {
-  const navigation = useNavigation();
-  const { isDark, accentColor, surfaceColor } = useThemePalette();
-  const [isExpanded, setIsExpanded] = React.useState(false);
+  const navigation = useNavigation<NavigationProp<any>>();
+  const { isDark } = useThemePalette();
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const menuItems = [
-    { id: 1, title: 'Orders', icon: 'shopping-outline', route: 'Orders', color: '#EF4444' },
-    { id: 2, title: 'History', icon: 'history', route: 'HistoryPage', color: '#F59E0B' },
-    { id: 3, title: 'Notify', icon: 'bell-outline', route: 'Notifications', color: '#8B5CF6', badge: 3 },
-    { id: 4, title: 'Settings', icon: 'cog-outline', route: 'Settings', color: '#10B981' },
-    { id: 5, title: 'Wishlist', icon: 'heart-outline', route: 'Wishlist', color: '#EC4899' },
-  ];
+  const visibleItems = useMemo(() =>
+    isExpanded ? MENU_ITEMS : MENU_ITEMS.slice(0, 4),
+    [isExpanded]);
 
-  const visibleItems = isExpanded ? menuItems : menuItems.slice(0, 4);
+  const toggleExpand = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
+  const handlePress = useCallback((route: string) => {
+    navigation.navigate(route);
+  }, [navigation]);
 
   return (
     <View style={{
@@ -41,7 +60,7 @@ const ActionGrid = memo(() => {
         }}>
           Quick Actions
         </Text>
-        <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
+        <TouchableOpacity onPress={toggleExpand}>
           <Text style={{
             fontSize: getResponsiveSize(14),
             color: isDark ? '#FFFFFF' : '#000000',
@@ -67,7 +86,7 @@ const ActionGrid = memo(() => {
               marginBottom: getResponsiveSize(16),
             }}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate(item.route as never)}
+            onPress={() => handlePress(item.route)}
           >
             {/* Circular Icon */}
             <View style={{ position: 'relative' }}>

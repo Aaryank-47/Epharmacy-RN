@@ -1,7 +1,6 @@
-
 export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
 
-export const API_TIMEOUT = 60000; // Increased timeout to 60 seconds for file uploads
+export const API_TIMEOUT = 60000;
 
 export const AUTH_TOKEN_STORAGE_KEY = "jwtToken";
 export const REFRESH_TOKEN_STORAGE_KEY = "refreshToken";
@@ -47,7 +46,6 @@ export const API_ROUTES = {
     send: "/api/v1/notifications/send",
     subscribeTopic: "/api/v1/notifications/subscribe-topic",
     unsubscribeTopic: "/api/v1/notifications/unsubscribe-topic",
-    // Notification Log APIs
     activeLogs: "/api/v1/notifications/active-logs",
     myNotifications: "/api/v1/notifications/myNotification",
     logById: "/api/v1/notifications/log",

@@ -159,6 +159,106 @@ class LocationService {
       return 'Location Updated';
     }
   }
+  /**
+   * Get detailed address from coordinates
+   * Returns structured object for form population
+   */
+  async getAddressDetails(latitude: number, longitude: number): Promise<{
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+    formattedAddress: string;
+  }> {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'EPharmacyNative/1.0',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.address) {
+        const addr = data.address;
+
+        // 1. Build a Super-Granular Address List
+        const parts = [];
+
+        // Specific House/Building Info
+        if (addr.house_number) parts.push(`House No ${addr.house_number}`);
+        if (addr.apartment) parts.push(addr.apartment);
+        if (addr.flat) parts.push(addr.flat);
+        if (addr.building) parts.push(addr.building);
+        if (addr.public_building) parts.push(addr.public_building);
+
+        // Street/Road Info
+        if (addr.road) parts.push(addr.road);
+        if (addr.street) parts.push(addr.street);
+        if (addr.pedestrian) parts.push(addr.pedestrian);
+
+        // Area/Colony/Locality Info (The "LIG, Sagbhar" part)
+        if (addr.residential) parts.push(addr.residential);
+        if (addr.suburb) parts.push(addr.suburb);
+        if (addr.neighbourhood) parts.push(addr.neighbourhood);
+        if (addr.hamlet) parts.push(addr.hamlet);
+        if (addr.locality) parts.push(addr.locality);
+        if (addr.croft) parts.push(addr.croft);
+        if (addr.district) parts.push(addr.district);
+        if (addr.quarter) parts.push(addr.quarter);
+        if (addr.block) parts.push(addr.block);
+
+        // Village/Town/City Info
+        if (addr.village) parts.push(addr.village);
+        if (addr.town) parts.push(addr.town);
+        if (addr.city_district) parts.push(addr.city_district);
+        if (addr.city) parts.push(addr.city);
+        if (addr.municipality) parts.push(addr.municipality);
+        if (addr.county) parts.push(addr.county);
+
+        // State/Region Info
+        if (addr.state_district) parts.push(addr.state_district);
+        if (addr.state) parts.push(addr.state);
+        if (addr.region) parts.push(addr.region);
+
+        // Country/Postal
+        if (addr.postcode) parts.push(addr.postcode);
+        if (addr.country) parts.push(addr.country);
+
+        // Deduplicate
+        const uniqueParts = [...new Set(parts)];
+        const formattedAddress = uniqueParts.filter(Boolean).join(', ');
+
+        // Basic fields for loose mapping (still useful for individual inputs if needed)
+        const city = addr.city || addr.town || addr.village || addr.municipality || '';
+        const state = addr.state || addr.province || '';
+        const zip = addr.postcode || '';
+        const country = addr.country || '';
+
+        // Street variable (House + Area) for fallback logic if needed
+        const street = uniqueParts
+          .filter(p => !p.includes(city) && !p.includes(state) && !p.includes(country) && !p.includes(zip))
+          .join(', ');
+
+        return {
+          street,
+          city,
+          state,
+          zip,
+          country,
+          formattedAddress
+        };
+      }
+
+      return { street: '', city: '', state: '', zip: '', country: '', formattedAddress: '' };
+    } catch (error) {
+      return { street: '', city: '', state: '', zip: '', country: '', formattedAddress: '' };
+    }
+  }
 }
 
 export default new LocationService();

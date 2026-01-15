@@ -579,12 +579,11 @@ const Tabs = memo<TabsProps>(({
     try {
       if (tabName === 'Explore') {
         setShowExploreOverlay(prev => !prev);
-        // Do not setActiveTab for Explore if we want to stay on current tab visually? 
-        // User asked to "stay on page", so we just toggle overlay.
+      
         return;
       }
 
-      setShowExploreOverlay(false); // Close overlay if switching tabs
+      setShowExploreOverlay(false); 
       setActiveTab(tabName);
     } catch (error) {
       onError(error as Error);
@@ -594,7 +593,6 @@ const Tabs = memo<TabsProps>(({
   const handleNavigate = useCallback((screenName: string) => {
     try {
       if (screenName === 'ExplorePage') {
-        // Should be caught by handleTabChange, but if called directly:
         setShowExploreOverlay(true);
         return;
       }

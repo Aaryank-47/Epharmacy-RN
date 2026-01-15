@@ -1,70 +1,6 @@
-
 import httpClient from './httpClient';
 import { API_ROUTES } from './config';
-import type { ApiResponse, ItemFeedItem, ItemDetails } from './types';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-interface Medicine {
-  _id: string;
-  title: string;
-  imageUrl: string;
-  price?: number;
-  originalPrice?: number;
-  discount?: number;
-  rating?: number;
-  description?: string;
-  category?: string;
-}
-
-interface DealItem {
-  _id: string;
-  itemName: string;
-  itemInitialPrice: number;
-  itemDiscount: number;
-  itemDescription?: string;
-  gstRate: number;
-  discountPrice: number;
-  gstAmount: number;
-  itemFinalPrice: number;
-  itemImages: string[];
-  itemCategory?: string;
-  itemCompany?: string;
-  updatedAt?: string;
-}
-
-
-
-interface Advertisement {
-  _id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  startDate: string;
-  endDate: string;
-  offerText?: string;
-  link?: string;
-}
-
-interface UserAddress {
-  street: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-}
-
-interface UserProfilePayload {
-  address: UserAddress;
-}
-
-
+import type { ApiResponse, ItemFeedItem, ItemDetails, Advertisement, Medicine, DealItem, UserAddress } from './types';
 
 // ============================================================================
 // MEDICINES API FUNCTIONS
@@ -75,7 +11,8 @@ export const getFeaturedMedicines = async (): Promise<
 > => {
   try {
     const response = await httpClient.get<ApiResponse<any>>(
-      API_ROUTES.catalog.featuredMedicines
+      API_ROUTES.catalog.featuredMedicines,
+      { cache: { ttl: 15 * 60 * 1000 } } as any // Cache for 15 minutes
     );
     // Handle different response structures from backend
     const data = response.data;
@@ -96,7 +33,8 @@ export const getRunningAdvertisements = async (): Promise<
 > => {
   try {
     const response = await httpClient.get<ApiResponse<any>>(
-      API_ROUTES.advertisements.running
+      API_ROUTES.advertisements.running,
+      { cache: { ttl: 5 * 60 * 1000 } } as any // Cache for 5 minutes
     );
     // Handle different response structures from backend
     const data = response.data;
@@ -187,7 +125,8 @@ export const getTrendingMedicines = async (): Promise<
 > => {
   try {
     const response = await httpClient.get<ApiResponse<any>>(
-      API_ROUTES.items.trending
+      API_ROUTES.items.trending,
+      { cache: true } as any // Default TTL
     );
     // Handle response structure
     const data = response.data;
@@ -209,7 +148,8 @@ export const getCategories = async (): Promise<
 > => {
   try {
     const response = await httpClient.get<ApiResponse<{ data: any[] }>>(
-      API_ROUTES.catalog.categories
+      API_ROUTES.catalog.categories,
+      { cache: { ttl: 60 * 60 * 1000 } } as any // Cache for 1 hour
     );
     return response.data;
   } catch (error) {
