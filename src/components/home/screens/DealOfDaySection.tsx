@@ -121,7 +121,7 @@ const DealCard = memo<{ item: any; isDark: boolean; accentColor: string; onPress
   }
 );
 
-const DealOfDaySection: React.FC = () => {
+const DealOfDaySection: React.FC<{ visible?: boolean; onReady?: () => void }> = ({ visible = false, onReady }) => {
   const navigation = useNavigation<any>();
   const { isDark, accentColor } = useThemePalette();
   const { addToCart, isInCart } = useCart();
@@ -129,6 +129,12 @@ const DealOfDaySection: React.FC = () => {
   const { data, isLoading, error } = useDealsOfTheDay();
   const deals = data?.deals || [];
   const totalDeals = data?.totalDeals || 0;
+
+  useEffect(() => {
+    if (!isLoading) {
+      onReady?.();
+    }
+  }, [isLoading, onReady]);
 
   const handleAddToCart = useCallback((item: any) => {
     const itemId = item._id || item.id;
@@ -159,6 +165,7 @@ const DealOfDaySection: React.FC = () => {
   const gradientColors = useMemo(() => (isDark ? ['#181A20', '#2A2D35'] : ['#F9FAFB', '#F3F4F6']), [isDark]);
   const timerGradient = useMemo(() => (isDark ? ['#7F1D1D', '#991B1B'] : ['#FEE2E2', '#FECACA']), [isDark]);
 
+  if (!visible) return null;
   if (!isLoading && totalDeals < 3) return null;
 
   const showShimmer = isLoading || error || deals.length === 0;

@@ -52,12 +52,18 @@ const CategoryItem = memo<{ category: Category; itemWidth: number; isDark: boole
   }
 );
 
-const CategoriesSection: React.FC = () => {
+const CategoriesSection: React.FC<{ visible?: boolean; onReady?: () => void }> = ({ visible = false, onReady }) => {
   const { isDark } = useThemePalette();
   const { width: screenWidth } = useWindowDimensions();
   const { data: items = [], isLoading, error } = useCategories();
   const itemWidth = useMemo(() => (screenWidth - 16) / 4, [screenWidth]);
   const showShimmer = isLoading || error || items.length === 0;
+
+  useEffect(() => {
+    if (!isLoading) {
+      onReady?.();
+    }
+  }, [isLoading, onReady]);
 
   const handleSelectCategory = useCallback(async (categoryId: string) => {
     try {
@@ -66,6 +72,8 @@ const CategoriesSection: React.FC = () => {
   }, []);
 
   const gradientColors = useMemo(() => (isDark ? ['#2A2D35', '#181A20'] : ['#F3F4F6', '#FFFFFF']), [isDark]);
+
+  if (!visible) return null;
 
   return (
     <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} className="mt-0">

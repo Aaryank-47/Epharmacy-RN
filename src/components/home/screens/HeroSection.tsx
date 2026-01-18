@@ -79,7 +79,7 @@ const RotatingBorder = memo(({ isDark }: { isDark: boolean }) => {
   );
 });
 
-const HeroSection: React.FC<{ navigation?: any }> = memo(({ navigation }) => {
+const HeroSection: React.FC<{ navigation?: any; onReady?: () => void }> = memo(({ navigation, onReady }) => {
   const { isDark, accentColor } = useThemePalette();
   const flatListRef = useRef<FlatList>(null);
   const scrollIndexRef = useRef(0);
@@ -112,6 +112,17 @@ const HeroSection: React.FC<{ navigation?: any }> = memo(({ navigation }) => {
     retryDelay: 2000,
     refetchInterval: (query) => (!query.state.data?.length ? 3000 : false),
   });
+
+  // Sequential Rendering Trigger
+  useEffect(() => {
+    if (!medicinesLoading && !adsLoading) {
+      // Small delay to ensure render passes
+      const timer = setTimeout(() => {
+        onReady?.();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [medicinesLoading, adsLoading, onReady]);
 
   const medicines: Medicine[] = useMemo(() => medicinesData || [], [medicinesData]);
   const advertisements: Advertisement[] = useMemo(() => adsData || [], [adsData]);

@@ -214,15 +214,19 @@ const PaginationDots = memo(({
 // ----------------------------------------------------------------------------
 // MAIN COMPONENT
 // ----------------------------------------------------------------------------
-const OfferBannerSection: React.FC = () => {
+const OfferBannerSection: React.FC<{ visible?: boolean; onReady?: () => void }> = ({ visible = false, onReady }) => {
   const { isDark, accentColor } = useThemePalette();
   const scrollX = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current; // New progress value
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const isLoading = false;
+  const isLoading = false; // Static for now, but keeping prop structure
   const shimmerAnim = useSharedShimmer();
+
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
 
   const handlePress = useCallback((item: OfferItem) => {
     if (item.link) {

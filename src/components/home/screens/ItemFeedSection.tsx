@@ -301,7 +301,7 @@ export const FeedHeader = memo(({ isDark, accentColor, navigation }: any) => (
 ));
 
 export const FeedSkeleton = memo(({ isDark, opacity }: any) => (
-    <View style={{ paddingBottom: 16, backgroundColor: isDark ? '#2A2D35' : '#FFFFFF' }}>
+    <View style={{ paddingBottom: 16, backgroundColor: isDark ? '#2A2D35' : '#F3F4F6' }}>
         {[1, 2, 3].map((row) => (
             <View key={`skel-row-${row}`} style={{ marginBottom: 12 }}>
                 <FlatList

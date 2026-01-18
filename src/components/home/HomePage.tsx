@@ -143,6 +143,7 @@ const Home: React.FC = () => {
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshingState(true);
+    setLoadingStage(0); // Reset sequence
     await queryClient.resetQueries();
     await new Promise<void>((resolve) => setTimeout(resolve, 1000));
     setIsRefreshingState(false);
@@ -193,28 +194,38 @@ const Home: React.FC = () => {
     return [...staticBeforeFeed, ...feedSections, recentSection];
   }, [chunkedItems, isFeedLoading]);
 
+  // --- Sequential Loading State ---
+  const [loadingStage, setLoadingStage] = useState(0); // 0: Hero, 1: Categories, 2: Deals, 3: Offers, 4: Trending, 5: Feed
+
+  const advanceStage = useCallback((currentStage: number) => {
+    setLoadingStage(prev => Math.max(prev, currentStage + 1));
+  }, []);
+
   // --- Render Item ---
   const renderItem = useCallback<ListRenderItem<any>>(({ item }) => {
     switch (item.type) {
       case SectionType.HERO:
-        return <HeroSection navigation={navigation} />;
+        return <HeroSection navigation={navigation} onReady={() => advanceStage(0)} />;
       case SectionType.CATEGORIES:
-        return <CategoriesSection />;
+        return <CategoriesSection visible={loadingStage >= 1} onReady={() => advanceStage(1)} />;
       case SectionType.DEALS:
-        return <DealOfDaySection />;
+        return <DealOfDaySection visible={loadingStage >= 2} onReady={() => advanceStage(2)} />;
       case SectionType.OFFER:
-        return <OfferBannerSection />;
+        return <OfferBannerSection visible={loadingStage >= 3} onReady={() => advanceStage(3)} />;
       case SectionType.TRENDING:
-        return <TrendingSection />;
+        return <TrendingSection visible={loadingStage >= 4} onReady={() => advanceStage(4)} />;
 
       // Virtualized Feed
       case SectionType.FEED_HEADER:
+        if (loadingStage < 5) return null;
         return <FeedHeader isDark={isDark} accentColor={accentColor} navigation={navigation} />;
 
       case SectionType.FEED_SKELETON:
+        if (loadingStage < 5) return null;
         return <FeedSkeleton isDark={isDark} opacity={new Animated.Value(0.5)} />;
 
       case SectionType.FEED_ROW:
+        if (loadingStage < 5) return null;
         return (
           <FeedRow
             items={item.data}
@@ -229,11 +240,12 @@ const Home: React.FC = () => {
         );
 
       case SectionType.RECENT:
+        if (loadingStage < 5) return null;
         return <RecentlyViewedSection />;
       default:
         return null;
     }
-  }, [navigation, isDark, accentColor, handleFeedPress, handleFeedAddToCart, isInCart, handleFeedToggleWishlist, isInWishlist]);
+  }, [navigation, isDark, accentColor, handleFeedPress, handleFeedAddToCart, isInCart, handleFeedToggleWishlist, isInWishlist, loadingStage, advanceStage]);
 
   const keyExtractor = useCallback((item: any) => item.id, []);
   const contentContainerStyle = useMemo(() => ({ paddingBottom: 10 }), []);

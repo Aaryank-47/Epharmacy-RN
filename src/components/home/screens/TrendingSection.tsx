@@ -347,7 +347,7 @@ TrendingProductCard.displayName = 'TrendingProductCard';
 // MAIN TRENDING SECTION
 // ============================================================================
 
-const TrendingSection: React.FC = () => {
+const TrendingSection: React.FC<{ visible?: boolean; onReady?: () => void }> = ({ visible = false, onReady }) => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
     const { addToCart, isInCart } = useCart();
@@ -355,6 +355,12 @@ const TrendingSection: React.FC = () => {
 
     const { data: trendingProducts, isLoading } = useTrendingProducts();
     const sharedShimmer = useSharedShimmer();
+
+    useEffect(() => {
+        if (!isLoading) {
+            onReady?.();
+        }
+    }, [isLoading, onReady]);
 
     const handleProductPress = useCallback((item: TrendingProduct) => {
         if (item._id) {
@@ -419,6 +425,8 @@ const TrendingSection: React.FC = () => {
     // Split data into two rows
     const firstRow = useMemo(() => Array.isArray(trendingProducts) ? trendingProducts.slice(0, 10) : [], [trendingProducts]);
     const secondRow = useMemo(() => Array.isArray(trendingProducts) ? trendingProducts.slice(10) : [], [trendingProducts]);
+
+    if (!visible) return null;
 
     return (
         <LinearGradient
