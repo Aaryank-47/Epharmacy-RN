@@ -37,7 +37,7 @@ const PrivacyTermsPage: React.FC = () => {
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: theme.backgroundColor }}
+      style={{ backgroundColor: theme.backgroundColor }}
       className="flex-1"
     >
       <StatusBar

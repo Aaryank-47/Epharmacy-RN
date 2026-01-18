@@ -1,7 +1,7 @@
 import messaging from '@react-native-firebase/messaging';
 import { Platform, PermissionsAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
+import notifee, { AndroidImportance, EventType, AndroidStyle } from '@notifee/react-native';
 
 // ============================================================================
 // CONSTANTS
@@ -14,10 +14,7 @@ const CHANNEL_ID = 'default';
 // FIREBASE CLOUD MESSAGING SERVICE - Production Ready
 // ============================================================================
 
-/**
- * Firebase Cloud Messaging (FCM) Service
- * Handles notification permissions, FCM token management, and message listeners
- */
+
 class NotificationService {
   private token: string | null = null;
   private onMessageListener: (() => void) | null = null;
@@ -61,12 +58,7 @@ class NotificationService {
   // PERMISSIONS
   // ==========================================================================
 
-  /**
-   * Request notification permissions
-   * iOS: Requests user permission
-   * Android 13+: Requests POST_NOTIFICATIONS permission
-   * @returns {boolean} Permission granted status
-   */
+
   async requestPermissions(): Promise<boolean> {
     try {
       if (Platform.OS === 'ios') {
@@ -94,10 +86,7 @@ class NotificationService {
   // TOKEN MANAGEMENT
   // ==========================================================================
 
-  /**
-   * Get FCM token (requests permissions if needed)
-   * @returns {string | null} FCM token or null if failed
-   */
+  
   async getToken(): Promise<string | null> {
     try {
       const hasPermission = await this.requestPermissions();
@@ -165,28 +154,34 @@ class NotificationService {
   // NOTIFICATION DISPLAY
   // ==========================================================================
 
-  /**
-   * Display local notification using Notifee
-   * @param title - Notification title
-   * @param body - Notification body
-   * @param data - Optional data payload
-   */
+
   async displayNotification(
     title: string,
     body: string,
     data?: Record<string, any>
   ): Promise<void> {
     try {
+      // Basic Android Configuration
+      const androidConfig: any = {
+        channelId: CHANNEL_ID,
+        importance: AndroidImportance.HIGH,
+        pressAction: { id: 'default' },
+        smallIcon: 'ic_launcher',
+      };
+
+      // Add Image Support (BigPictureStyle)
+      if (data?.image) {
+        androidConfig.style = {
+          type: AndroidStyle.BIGPICTURE,
+          picture: data.image,
+        };
+      }
+
       await notifee.displayNotification({
         title,
         body,
         data,
-        android: {
-          channelId: CHANNEL_ID,
-          importance: AndroidImportance.HIGH,
-          pressAction: { id: 'default' },
-          smallIcon: 'ic_launcher',
-        },
+        android: androidConfig,
         ios: {
           sound: 'default',
           foregroundPresentationOptions: {
@@ -194,6 +189,7 @@ class NotificationService {
             badge: true,
             sound: true,
           },
+          attachments: data?.image ? [{ url: data.image }] : [],
         },
       });
     } catch (error) {
@@ -205,11 +201,7 @@ class NotificationService {
   // MESSAGE LISTENERS
   // ==========================================================================
 
-  /**
-   * Listen for foreground messages
-   * @param callback - Function to handle incoming messages
-   * @returns Unsubscribe function
-   */
+
   onMessage(callback: (message: any) => void): () => void {
     if (this.onMessageListener) {
       this.onMessageListener();
@@ -223,11 +215,7 @@ class NotificationService {
     return unsubscribe;
   }
 
-  /**
-   * Listen for notification opened from background
-   * @param callback - Function to handle notification open
-   * @returns Unsubscribe function
-   */
+  
   onNotificationOpenedApp(callback: (message: any) => void): () => void {
     if (this.onNotificationOpenedListener) {
       this.onNotificationOpenedListener();
@@ -253,38 +241,47 @@ class NotificationService {
     }
   }
 
-  // ==========================================================================
-  // TOPIC SUBSCRIPTION
-  // ==========================================================================
 
-  /**
-   * Subscribe to FCM topic
-   * @param topic - Topic name to subscribe to
-   */
-  async subscribeToTopic(topic: string): Promise<void> {
-    try {
-      await messaging().subscribeToTopic(topic);
-    } catch (error) {
-      
-      // Silent fail
-    }
-  }
 
-  /**
-   * Unsubscribe from FCM topic
-   * @param topic - Topic name to unsubscribe from
-   */
-  async unsubscribeFromTopic(topic: string): Promise<void> {
-    try {
-      await messaging().unsubscribeFromTopic(topic);
-    } catch (error) {
-      // Silent fail
-    }
-  }
 
   // ==========================================================================
   // CLEANUP
   // ==========================================================================
+
+  /**
+   * Handle background message (Headless JS)
+   * @param remoteMessage - Firebase remote message
+   */
+  async handleBackgroundMessage(remoteMessage: any): Promise<void> {
+    const imageUrl = remoteMessage.notification?.android?.imageUrl || remoteMessage.data?.image;
+
+    const androidConfig: any = {
+      channelId: CHANNEL_ID,
+      importance: AndroidImportance.HIGH,
+      pressAction: { id: 'default' },
+      smallIcon: 'ic_launcher',
+    };
+
+    // Add Big Picture Style if image exists
+    if (imageUrl) {
+      androidConfig.style = {
+        type: AndroidStyle.BIGPICTURE,
+        picture: imageUrl,
+      };
+    }
+
+    // Display notification using Notifee
+    await notifee.displayNotification({
+      title: remoteMessage.notification?.title || 'Notification',
+      body: remoteMessage.notification?.body || 'You have a new notification',
+      data: remoteMessage.data,
+      android: androidConfig,
+      ios: {
+        sound: 'default',
+        attachments: imageUrl ? [{ url: imageUrl }] : [],
+      },
+    });
+  }
 
   /**
    * Clean up all listeners (call on unmount)

@@ -41,7 +41,6 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
   const {
     isDark,
     surfaceColor,
-    iconMutedBackground,
     statusBarBackground,
     statusBarStyle,
     ctaGradient,
@@ -50,7 +49,7 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
   const compactTopInset = Math.max(insets.top - 24, 0);
 
   useEffect(() => {
-    Animated.parallel([ 
+    Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1500,
@@ -122,7 +121,7 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
           >
             <Icon name="arrow-back" size={22} color={iconColor} />
           </TouchableOpacity>
-          
+
           <View className="w-11" />
         </View>
 
@@ -151,9 +150,8 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
           </Text>
         </AnimatedView>
 
-  <AnimatedView className="mt-8" style={{ opacity: fadeAnim }}>
-          <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("SignIn")}
-          >
+        <AnimatedView className="mt-8" style={{ opacity: fadeAnim }}>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("SignIn")}>
             <LinearGradient
               colors={ctaGradient}
               start={{ x: 0, y: 0 }}
@@ -178,16 +176,15 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
             onPress={() => navigation.navigate("SignUp")}
           >
             <View
-              className="mr-3 rounded-full p-2"
-              style={{ backgroundColor: iconMutedBackground }}
+              className="mr-3 rounded-full p-2 bg-slate-100 dark:bg-white/10"
             >
-              {/* <Icon name="info" size={18} color={isDark ? "#FFFFFF" : "#181A20"} /> */}
+              <Icon name="info" size={18} color={isDark ? "#FFFFFF" : "#181A20"} />
             </View>
             <Text
               className="text-sm font-semibold text-slate-600 dark:text-slate-300"
               style={{ fontFamily: serifFontFamily }}
             >
-             MADE BY VELCARD
+              MADE BY VELCARD
             </Text>
           </TouchableOpacity>
         </AnimatedView>
@@ -196,4 +193,4 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
   );
 };
 
-export default StartPage;
+export default React.memo(StartPage);

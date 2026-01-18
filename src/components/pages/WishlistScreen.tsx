@@ -1,250 +1,179 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Dimensions, StatusBar } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, StatusBar, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useWishlist } from '../../context/WishlistContext';
+import { useCart } from '../../context/CartContext';
+import LinearGradient from 'react-native-linear-gradient';
+import Tabs from '../commonPage/Tab';
 
 const { width } = Dimensions.get('window');
 
 const WishlistScreen = () => {
     const navigation = useNavigation<any>();
     const { isDark, accentColor } = useThemePalette();
-    const { wishlistItems, removeFromWishlist } = useWishlist(); // Use the wishlist hook
+    const { wishlistItems, removeFromWishlist } = useWishlist();
+    const { addToCart } = useCart();
 
-    const renderItem = ({ item }: { item: any }) => (
-        <TouchableOpacity
-            style={[styles.itemCard, { backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF' }]}
-            onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
-            activeOpacity={0.7}
-        >
-            <View style={styles.imageContainer}>
-                {item.image ? (
-                    <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="cover" />
-                ) : (
-                    <Icon name="image-outline" size={40} color={isDark ? '#555' : '#E5E7EB'} />
-                )}
-            </View>
-            <View style={styles.itemInfo}>
-                <Text style={[styles.itemName, { color: isDark ? '#FFF' : '#1F2937' }]} numberOfLines={2}>
-                    {item.itemName}
-                </Text>
-                <View style={styles.priceContainer}>
-                    <Text style={[styles.itemPrice, { color: isDark ? '#FFF' : '#111827' }]}>
-                        ₹{item.itemFinalPrice}
-                    </Text>
-                    {item.itemInitialPrice > item.itemFinalPrice && (
-                        <Text style={styles.originalPrice}>₹{item.itemInitialPrice}</Text>
-                    )}
-                </View>
-                <View style={styles.ratingContainer}>
-                    <Icon name="star" size={12} color="#FBBF24" />
-                    <Text style={[styles.ratingText, { color: isDark ? '#D1D5DB' : '#4B5563' }]}>
-                        {item.itemRatings || 0}
-                    </Text>
-                </View>
-            </View>
-            <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeFromWishlist(item._id)}
-            >
-                <Icon name="trash-outline" size={20} color="#EF4444" />
-            </TouchableOpacity>
-        </TouchableOpacity>
-    );
+    const handleAddToCart = useCallback((item: any) => {
+        addToCart({
+            id: item._id,
+            name: item.itemName,
+            price: item.itemFinalPrice,
+            quantity: 1,
+        });
+        navigation.navigate('ShoppingBag');
+    }, [addToCart, navigation]);
 
-    const renderEmptyState = () => (
-        <View style={styles.emptyContainer}>
-            <View style={[styles.iconContainer, { backgroundColor: isDark ? '#2A2A2A' : '#F3F4F6' }]}>
-                <Icon name="heart-outline" size={64} color={isDark ? '#555' : '#CBD5E1'} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
-                Your Wishlist is Empty
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-                Tap the heart button on any product to save it for later.
-            </Text>
+    const renderItem = useCallback(({ item }: { item: any }) => {
+        // Mock color options for visual fidelity as per reference image
+        const colors = ['#FCA5A5', '#FCD34D', '#111827'];
+
+        return (
             <TouchableOpacity
-                style={[styles.shopButton, { backgroundColor: accentColor }]}
-                onPress={() => navigation.navigate('HomeTabs')}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
+                className={`flex-row mb-5 rounded-[24px] p-3 shadow-sm ${isDark ? 'bg-[#1E2028]' : 'bg-white'}`}
+                style={{
+                    shadowColor: isDark ? '#000' : '#E5E7EB',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: isDark ? 0.3 : 1,
+                    shadowRadius: 16,
+                    elevation: 1, // Subtle elevation for clean look
+                }}
             >
-                <Text style={styles.shopButtonText}>Start Shopping</Text>
+                {/* Image Section */}
+                <View className="relative">
+                    <View className={`w-32 h-32 rounded-[20px] overflow-hidden ${isDark ? 'bg-[#2A2D35]' : 'bg-gray-100'}`}>
+                        <Image
+                            source={{ uri: item.image }}
+                            className="w-full h-full"
+                            resizeMode="cover"
+                        />
+                    </View>
+
+                    {/* "Shop" Overlay Button */}
+                    <TouchableOpacity
+                        onPress={() => handleAddToCart(item)}
+                        className="absolute -bottom-2 -right-2 flex-row items-center bg-[#F97316] pl-3 pr-4 py-2 rounded-tl-[20px] rounded-br-[20px] rounded-bl-[8px] rounded-tr-[8px] border-4 border-white dark:border-[#1E2028]"
+                        activeOpacity={0.8}
+                    >
+                        <View className="bg-white/20 p-1 rounded-full mr-1.5">
+                            <Ionicons name="bag-handle" size={14} color="white" />
+                        </View>
+                        <Text className="text-white font-bold text-xs tracking-wide">Shop</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Content Section */}
+                <View className="flex-1 ml-4 justify-between py-1">
+                    <View>
+                        <Text
+                            numberOfLines={1}
+                            className={`text-base font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                        >
+                            {item.itemName}
+                        </Text>
+                        <Text
+                            numberOfLines={1}
+                            className={`text-xs mb-2 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}
+                        >
+                            {item.itemDescription || 'Bloom with elegance'}
+                        </Text>
+
+                        {/* Rating Stars */}
+                        <View className="flex-row mb-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <Ionicons key={star} name="star" size={12} color="#FBBF24" style={{ marginRight: 2 }} />
+                            ))}
+                        </View>
+                    </View>
+
+                    {/* Footer: Price + Actions */}
+                    <View className="flex-row justify-between items-end">
+                        <View>
+                            <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                ₹{item.itemFinalPrice}
+                            </Text>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            {/* NEW: Cart Icon (Left of Heart) */}
+                            <TouchableOpacity
+                                onPress={() => handleAddToCart(item)}
+                                className="mr-3 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-full"
+                            >
+                                <Ionicons name="cart-outline" size={18} color={isDark ? '#FFF' : '#374151'} />
+                            </TouchableOpacity>
+
+                            {/* Heart Logic: Filled because it IS in wishlist */}
+                            <TouchableOpacity
+                                onPress={() => removeFromWishlist(item._id)}
+                                className="mr-2" // Reduced margin to bring dots closer
+                            >
+                                <Ionicons name="heart" size={22} color="#F97316" />
+                            </TouchableOpacity>
+
+                            {/* Color Options (Visual Mock) */}
+                            <View className="flex-row -space-x-1">
+                                {colors.map((color, index) => (
+                                    <View
+                                        key={index}
+                                        style={{ backgroundColor: color }}
+                                        className={`w-3 h-3 rounded-full border border-white ${index === 2 ? 'border-2 border-gray-300' : ''}`}
+                                    />
+                                ))}
+                            </View>
+                        </View>
+                    </View>
+                </View>
             </TouchableOpacity>
-        </View>
-    );
+        );
+    }, [isDark, navigation, handleAddToCart, removeFromWishlist]);
 
     return (
-        <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F9FAFB' }]}>
-            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#121212' : '#F9FAFB'} />
+        <Tabs currentActiveTab="Profile" onNavigate={(screen) => navigation.navigate(screen as never)}>
+            <View className={`flex-1 ${isDark ? 'bg-[#121212]' : 'bg-[#FAFAFA]'}`}>
+                <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#121212' : '#FAFAFA'} />
 
-            {/* Header */}
-            <View style={[styles.header, { borderBottomColor: isDark ? '#2A2A2A' : '#E5E7EB' }]}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={[styles.backButton, { backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF' }]}
-                >
-                    <Icon name="arrow-back" size={24} color={isDark ? '#FFF' : '#1F2937'} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>My Wishlist</Text>
-                <View style={{ width: 40 }} />
+                {/* Header */}
+                <View className="flex-row justify-between items-center px-6 pt-4 pb-2">
+                    <TouchableOpacity onPress={() => navigation.goBack()} className={`p-2 rounded-full ${isDark ? 'bg-[#2A2A2A]' : 'bg-white'}`}>
+                        <Ionicons name="arrow-back" size={24} color={isDark ? 'white' : 'black'} />
+                    </TouchableOpacity>
+                    <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Favorites
+                    </Text>
+                    <View className="w-10" />
+                </View>
+
+                <View className="flex-1 px-5 pt-4">
+                    {wishlistItems.length > 0 ? (
+                        <FlatList
+                            data={wishlistItems}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item._id}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 100 }} // Increased padding for Tabs
+                        />
+                    ) : (
+                        <View className="flex-1 justify-center items-center">
+                            <View className={`w-24 h-24 rounded-full justify-center items-center mb-4 ${isDark ? 'bg-[#2A2A2A]' : 'bg-gray-100'}`}>
+                                <Ionicons name="heart-outline" size={48} color="#9CA3AF" />
+                            </View>
+                            <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                Your wishlist is empty
+                            </Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('HomeTabs')} className="mt-4">
+                                <Text className="text-[#F97316] font-bold">Start Shopping</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
             </View>
-
-            {wishlistItems.length > 0 ? (
-                <FlatList
-                    data={wishlistItems}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item._id}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
-            ) : (
-                renderEmptyState()
-            )}
-        </View>
+        </Tabs>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 16,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    listContent: {
-        padding: 16,
-        paddingBottom: 40,
-    },
-    // Item Card Styles
-    itemCard: {
-        flexDirection: 'row',
-        borderRadius: 12,
-        marginBottom: 16,
-        padding: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-        alignItems: 'center',
-    },
-    imageContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-        backgroundColor: '#F3F4F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-    },
-    itemImage: {
-        width: '100%',
-        height: '100%',
-    },
-    itemInfo: {
-        flex: 1,
-        marginLeft: 16,
-        justifyContent: 'center',
-    },
-    itemName: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 4,
-        lineHeight: 20,
-    },
-    priceContainer: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        marginBottom: 4,
-    },
-    itemPrice: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    originalPrice: {
-        fontSize: 12,
-        color: '#9CA3AF',
-        textDecorationLine: 'line-through',
-        marginLeft: 6,
-    },
-    ratingContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    ratingText: {
-        fontSize: 12,
-        fontWeight: '500',
-        marginLeft: 4,
-    },
-    removeButton: {
-        padding: 8,
-    },
-    // Empty State Styles
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 32,
-    },
-    iconContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 24,
-    },
-    emptyTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    emptySubtitle: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 32,
-        lineHeight: 24,
-    },
-    shopButton: {
-        paddingVertical: 14,
-        paddingHorizontal: 32,
-        borderRadius: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    shopButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    }
-});
 
 export default WishlistScreen;

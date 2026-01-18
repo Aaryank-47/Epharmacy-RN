@@ -6,7 +6,6 @@ import {
     Modal,
     TextInput,
     FlatList,
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Dimensions,
@@ -16,7 +15,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LinearGradient from 'react-native-linear-gradient';
+
 
 import { useThemePalette } from '../hooks/useThemePalette';
 import { useAuth } from '../context/AuthContext';
@@ -121,23 +120,17 @@ const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
                 const detail = error.response.data?.detail || '';
                 // Handle "User already exists" (500 Unique Constraint)
                 if (String(detail).includes('UNIQUE constraint failed') || String(detail).includes('users.phone_number')) {
-                    // Fallback: If user exists, we assume we can proceed. 
-                    // PROBLEM: We don't know the Server-Side ID.
-                    // ATTEMPT: Use numeric phone number as a 'best guess' or just default to 1 for testing if phone fails?
-                    // User says: "sidha second vale api me... input bejna hai". 
-
-                    // We will try using the Phone Number parsed as Int.
+                 
                     const phoneAsId = parseInt(user?.phone || '0', 10);
                     if (phoneAsId > 0) {
                         setAiUserId(phoneAsId);
                         await AsyncStorage.setItem(AI_USER_ID_KEY, phoneAsId.toString());
-                        // Toast.show("Session Recovered", Toast.SHORT);
+                        
                     } else {
-                        // Fallback to 1 if phone is weird
                         setAiUserId(1);
                         await AsyncStorage.setItem(AI_USER_ID_KEY, "1");
                     }
-                    return; // Successfully handled gracefully
+                    return; 
                 }
             }
         } finally {
@@ -420,7 +413,6 @@ const AiChatSupport: React.FC<AiChatSupportProps> = ({ visible, onClose }) => {
                             />
                             <TouchableOpacity
                                 onPress={sendMessage}
-                                // disabled={!inputText.trim() || isLoading} // Allow press to handle retry hint
                                 style={{
                                     marginLeft: 10,
                                     width: 48, height: 48,

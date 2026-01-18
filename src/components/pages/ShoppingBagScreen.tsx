@@ -1,268 +1,266 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-
-interface BagItem {
-  id: string;
-  price: number;
-  quantity: number;
-}
-
-// Calculate bag subtotal
-export const calculateBagSubtotal = (items: BagItem[]): number => {
-  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-};
-
-// Count total items
-export const countTotalItems = (items: BagItem[]): number => {
-  return items.reduce((count, item) => count + item.quantity, 0);
-};
-
-// Check if bag is empty
-export const isBagEmpty = (items: BagItem[]): boolean => {
-  return items.length === 0;
-};
-
-// Get savings amount
-export const calculateSavings = (originalTotal: number, currentTotal: number): number => {
-  return Math.max(0, originalTotal - currentTotal);
-};
-
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, StatusBar } from 'react-native';
 import Tabs from '../commonPage/Tab';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../../context/CartContext';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import { FlatList, TouchableOpacity, Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 
 const ShoppingBagScreen: React.FC = () => {
   const navigation = useNavigation();
   const { items, removeFromCart, updateQuantity, getCartTotal } = useCart();
-  const { isDark, surfaceColor, accentColor } = useThemePalette();
+  const { isDark, accentColor } = useThemePalette();
   const [selectedItems, setSelectedItems] = React.useState<string[]>([]);
   const insets = useSafeAreaInsets();
 
-  // Calculate Tab Bar Height to position Checkout Bar above it
-  const bottomInset = insets.bottom;
-  const isGestureNav = bottomInset > 45;
-  const TAB_CONTENT_HEIGHT = isGestureNav ? 20 : 69;
-  const effectiveBottomPadding = isGestureNav ? bottomInset : 4;
-  const tabBarHeight = TAB_CONTENT_HEIGHT + effectiveBottomPadding;
+  // Tab Bar & Layout Calculation
+  const isGestureNav = insets.bottom > 20;
+  const TAB_BAR_HEIGHT = isGestureNav ? 70 : 60; // Approximate tab bar height
+  const CHECKOUT_BAR_HEIGHT = 100;
+  const BOTTOM_PADDING = TAB_BAR_HEIGHT + CHECKOUT_BAR_HEIGHT + (isGestureNav ? 0 : 20);
 
-  const toggleSelection = (id: string) => {
+  // --- Handlers ---
+
+  const toggleSelection = useCallback((id: string) => {
     setSelectedItems(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(item => item !== id);
-      } else {
-        return [...prev, id];
-      }
+      if (prev.includes(id)) return prev.filter(item => item !== id);
+      return [...prev, id];
     });
-  };
+  }, []);
 
-  const selectedTotal = items
-    .filter(item => selectedItems.includes(item.id))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const selectAll = useCallback(() => {
+    if (selectedItems.length === items.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(items.map(i => i.id));
+    }
+  }, [items, selectedItems]);
 
-  const totalAmount = getCartTotal();
+  const handleCheckout = useCallback(() => {
+    // Navigate to checkout logic here
+    // For now just show alert or log
+    console.log("Proceeding to checkout with", selectedItems.length > 0 ? selectedItems : "all items");
+  }, [selectedItems]);
 
-  const renderCartItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={() => (navigation as any).navigate('ProductDetail', { productId: item.id })}
-      style={{
-        flexDirection: 'row',
-        backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
-        borderRadius: 16,
-        marginBottom: 16,
-        padding: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-        alignItems: 'center', // Align checkbox
-      }}>
-      {/* Checkbox */}
-      <TouchableOpacity
-        onPress={() => toggleSelection(item.id)}
-        style={{ padding: 8, marginRight: 4 }}
+  // --- Calculations ---
+
+  const subtotal = useMemo(() => {
+    const targetItems = selectedItems.length > 0
+      ? items.filter(i => selectedItems.includes(i.id))
+      : items;
+    return targetItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }, [items, selectedItems]);
+
+  const savings = useMemo(() => {
+    // Mock savings calculation (e.g. 10-15% discount for demo)
+    return Math.floor(subtotal * 0.12);
+  }, [subtotal]);
+
+  const deliveryFee = subtotal > 500 ? 0 : 40;
+  const finalTotal = subtotal + deliveryFee;
+
+  // --- UI Components ---
+
+  const renderCartItem = useCallback(({ item }: { item: any }) => {
+    const isSelected = selectedItems.includes(item.id);
+
+    return (
+      <View
+        className={`mb-4 rounded-2xl p-3 flex-row items-center border-[0.5px] ${isDark ? 'bg-[#1E2028] border-gray-700' : 'bg-white border-gray-100'}`}
+        style={{
+          shadowColor: isDark ? '#000' : '#888',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowRadius: 12,
+          elevation: 4
+        }}
       >
-        <Ionicons
-          name={selectedItems.includes(item.id) ? "checkbox" : "square-outline"}
-          size={24}
-          color={selectedItems.includes(item.id) ? accentColor : (isDark ? '#4B5563' : '#9CA3AF')}
-        />
-      </TouchableOpacity>
+        {/* Checkbox */}
+        <TouchableOpacity
+          onPress={() => toggleSelection(item.id)}
+          className="p-2 mr-1"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons
+            name={isSelected ? "checkbox" : "square-outline"}
+            size={22}
+            color={isSelected ? accentColor : (isDark ? '#6B7280' : '#D1D5DB')}
+          />
+        </TouchableOpacity>
 
-      {/* Image Placeholder */}
-      <View style={{
-        width: 80,
-        height: 80,
-        borderRadius: 12,
-        backgroundColor: isDark ? '#2A2D35' : '#F3F4F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-      }}>
-        <Ionicons name="medkit-outline" size={30} color={isDark ? '#4B5563' : '#9CA3AF'} />
-      </View>
+        {/* Image */}
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate('ProductDetail', { productId: item.id })}
+          className={`w-20 h-20 rounded-xl mr-3 justify-center items-center overflow-hidden ${isDark ? 'bg-[#2A2D35]' : 'bg-gray-50'}`}
+        >
+          {/* Replace with actual Image component if URL exists, fallback to Icon */}
+          <Ionicons name="medkit-outline" size={32} color={isDark ? '#4B5563' : '#9CA3AF'} />
+          {/* <Image source={{ uri: item.image }} className="w-full h-full" resizeMode="cover" /> */}
+        </TouchableOpacity>
 
-      {/* Details */}
-      <View style={{ flex: 1, justifyContent: 'space-between' }}>
-        <View>
-          <Text style={{
-            fontSize: 16,
-            fontWeight: '700',
-            color: isDark ? '#FFFFFF' : '#1F2937',
-            marginBottom: 4,
-          }} numberOfLines={2}>
-            {item.name}
-          </Text>
-          <Text style={{
-            fontSize: 14,
-            fontWeight: '600',
-            color: isDark ? '#9CA3AF' : '#6B7280',
-          }}>
-            ₹{item.price}
-          </Text>
-        </View>
-
-        {/* Action Row */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-          {/* Quantity Controls */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#2A2D35' : '#F3F4F6', borderRadius: 8 }}>
-            <TouchableOpacity
-              style={{ padding: 8 }}
-              onPress={() => {
-                if (item.quantity > 1) {
-                  updateQuantity(item.id, item.quantity - 1);
-                } else {
-                  removeFromCart(item.id);
-                }
-              }}
+        {/* Details */}
+        <View className="flex-1 justify-between h-20 py-1">
+          <View>
+            <Text
+              numberOfLines={1}
+              className={`text-base font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
             >
-              <Ionicons name="remove" size={16} color={isDark ? '#FFF' : '#333'} />
-            </TouchableOpacity>
-
-            <Text style={{ fontWeight: '600', color: isDark ? '#FFF' : '#333', marginHorizontal: 8 }}>
-              {item.quantity}
+              {item.name}
             </Text>
-
-            <TouchableOpacity
-              style={{ padding: 8 }}
-              onPress={() => updateQuantity(item.id, item.quantity + 1)}
-            >
-              <Ionicons name="add" size={16} color={isDark ? '#FFF' : '#333'} />
-            </TouchableOpacity>
+            <Text className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              100ml Bottle • 💊 Pill
+            </Text>
           </View>
 
-          {/* Delete Button */}
-          <TouchableOpacity
-            onPress={() => removeFromCart(item.id)}
-            style={{
-              padding: 8,
-              backgroundColor: '#FFdede',
-              borderRadius: 8,
-            }}
-          >
-            <Ionicons name="trash-outline" size={18} color="#EF4444" />
-          </TouchableOpacity>
+          <View className="flex-row justify-between items-end mt-2">
+            <Text className={`text-lg font-extrabold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              ₹{item.price}
+            </Text>
+
+            {/* Quantity Control (Pill Shape) */}
+            <View className={`flex-row items-center rounded-full px-1 ${isDark ? 'bg-[#2A2D35]' : 'bg-gray-100'}`}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (item.quantity > 1) updateQuantity(item.id, item.quantity - 1);
+                  else removeFromCart(item.id);
+                }}
+                className="w-8 h-8 justify-center items-center"
+              >
+                <Ionicons name="remove" size={16} color={isDark ? '#FFF' : '#374151'} />
+              </TouchableOpacity>
+
+              <Text className={`font-bold mx-1 text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {item.quantity}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => updateQuantity(item.id, item.quantity + 1)}
+                className="w-8 h-8 justify-center items-center"
+              >
+                <Ionicons name="add" size={16} color={isDark ? '#FFF' : '#374151'} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
-    </TouchableOpacity>
+    );
+  }, [isDark, accentColor, selectedItems, navigation, updateQuantity, removeFromCart, toggleSelection]);
+
+  const renderEmptyState = () => (
+    <View className="flex-1 justify-center items-center px-8" style={{ marginTop: '40%' }}>
+      <View className={`w-32 h-32 rounded-full justify-center items-center mb-6 ${isDark ? 'bg-[#1E2028]' : 'bg-gray-100'}`}>
+        <Ionicons name="cart-outline" size={64} color={isDark ? '#4B5563' : '#9CA3AF'} />
+      </View>
+      <Text className={`text-2xl font-bold mb-2 text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        Your Bag is Empty
+      </Text>
+      <Text className={`text-center mb-8 leading-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+        Looks like you haven't made your choice yet. Browse our medicines and find what you need.
+      </Text>
+      <TouchableOpacity
+        onPress={() => (navigation as any).navigate('Home')}
+        className="w-full py-4 rounded-full shadow-lg items-center"
+        style={{ backgroundColor: accentColor, shadowColor: accentColor, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}
+      >
+        <Text className="text-white font-bold text-lg">Start Shopping</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
-    <Tabs
-      currentActiveTab="Cart"
-      onNavigate={(screen) => navigation.navigate(screen as never)}
-    >
-      <View style={[styles.container, { backgroundColor: surfaceColor }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <Text style={[styles.title, { color: isDark ? '#FFF' : '#1F2937' }]}>Shopping Bag</Text>
-          <Text style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
-            {items.length} Items
+    <Tabs currentActiveTab="Cart" onNavigate={(screen) => navigation.navigate(screen as never)}>
+      <View className={`flex-1 ${isDark ? 'bg-[#121212]' : 'bg-[#F9FAFB]'}`}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#121212' : '#F9FAFB'} />
+
+        {/* Header */}
+        <View className={`px-5 py-4 flex-row justify-between items-center ${isDark ? 'bg-[#121212]' : 'bg-[#F9FAFB]'}`}>
+          <Text className={`text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            My Bag <Text className="text-2xl font-normal text-gray-400">({items.length})</Text>
           </Text>
+          {items.length > 0 && (
+            <TouchableOpacity onPress={selectAll}>
+              <Text className={`text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {selectedItems.length === items.length ? 'Deselect All' : 'Select All'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {items.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Ionicons name="cart-outline" size={64} color={isDark ? '#374151' : '#E5E7EB'} />
-            <Text style={{ marginTop: 16, fontSize: 16, color: isDark ? '#9CA3AF' : '#6B7280' }}>Your bag is empty</Text>
-          </View>
+          renderEmptyState()
         ) : (
           <>
             <FlatList
               data={items}
               keyExtractor={item => item.id}
               renderItem={renderCartItem}
-              contentContainerStyle={{ paddingBottom: tabBarHeight + 100 }}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: BOTTOM_PADDING + 20 }}
               showsVerticalScrollIndicator={false}
             />
 
-            {/* Checkout Section */}
-            <View style={{
-              position: 'absolute',
-              bottom: tabBarHeight - 5,
-              left: 0,
-              right: 0,
-              backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
-              padding: 20,
-              borderTopWidth: 1,
-              borderTopColor: isDark ? '#2D3038' : '#F3F4F6',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              zIndex: 90, // Ensure it sits properly
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 4
-            }}>
-              <View>
-                <Text style={{ color: isDark ? '#9CA3AF' : '#6B7280', fontSize: 12, marginBottom: 4 }}>
-                  {selectedItems.length > 0 ? 'Selected Total' : 'Total'}
-                </Text>
-                <Text style={{ color: isDark ? '#FFF' : '#1F2937', fontSize: 24, fontWeight: '800' }}>
-                  ₹{selectedItems.length > 0 ? selectedTotal : totalAmount}
-                </Text>
+            {/* Sticky Checkout Bar */}
+            <LinearGradient
+              colors={isDark ? ['transparent', '#121212', '#121212'] : ['rgba(255,255,255,0)', '#ffffff', '#ffffff']}
+              locations={[0, 0.2, 1]}
+              className="absolute bottom-0 left-0 right-0 px-5 pt-8 pb-4 z-50 justify-end"
+              style={{ paddingBottom: TAB_BAR_HEIGHT + (isGestureNav ? 0 : 20) }}
+            >
+              <View className={`rounded-3xl p-5 ${isDark ? 'bg-[#1E2028]' : 'bg-white'}`}
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: isDark ? 0.3 : 0.1,
+                  shadowRadius: 16,
+                  elevation: 20
+                }}
+              >
+                {/* Savings Tag */}
+                {savings > 0 && (
+                  <View className="bg-green-100 dark:bg-green-900/30 self-start px-3 py-1 rounded-lg mb-4 flex-row items-center">
+                    <Ionicons name="pricetag" size={14} color="#16A34A" />
+                    <Text className="text-green-600 dark:text-green-400 text-xs font-bold ml-1">
+                      You are saving ₹{savings} on this order!
+                    </Text>
+                  </View>
+                )}
+
+                {/* Totals Row */}
+                <View className="flex-row justify-between items-center mb-5">
+                  <View>
+                    <Text className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Total Estimate
+                    </Text>
+                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      ₹{finalTotal}
+                    </Text>
+                  </View>
+                  <View className="items-end">
+                    <Text className="text-xs text-gray-400 line-through">₹{subtotal + savings}</Text>
+                    <Text className={`text-xs font-medium ${deliveryFee === 0 ? 'text-green-500' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>
+                      {deliveryFee === 0 ? 'Free Delivery' : `+ ₹${deliveryFee} Delivery`}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Checkout Button */}
+                <TouchableOpacity
+                  onPress={handleCheckout}
+                  activeOpacity={0.8}
+                  className="w-full py-4 rounded-2xl flex-row justify-center items-center shadow-lg"
+                  style={{ backgroundColor: accentColor, shadowColor: accentColor, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 }}
+                >
+                  <Text className="text-white font-bold text-lg mr-2">Proceed to Checkout</Text>
+                  <Ionicons name="arrow-forward" size={20} color="white" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={{
-                backgroundColor: selectedItems.length > 0 ? accentColor : (isDark ? '#374151' : '#E5E7EB'),
-                paddingHorizontal: 32,
-                paddingVertical: 14,
-                borderRadius: 16,
-                shadowColor: selectedItems.length > 0 ? accentColor : 'transparent',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 4
-              }}>
-                <Text style={{ color: selectedItems.length > 0 ? '#FFF' : (isDark ? '#9CA3AF' : '#9CA3AF'), fontWeight: '700', fontSize: 16 }}>
-                  {selectedItems.length > 0 ? `Buy Now (${selectedItems.length})` : 'Select Items'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </LinearGradient>
           </>
         )}
       </View>
     </Tabs>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    paddingBottom: 80, // Space for checkout bar
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -1,
-  },
-});
 
 export default ShoppingBagScreen;

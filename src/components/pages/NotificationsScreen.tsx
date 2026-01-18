@@ -1,8 +1,3 @@
-/**
- * NOTIFICATIONS SCREEN
- * Displays user notifications with filtering, pagination, and mark as read functionality
- */
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -11,33 +6,30 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  StyleSheet,
   Alert,
+  StatusBar
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+} from '../../api/notificationApi';
+import {
   NotificationLog,
   NotificationLogsResponse,
-} from '../../api/notificationApi';
-
-// ============================================================================
-// TYPES
-// ============================================================================
+} from '../../api/types';
+import useThemePalette from '../../hooks/useThemePalette';
 
 interface NotificationsScreenProps {
   navigation?: any;
 }
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
+const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation }) => {
+  const { isDark, surfaceColor, primary, statusBarStyle } = useThemePalette();
 
-const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
-  navigation,
-}) => {
   const [notifications, setNotifications] = useState<NotificationLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,18 +39,12 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  // ============================================================================
-  // FETCH NOTIFICATIONS
-  // ============================================================================
-
+  // Fetch Notifications
   const fetchNotifications = useCallback(
     async (page = 1, append = false) => {
       try {
-        if (!append) {
-          setLoading(true);
-        } else {
-          setLoadingMore(true);
-        }
+        if (!append) setLoading(true);
+        else setLoadingMore(true);
 
         const response: NotificationLogsResponse = await getMyNotifications({
           page,
@@ -78,10 +64,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         setTotalPages(response.pagination.totalPages);
         setUnreadCount(response.stats?.unreadLogs || 0);
       } catch (error: any) {
-        Alert.alert(
-          'Error',
-          error.response?.data?.message || 'Failed to load notifications'
-        );
+        // Silent error or minimal alert if critical
+        console.error("Failed to fetch notifications", error);
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -91,17 +75,9 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     [filter]
   );
 
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
-
   useEffect(() => {
     fetchNotifications(1, false);
   }, [filter, fetchNotifications]);
-
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -117,11 +93,8 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
   const handleNotificationPress = useCallback(
     async (notification: NotificationLog) => {
       try {
-        // Mark as read if not already read
         if (!notification.isRead) {
           await markNotificationAsRead(notification._id);
-          
-          // Update local state
           setNotifications((prev) =>
             prev.map((n) =>
               n._id === notification._id ? { ...n, isRead: true } : n
@@ -130,378 +103,189 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
           setUnreadCount((prev) => Math.max(0, prev - 1));
         }
 
-        // Navigate based on notification type or entity
         if (notification.relatedEntityType === 'Category' && notification.relatedEntity) {
-          // Navigate to category detail
-          navigation?.navigate('CategoryDetail', {
-            categoryId: notification.relatedEntity._id,
-          });
-        } else if (
-          notification.relatedEntityType === 'Advertisement' &&
-          notification.relatedEntity
-        ) {
-          // Navigate to advertisement detail
-          navigation?.navigate('AdvertisementDetail', {
-            adId: notification.relatedEntity._id,
-          });
-        } else if (
-          notification.relatedEntityType === 'FeaturedMedicine' &&
-          notification.relatedEntity
-        ) {
-          // Navigate to medicine detail
-          navigation?.navigate('ProductDetail', {
-            medicineId: notification.relatedEntity._id,
-          });
+          navigation?.navigate('CategoryDetail', { categoryId: notification.relatedEntity._id });
+        } else if (notification.relatedEntityType === 'Advertisement' && notification.relatedEntity) {
+          navigation?.navigate('AdvertisementDetail', { adId: notification.relatedEntity._id });
+        } else if (notification.relatedEntityType === 'FeaturedMedicine' && notification.relatedEntity) {
+          navigation?.navigate('ProductDetail', { productId: notification.relatedEntity._id }); // ensuring param name consistency
         }
-      } catch (error: any) {
-        Alert.alert('Error', 'Failed to mark notification as read', error);
+      } catch (error) {
+        console.error("Navigation/Read error", error);
       }
     },
     [navigation]
   );
 
   const handleMarkAllAsRead = useCallback(async () => {
-    try {
-      Alert.alert(
-        'Mark All as Read',
-        'Are you sure you want to mark all notifications as read?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Mark All',
-            onPress: async () => {
-              try {
-                await markAllNotificationsAsRead();
-                
-                // Update local state
-                setNotifications((prev) =>
-                  prev.map((n) => ({ ...n, isRead: true }))
-                );
-                setUnreadCount(0);
-                
-                Alert.alert('Success', 'All notifications marked as read');
-              } catch {
-                Alert.alert('Error', 'Failed to mark all as read');
-              }
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      throw error;
-      // Silent fail - error already handled in Alert
-    }
+    Alert.alert(
+      'Mark all read',
+      'Are you sure you want to mark all as read?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              await markAllNotificationsAsRead();
+              setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+              setUnreadCount(0);
+            } catch (e) { Alert.alert("Error", "Could not mark all as read"); }
+          }
+        }
+      ]
+    );
   }, []);
 
-  // ============================================================================
-  // RENDER FUNCTIONS
-  // ============================================================================
+  // Helpers
+  const getIconConfig = (type: string) => {
+    switch (type) {
+      case 'order': return { name: 'cart-outline', color: '#3B82F6', bg: 'bg-blue-100 dark:bg-blue-900/30' }; // blue
+      case 'offer': return { name: 'tag-outline', color: '#10B981', bg: 'bg-emerald-100 dark:bg-emerald-900/30' }; // green
+      case 'advertisement': return { name: 'bullhorn-outline', color: '#F59E0B', bg: 'bg-amber-100 dark:bg-amber-900/30' }; // amber
+      case 'medicine': return { name: 'medical-bag', color: '#EC4899', bg: 'bg-pink-100 dark:bg-pink-900/30' }; // pink
+      default: return { name: 'bell-outline', color: '#6366F1', bg: 'bg-indigo-100 dark:bg-indigo-900/30' }; // indigo
+    }
+  };
 
-  const renderNotificationItem = useCallback(
-    ({ item }: { item: NotificationLog }) => (
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return diffDays < 7 ? `${diffDays}d ago` : date.toLocaleDateString();
+  };
+
+  const renderItem = ({ item }: { item: NotificationLog }) => {
+    const config = getIconConfig(item.type);
+    const isUnread = !item.isRead;
+
+    return (
       <TouchableOpacity
-        style={[
-          styles.notificationItem,
-          !item.isRead && styles.unreadNotification,
-        ]}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}
+        className={`flex-row items-center p-4 mb-3 mx-4 rounded-2xl border ${isDark
+          ? 'bg-[#1E1E1E] border-neutral-800'
+          : 'bg-white border-gray-100'
+          } ${isUnread ? 'border-l-4 border-l-blue-500' : ''} shadow-sm`}
       >
-        <View style={styles.notificationIcon}>
-          <Icon
-            name={getNotificationIcon(item.type)}
-            size={24}
-            color={item.isRead ? '#999' : '#007AFF'}
-          />
+        {/* Icon */}
+        <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${config.bg}`}>
+          <MaterialCommunityIcons name={config.name} size={24} color={config.color} />
         </View>
-        <View style={styles.notificationContent}>
-          <Text style={[styles.title, !item.isRead && styles.unreadTitle]}>
-            {item.title}
-          </Text>
-          <Text style={styles.body} numberOfLines={2}>
+
+        {/* Content */}
+        <View className="flex-1">
+          <View className="flex-row justify-between items-start mb-1">
+            <Text className={`text-base font-bold flex-1 mr-2 ${isDark ? 'text-gray-100' : 'text-gray-900'} ${isUnread ? '' : 'text-gray-600 dark:text-gray-400'}`}>
+              {item.title}
+            </Text>
+            <Text className="text-xs text-gray-400 font-medium">
+              {formatTime(item.sentAt)}
+            </Text>
+          </View>
+          <Text
+            className={`text-sm leading-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            numberOfLines={2}
+          >
             {item.body}
           </Text>
-          <Text style={styles.time}>{formatTime(item.sentAt)}</Text>
         </View>
-        {!item.isRead && <View style={styles.unreadDot} />}
+
+        {/* Unread Dot (redundant with border-l but good for visibility) */}
+        {isUnread && (
+          <View className="w-2 h-2 rounded-full bg-blue-500 ml-2 mt-1" />
+        )}
       </TouchableOpacity>
-    ),
-    [handleNotificationPress]
-  );
-
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="bell-off-outline" size={64} color="#ccc" />
-      <Text style={styles.emptyText}>No notifications yet</Text>
-    </View>
-  );
-
-  const renderFooter = () => {
-    if (!loadingMore) return null;
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#007AFF" />
-      </View>
     );
   };
 
-  // ============================================================================
-  // MAIN RENDER
-  // ============================================================================
-
-  if (loading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+  const renderEmpty = () => (
+    <View className="items-center justify-center py-20 px-6">
+      <View className="w-24 h-24 bg-gray-100 dark:bg-neutral-800 rounded-full items-center justify-center mb-6">
+        <Ionicons name="notifications-off-outline" size={48} color={isDark ? '#525252' : '#9CA3AF'} />
       </View>
-    );
-  }
+      <Text className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">No Notifications</Text>
+      <Text className="text-center text-gray-500 dark:text-gray-400">
+        You're all caught up! notifications will appear here when you have updates.
+      </Text>
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-gray-50 dark:bg-[#121212]">
+      <StatusBar barStyle={statusBarStyle} backgroundColor={surfaceColor} />
+
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        {unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unreadCount}</Text>
-          </View>
-        )}
+      <View className="px-4 pt-2 pb-4 flex-row items-center justify-between  dark:bg-[#1A1A1A] border-b border-gray-100 dark:border-neutral-800">
+        <View className="flex-row items-center">
+          <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3 p-1">
+            <Ionicons name="arrow-back" size={24} color={isDark ? 'white' : 'black'} />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold text-gray-900 dark:text-white">Notifications</Text>
+          {unreadCount > 0 && (
+            <View className="bg-red-500 rounded-full px-2 py-0.5 ml-2">
+              <Text className="text-white text-xs font-bold">{unreadCount}</Text>
+            </View>
+          )}
+        </View>
+        <TouchableOpacity onPress={handleMarkAllAsRead} disabled={unreadCount === 0} className={unreadCount === 0 ? 'opacity-50' : ''}>
+          <MaterialCommunityIcons name="check-all" size={24} color={isDark ? 'white' : '#1F2937'} />
+        </TouchableOpacity>
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterTab, filter === 'all' && styles.activeFilter]}
-          onPress={() => setFilter('all')}
-        >
-          <Text
-            style={[
-              styles.filterText,
-              filter === 'all' && styles.activeFilterText,
-            ]}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterTab,
-            filter === 'unread' && styles.activeFilter,
-          ]}
-          onPress={() => setFilter('unread')}
-        >
-          <Text
-            style={[
-              styles.filterText,
-              filter === 'unread' && styles.activeFilterText,
-            ]}
-          >
-            Unread ({unreadCount})
-          </Text>
-        </TouchableOpacity>
-        {unreadCount > 0 && (
+      <View className="flex-row px-4 py-4 space-x-3">
+        {['all', 'unread'].map((tab) => (
           <TouchableOpacity
-            style={styles.markAllButton}
-            onPress={handleMarkAllAsRead}
+            key={tab}
+            onPress={() => setFilter(tab as 'all' | 'unread')}
+            className={`px-5 py-2 rounded-full border ${filter === tab
+              ? isDark ? 'bg-white border-white' : 'bg-black border-black'
+              : isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-gray-200'
+              }`}
           >
-            <Icon name="check-all" size={20} color="#007AFF" />
+            <Text className={`font-semibold capitalize ${filter === tab
+              ? isDark ? 'text-black' : 'text-white'
+              : isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+              {tab}
+            </Text>
           </TouchableOpacity>
-        )}
+        ))}
       </View>
 
-      {/* Notifications List */}
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item._id}
-        renderItem={renderNotificationItem}
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        contentContainerStyle={
-          notifications.length === 0 ? styles.emptyList : undefined
-        }
-      />
-    </View>
+      {/* List */}
+      {loading && !loadingMore ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color={primary || '#000'} />
+        </View>
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item._id}
+          renderItem={renderItem}
+          ListEmptyComponent={renderEmpty}
+          contentContainerStyle={{ paddingBottom: 20, paddingTop: 4 }}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingMore ? <ActivityIndicator size="small" className="py-4" /> : null}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={isDark ? '#fff' : '#000'}
+            />
+          }
+        />
+      )}
+    </SafeAreaView>
   );
 };
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-const getNotificationIcon = (type: string): string => {
-  switch (type) {
-    case 'category':
-      return 'tag-outline';
-    case 'advertisement':
-      return 'bullhorn-outline';
-    case 'medicine':
-    case 'featured_medicine':
-      return 'pill';
-    case 'order':
-      return 'cart-outline';
-    case 'offer':
-      return 'sale';
-    default:
-      return 'bell-outline';
-  }
-};
-
-const formatTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
-};
-
-// ============================================================================
-// STYLES
-// ============================================================================
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  badge: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-  },
-  activeFilter: {
-    backgroundColor: '#007AFF',
-  },
-  filterText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  activeFilterText: {
-    color: '#fff',
-  },
-  markAllButton: {
-    marginLeft: 'auto',
-    padding: 8,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  unreadNotification: {
-    backgroundColor: '#f0f8ff',
-  },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  notificationContent: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 4,
-  },
-  unreadTitle: {
-    fontWeight: '600',
-    color: '#000',
-  },
-  body: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  time: {
-    fontSize: 12,
-    color: '#999',
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#007AFF',
-    marginLeft: 8,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyList: {
-    flexGrow: 1,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#999',
-  },
-  footerLoader: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-});
 
 export default NotificationsScreen;

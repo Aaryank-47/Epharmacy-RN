@@ -99,12 +99,6 @@ export const useProfilePageUI = () => {
         }
     }, [queryClient]);
 
-    // Initial Load Effect (on Focus) - Placed here to access handleRefresh
-    useFocusEffect(
-        useCallback(() => {
-            handleRefresh().catch(() => { });
-        }, [handleRefresh])
-    );
 
     const handleLogout = useCallback((): void => {
         Alert.alert(

@@ -24,8 +24,6 @@ const ScrollToTopButton: React.FC<ScrollToTopButtonProps> = ({
       const currentY = value;
       const isScrollingUp = currentY < lastScrollY.current;
 
-      // Show if scrolled down more than threshold AND scrolling UP
-      // Hide if scrolling DOWN or near top
       if (currentY > threshold && isScrollingUp) {
         setShowButton(true);
       } else if (currentY <= threshold || !isScrollingUp) {

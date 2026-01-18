@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { View, Animated, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import LottieView from 'lottie-react-native';
+import React, { useCallback, useState, useMemo, useRef } from 'react';
+import { View, Animated, StyleSheet, ListRenderItem } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../../../AppNavigator';
-import { useRefreshControl } from '../../hooks/useRefreshControl';
-import { RefreshControlWrapper } from '../RefreshControlWrapper';
 import { useQueryClient } from '@tanstack/react-query';
+
+import type { RootStackParamList } from '../../../AppNavigator';
+
 import Tabs from '../commonPage/Tab';
 import HeaderScreen from '../home/screens/HeaderSection';
 import HeroSection from '../home/screens/HeroSection';
@@ -13,45 +12,113 @@ import CategoriesSection from './screens/CategoriesSection';
 import TrendingSection from './screens/TrendingSection';
 import DealOfDaySection from './screens/DealOfDaySection';
 import OfferBannerSection from './screens/OfferBannerSection';
-import ItemFeedSection from './screens/ItemFeedSection';
+import { FeedRow, FeedHeader, FeedSkeleton } from './screens/ItemFeedSection';
 import RecentlyViewedSection from './screens/RecentlyViewedSection';
+
+import { useItemFeed } from '../../hooks/useItemFeed';
+import { useThemePalette } from '../../hooks/useThemePalette';
+
+
+// --- Constants ---
+const SCROLL_EVENT_THROTTLE = 16;
+const TAB_BAR_HIDDEN_OFFSET = 100;
+
+enum SectionType {
+  HERO = 'HERO',
+  CATEGORIES = 'CATEGORIES',
+  DEALS = 'DEALS',
+  OFFER = 'OFFER',
+  TRENDING = 'TRENDING',
+  FEED_HEADER = 'FEED_HEADER',
+  FEED_SKELETON = 'FEED_SKELETON',
+  FEED_ROW = 'FEED_ROW',
+  RECENT = 'RECENT',
+}
+
+interface SectionItem {
+  id: string;
+  type: SectionType;
+}
+
+const SECTIONS_DATA: SectionItem[] = [
+  { id: 'section-hero', type: SectionType.HERO },
+  { id: 'section-categories', type: SectionType.CATEGORIES },
+  { id: 'section-deals', type: SectionType.DEALS },
+  { id: 'section-offer', type: SectionType.OFFER },
+  { id: 'section-trending', type: SectionType.TRENDING },
+];
+
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const { isDark, accentColor } = useThemePalette();
 
-  // Scroll Animation Logic
+  // --- Animation State ---
   const scrollY = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current; // 0 = Visible, 100 = Hidden
+  const translateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const isTabBarHidden = useRef(false);
+  const flatListRef = useRef<Animated.FlatList>(null);
 
-  const handleScrollToTop = () => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  };
+  // --- Feed Logic ---
+  const {
+    data: feedItems,
+    isLoading: isFeedLoading,
+    chunkedItems,
+    handleFeedPress,
+    handleFeedToggleWishlist,
+    handleFeedAddToCart,
+    isInCart,
+    isInWishlist
+  } = useItemFeed();
 
-  // Unified Scroll Handler for Tab Bar & Button
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  // --- Local State ---
+  const [isRefreshingState, setIsRefreshingState] = useState(false);
+  const lastTapRef = useRef<number>(0);
+
+  // --- Handlers ---
+  const handleNavigate = useCallback((screenName: string) => {
+    navigation.navigate(screenName as keyof RootStackParamList);
+  }, [navigation]);
+
+  const handleScrollToTop = useCallback(() => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
+
+  const handleScrollRaw = useCallback((event: any) => {
     const currentY = event.nativeEvent.contentOffset.y;
     const dy = currentY - lastScrollY.current;
 
+    // Detect if close to bottom
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const isCloseToBottom = layoutHeight + currentY >= contentHeight - 20;
 
-    if (currentY > 50) {
-      if (dy > 10 && !isTabBarHidden.current) { 
+    //--------------------------------- Tab Bar Hiding-------------------------------------------------------
+    if (isCloseToBottom) {
+
+      if (isTabBarHidden.current) {
+        isTabBarHidden.current = false;
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    } else if (currentY > 50) {
+      if (dy > 10 && !isTabBarHidden.current) {
         isTabBarHidden.current = true;
         Animated.timing(translateY, {
-          toValue: 100,
-          duration: 200,
+          toValue: TAB_BAR_HIDDEN_OFFSET,
+          duration: 300,
           useNativeDriver: true,
         }).start();
       } else if (dy < -5 && isTabBarHidden.current) {
         isTabBarHidden.current = false;
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 150,
+          duration: 250,
           useNativeDriver: true,
         }).start();
       }
@@ -59,52 +126,34 @@ const Home: React.FC = () => {
       isTabBarHidden.current = false;
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 200,
+        duration: 250,
         useNativeDriver: true,
       }).start();
     }
-
     lastScrollY.current = currentY;
-  };
+  }, [translateY]);
 
-  const fetchData = useCallback(async (isRefresh = false): Promise<void> => {
-    try {
-      if (isRefresh) {
-        setRefreshKey((prev) => prev + 1);
-        await queryClient.resetQueries();
-        await new Promise<void>((resolve) => setTimeout(resolve, 2000));
-      }
-    } catch (error) {
-      error;
+  const onScrollEvent = useMemo(() => Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: true,
+      listener: handleScrollRaw,
     }
+  ), [scrollY, handleScrollRaw]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshingState(true);
+    await queryClient.resetQueries();
+    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+    setIsRefreshingState(false);
   }, [queryClient]);
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
-
-  const { isRefreshing, handleRefresh } = useRefreshControl({
-    onRefresh: [() => fetchData(true)],
-    minRefreshTime: 2000,
-  });
-
-  const handleNavigate = useCallback((screenName: string) => {
-    try {
-      navigation.navigate(screenName as keyof RootStackParamList);
-    } catch (error) {
-      error;
-    }
-  }, [navigation]);
-
-  const lastTapRef = useRef<number>(0);
 
   const handleTabReselect = useCallback((tabName: string) => {
     if (tabName !== 'Home') return;
-
     const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300;
-
-    const currentScrollY = (scrollY as any)._value || 0;
+    const DOUBLE_TAP_DELAY = 350;
+    // @ts-ignore
+    const currentScrollY = scrollY._value || 0;
 
     if (currentScrollY > 100) {
       handleScrollToTop();
@@ -115,63 +164,117 @@ const Home: React.FC = () => {
         handleScrollToTop();
       }
     }
-
     lastTapRef.current = now;
-  }, [handleRefresh, scrollY]);
+  }, [handleRefresh, scrollY, handleScrollToTop]);
+
+  // --- Flattened Data Source ---
+  const flatData = useMemo(() => {
+    const staticBeforeFeed = SECTIONS_DATA;
+    const recentSection = { id: 'section-recent', type: SectionType.RECENT };
+
+    let feedSections: any[] = [];
+
+    feedSections.push({ id: 'feed-header', type: SectionType.FEED_HEADER });
+
+    if (isFeedLoading) {
+      feedSections.push({ id: 'feed-skeleton', type: SectionType.FEED_SKELETON });
+    } else {
+      // Map chunks to rows
+      if (chunkedItems && chunkedItems.length > 0) {
+        const rows = chunkedItems.map((row, index) => ({
+          id: `feed-row-${index}`,
+          type: SectionType.FEED_ROW,
+          data: row
+        }));
+        feedSections = [...feedSections, ...rows];
+      }
+    }
+
+    return [...staticBeforeFeed, ...feedSections, recentSection];
+  }, [chunkedItems, isFeedLoading]);
+
+  // --- Render Item ---
+  const renderItem = useCallback<ListRenderItem<any>>(({ item }) => {
+    switch (item.type) {
+      case SectionType.HERO:
+        return <HeroSection navigation={navigation} />;
+      case SectionType.CATEGORIES:
+        return <CategoriesSection />;
+      case SectionType.DEALS:
+        return <DealOfDaySection />;
+      case SectionType.OFFER:
+        return <OfferBannerSection />;
+      case SectionType.TRENDING:
+        return <TrendingSection />;
+
+      // Virtualized Feed
+      case SectionType.FEED_HEADER:
+        return <FeedHeader isDark={isDark} accentColor={accentColor} navigation={navigation} />;
+
+      case SectionType.FEED_SKELETON:
+        return <FeedSkeleton isDark={isDark} opacity={new Animated.Value(0.5)} />;
+
+      case SectionType.FEED_ROW:
+        return (
+          <FeedRow
+            items={item.data}
+            isDark={isDark}
+            accentColor={accentColor}
+            handlePress={handleFeedPress}
+            handleAddToCart={handleFeedAddToCart}
+            checkIsInCart={isInCart}
+            handleToggleWishlist={handleFeedToggleWishlist}
+            checkIsInWishlist={isInWishlist}
+          />
+        );
+
+      case SectionType.RECENT:
+        return <RecentlyViewedSection />;
+      default:
+        return null;
+    }
+  }, [navigation, isDark, accentColor, handleFeedPress, handleFeedAddToCart, isInCart, handleFeedToggleWishlist, isInWishlist]);
+
+  const keyExtractor = useCallback((item: any) => item.id, []);
+  const contentContainerStyle = useMemo(() => ({ paddingBottom: 10 }), []);
 
   return (
-    <>
-      {loading ? (
-        <View className="flex-1 justify-center items-center bg-white dark:bg-[#0F1419]">
-          <LottieView
-            source={require('../../assets/animations/Loading 48 _ Mortar & Pestle.json')}
-            autoPlay
-            loop
-            style={{ width: 300, height: 300 }}
-          />
-        </View>
-      ) : (
-        <Tabs
-          translateY={translateY}
-          onNavigate={handleNavigate}
-          onTabReselect={handleTabReselect}
-          scrollY={scrollY}
-          onScrollToTop={handleScrollToTop}
-        >
-          <HeaderScreen />
-
-          <RefreshControlWrapper
-            ref={scrollViewRef}
-            isRefreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            scrollViewProps={{
-              onScroll: Animated.event(
-                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                {
-                  useNativeDriver: true,
-                  listener: handleScroll,
-                }
-              ),
-              scrollEventThrottle: 16,
-              contentContainerStyle: { paddingBottom: 100 },
-              showsVerticalScrollIndicator: false,
-              removeClippedSubviews: true, // Optimize offscreen rendering
-            }}
-          >
-            <View className="flex-1 bg-white dark:bg-gray-900">
-              <HeroSection key={`hero-${refreshKey}`} navigation={navigation} />
-              <CategoriesSection key={`cat-${refreshKey}`} />
-              <DealOfDaySection key={`deal-${refreshKey}`} />
-              <OfferBannerSection key={`offer-${refreshKey}`} />
-              <TrendingSection key={`trend-${refreshKey}`} />
-              <ItemFeedSection key={`feed-${refreshKey}`} />
-              <RecentlyViewedSection key={`recent-${refreshKey}`} />
-            </View>
-          </RefreshControlWrapper>
-        </Tabs>
-      )}
-    </>
+    <Tabs
+      translateY={translateY}
+      onNavigate={handleNavigate}
+      onTabReselect={handleTabReselect}
+      scrollY={scrollY}
+      onScrollToTop={handleScrollToTop}
+    >
+      <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F3F4F6' }]}>
+        <HeaderScreen />
+        <Animated.FlatList
+          ref={flatListRef}
+          data={flatData}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          onScroll={onScrollEvent}
+          scrollEventThrottle={SCROLL_EVENT_THROTTLE}
+          contentContainerStyle={contentContainerStyle}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          initialNumToRender={5}
+          maxToRenderPerBatch={2}
+          updateCellsBatchingPeriod={30}
+          windowSize={11}
+          refreshing={isRefreshingState}
+          onRefresh={handleRefresh}
+        />
+      </View>
+    </Tabs>
   );
 };
 
-export default Home;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+});
+
+export default React.memo(Home);

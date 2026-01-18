@@ -1,20 +1,10 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  StatusBar,
-  Platform,
-  RefreshControl,
-} from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, StatusBar, Platform, RefreshControl } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../../AppNavigator';
 
-// Components
 import ActionGrid from './ActionGrid';
 import PrivacyTermsPage from './PrivacyTermsPage';
 import RecentlyViewedSection from '../../components/home/screens/RecentlyViewedSection';
@@ -22,10 +12,8 @@ import RecentlyViewedCategory from '../../components/home/screens/RecentlyViewed
 import ProfileCard from './ProfileCard';
 import ProfileSkeleton from './ProfileSkeleton';
 
-// Hooks
 import { useProfilePageUI } from '../../hooks/useProfilePageUI';
 
-// Constants
 const { width: screenWidth } = Dimensions.get('window');
 const getResponsiveSize = (size: number): number => (screenWidth / 375) * size;
 
@@ -36,17 +24,9 @@ interface ContactItemProps {
 }
 
 const ContactItem: React.FC<ContactItemProps> = React.memo(({ icon, text, isDark }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
-    <MaterialCommunityIcons
-      name={icon}
-      size={getResponsiveSize(20)}
-      color={isDark ? '#d77b7bff' : '#e16c61f1'}
-    />
-    <Text style={{
-      fontSize: getResponsiveSize(14),
-      marginLeft: 15,
-      color: isDark ? '#D1D5DB' : '#6B7280'
-    }}>
+  <View className="flex-row items-center py-2.5">
+    <MaterialCommunityIcons name={icon} size={getResponsiveSize(20)} color={isDark ? '#d77b7bff' : '#e16c61f1'} />
+    <Text style={{ fontSize: getResponsiveSize(14), color: isDark ? '#D1D5DB' : '#6B7280' }} className="ml-4">
       {text}
     </Text>
   </View>
@@ -55,7 +35,6 @@ const ContactItem: React.FC<ContactItemProps> = React.memo(({ icon, text, isDark
 const ProfilePage: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-  // Custom Hook (MVVM Pattern) - Encapsulates all logic
   const {
     userData,
     isDark,
@@ -65,7 +44,6 @@ const ProfilePage: React.FC = () => {
     isManualRefreshing,
     refreshKey,
     isLoading,
-    isRefetching,
     isError,
     error,
     refetch,
@@ -76,33 +54,136 @@ const ProfilePage: React.FC = () => {
     contactItems,
   } = useProfilePageUI();
 
-  // Render Skeleton
-  if (isLoading || isManualRefreshing) {
-    return <ProfileSkeleton />;
-  }
+  // Memoize Navigation Handlers
+  const handleGoBack = useCallback(() => navigation.goBack(), [navigation]);
+  const handleNavigateNotifications = useCallback(() => navigation.navigate('Notifications'), [navigation]);
 
-  // Render Error
+  // Memoize Sections to prevent unnecessary re-renders
+  const sections = useMemo(() => (
+    <>
+      <ProfileCard userData={userData} isDark={isDark} refetch={refetch} />
+
+      <ActionGrid />
+
+      {/* Personal Details - Collapsible */}
+      <View style={{
+        marginHorizontal: screenWidth * 0.04,
+        marginBottom: 20,
+        padding: screenWidth * 0.05,
+        borderRadius: 16,
+        backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 2,
+      }}>
+        <TouchableOpacity
+          className="flex-row items-center justify-between py-1.5"
+          onPress={togglePersonalDetails}
+        >
+          <Text style={{ fontSize: 18, color: isDark ? '#FFFFFF' : '#1F2937' }} className="font-bold">
+            Personal Details
+          </Text>
+          <MaterialCommunityIcons
+            name={personalDetailsExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color={isDark ? '#FFFFFF' : '#1F2937'}
+          />
+        </TouchableOpacity>
+        {personalDetailsExpanded && (
+          <View className="mt-4">
+            {contactItems.map((item, index) => (
+              <ContactItem key={`contact-${index}`} icon={item.icon} text={item.text} isDark={isDark} />
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Recently Viewed Categories Section */}
+      <View className="mb-5">
+        <RecentlyViewedCategory key={`recent-cat-${refreshKey}`} transparentBackground={true} />
+      </View>
+
+      {/* Recently Viewed Section */}
+      <View className="mb-5">
+        <RecentlyViewedSection key={`recent-${refreshKey}`} transparentBackground={true} />
+      </View>
+
+      {/* Privacy & Terms - Collapsible */}
+      <View style={{
+        marginHorizontal: screenWidth * 0.04,
+        marginBottom: 20,
+        padding: screenWidth * 0.04,
+        backgroundColor: isDark ? 'transparent' : '#FFFFFF',
+      }}>
+        <TouchableOpacity
+          className="flex-row items-center justify-between py-1.5"
+          onPress={togglePrivacyTerms}
+        >
+          <Text style={{ fontSize: 18, color: isDark ? '#FFFFFF' : '#1F2937' }} className="font-bold">
+            Privacy & Terms
+          </Text>
+          <MaterialCommunityIcons
+            name={privacyTermsExpanded ? "chevron-up" : "chevron-down"}
+            size={24}
+            color={isDark ? '#FFFFFF' : '#1F2937'}
+          />
+        </TouchableOpacity>
+        {privacyTermsExpanded && (
+          <View className="mt-4">
+            <PrivacyTermsPage />
+          </View>
+        )}
+      </View>
+
+      {/* Logout Button */}
+      <TouchableOpacity
+        style={{
+          width: 50,
+          height: 50,
+          marginLeft: screenWidth * 0.8,
+          backgroundColor: isDark ? '#DC2626' : '#da5959ff',
+        }}
+        className="rounded-full mb-5 items-center justify-center shadow-lg elevation-5"
+        onPress={handleLogout}
+      >
+        <MaterialCommunityIcons name="logout" size={22} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <Text style={{ color: isDark ? '#666666' : '#9CA3AF' }} className="text-center text-xs mb-2.5">
+        MEDICARE+ v3.0.0
+      </Text>
+    </>
+  ), [
+    userData,
+    isDark,
+    refetch,
+    personalDetailsExpanded,
+    togglePersonalDetails,
+    contactItems,
+    refreshKey,
+    privacyTermsExpanded,
+    togglePrivacyTerms,
+    handleLogout
+  ]);
+
+  if (isLoading || isManualRefreshing) return <ProfileSkeleton />;
+
   if (isError && error) {
     return (
       <LinearGradient
         colors={isDark ? ['#1A1A1A', '#2A2A2A'] : ['#FFFFFF', '#F8F9FA']}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+        className="flex-1 items-center justify-center"
       >
         <MaterialCommunityIcons name="alert-circle-outline" size={64} color={isDark ? '#EF4444' : '#DC2626'} />
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 20, color: isDark ? '#FFFFFF' : '#1F2937' }}>
-          Failed to Load Profile
-        </Text>
+        <Text style={{ color: isDark ? '#FFFFFF' : '#1F2937' }} className="text-xl font-bold mt-5">Failed to Load Profile</Text>
         <TouchableOpacity
-          style={{
-            marginTop: 20,
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            backgroundColor: isDark ? '#DC2626' : '#da5959ff',
-            borderRadius: 20
-          }}
+          style={{ backgroundColor: isDark ? '#DC2626' : '#da5959ff' }}
+          className="mt-5 px-5 py-2.5 rounded-2xl"
           onPress={() => refetch()}
         >
-          <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Retry</Text>
+          <Text className="text-white font-bold">Retry</Text>
         </TouchableOpacity>
       </LinearGradient>
     );
@@ -117,32 +198,23 @@ const ProfilePage: React.FC = () => {
 
       {/* Header */}
       <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: screenWidth * 0.04,
-        paddingBottom: 15,
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + (-25) : 45,
-        borderBottomWidth: 1,
         borderBottomColor: isDark ? '#3A3A3A' : '#E5E7EB',
-      }}>
+      }} className="flex-row items-center justify-between px-[4%] pb-[15px] border-b">
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isDark ? '#3A3A3A' : '#F3F4F6',
-          }}
+          onPress={handleGoBack}
+          style={{ backgroundColor: isDark ? '#3A3A3A' : '#F3F4F6' }}
+          className="w-10 h-10 rounded-full items-center justify-center"
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#1F2937'} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: isDark ? '#FFFFFF' : '#1F2937' }}>
-          Profile
-        </Text>
-        <View style={{ width: 40 }} />
+        <Text style={{ color: isDark ? '#FFFFFF' : '#1F2937' }} className="text-xl font-bold">Profile</Text>
+        <TouchableOpacity
+          className="w-10 items-end justify-center"
+          onPress={handleNavigateNotifications}
+        >
+          <MaterialCommunityIcons name="bell-outline" size={24} color={isDark ? '#FFFFFF' : '#1F2937'} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -150,110 +222,14 @@ const ProfilePage: React.FC = () => {
         contentContainerStyle={{ paddingBottom: 30 }}
         refreshControl={
           <RefreshControl
-            refreshing={isRefetching || isManualRefreshing}
+            refreshing={false} // Managed by skeleton for initial load
             onRefresh={handleRefresh}
             tintColor={isDark ? '#FFFFFF' : '#000000'}
             colors={[isDark ? '#FFFFFF' : '#000000']}
           />
         }
       >
-        <ProfileCard userData={userData} isDark={isDark} refetch={refetch} />
-
-        <ActionGrid />
-
-        {/* Personal Details - Collapsible */}
-        <View style={{
-          marginHorizontal: screenWidth * 0.04,
-          marginBottom: 20,
-          padding: screenWidth * 0.05,
-          borderRadius: 16,
-          backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 2,
-        }}>
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 5 }}
-            onPress={togglePersonalDetails}
-          >
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: isDark ? '#FFFFFF' : '#1F2937' }}>
-              Personal Details
-            </Text>
-            <MaterialCommunityIcons
-              name={personalDetailsExpanded ? "chevron-up" : "chevron-down"}
-              size={24}
-              color={isDark ? '#FFFFFF' : '#1F2937'}
-            />
-          </TouchableOpacity>
-          {personalDetailsExpanded && (
-            <View style={{ marginTop: 15 }}>
-              {contactItems.map((item, index) => (
-                <ContactItem key={index} icon={item.icon} text={item.text} isDark={isDark} />
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Recently Viewed Categories Section */}
-        <View style={{ marginBottom: 20 }}>
-          <RecentlyViewedCategory key={`recent-cat-${refreshKey}`} transparentBackground={true} />
-        </View>
-
-        {/* Recently Viewed Section */}
-        <View style={{ marginBottom: 20 }}>
-          <RecentlyViewedSection key={`recent-${refreshKey}`} transparentBackground={true} />
-        </View>
-
-        {/* Privacy & Terms - Collapsible */}
-        <View style={{
-          marginHorizontal: screenWidth * 0.04,
-          marginBottom: 20,
-          padding: screenWidth * 0.04,
-          backgroundColor: isDark ? 'transparent' : '#FFFFFF',
-        }}>
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 5 }}
-            onPress={togglePrivacyTerms}
-          >
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: isDark ? '#FFFFFF' : '#1F2937' }}>
-              Privacy & Terms
-            </Text>
-            <MaterialCommunityIcons
-              name={privacyTermsExpanded ? "chevron-up" : "chevron-down"}
-              size={24}
-              color={isDark ? '#FFFFFF' : '#1F2937'}
-            />
-          </TouchableOpacity>
-          {privacyTermsExpanded && (
-            <View style={{ marginTop: 15 }}>
-              <PrivacyTermsPage />
-            </View>
-          )}
-        </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={{
-            width: 50,
-            height: 50,
-            borderRadius: 25,
-            marginLeft: screenWidth * 0.8,
-            marginBottom: 20,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: isDark ? '#DC2626' : '#da5959ff',
-            elevation: 5,
-          }}
-          onPress={handleLogout}
-        >
-          <MaterialCommunityIcons name="logout" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <Text style={{ textAlign: 'center', fontSize: 12, marginBottom: 10, color: isDark ? '#666666' : '#9CA3AF' }}>
-          MEDICARE+ v3.0.0
-        </Text>
+        {sections}
       </ScrollView>
     </LinearGradient>
   );

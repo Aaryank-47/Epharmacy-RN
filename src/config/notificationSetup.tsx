@@ -19,16 +19,20 @@ import { notificationService } from '../services/notificationService';
  * Should be mounted once at the app root level
  */
 export const NotificationSetup: React.FC = () => {
-  // Initialize notifications with configuration
   useNotifications({
     backendUrl: API_BASE_URL,
     autoRegister: true,
     onForegroundMessage: (message) => {
-      // Display notification using Notifee for rich styling when app is in foreground
+      // Extract image from either standard field or data
+      const image = message.notification?.android?.imageUrl || message.data?.image;
+
+      // Merge image into data for notificationService to pick it up
+      const dataWithImage = { ...message.data, ...(image ? { image } : {}) };
+
       notificationService.displayNotification(
         message.notification?.title || 'Notification',
         message.notification?.body || 'You have a new notification',
-        message.data
+        dataWithImage
       );
     },
     onNotificationOpened: (_message) => {
@@ -36,13 +40,8 @@ export const NotificationSetup: React.FC = () => {
       // Example: if (_message.data?.screen) navigation.navigate(_message.data.screen);
     },
   });
-
-  // This component doesn't render anything
   return null;
 };
 
-// ============================================================================
-// EXPORT
-// ============================================================================
 
 export default NotificationSetup;

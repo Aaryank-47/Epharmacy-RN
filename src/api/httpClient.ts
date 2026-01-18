@@ -219,6 +219,10 @@ httpClient.interceptors.request.use(async (config) => {
   // Track request timing for slow request warnings
   extendedConfig.metadata = { startTime: Date.now() };
 
+  if (__DEV__) {
+    console.log(`[HTTP]  Request: ${extendedConfig.method?.toUpperCase()} ${extendedConfig.url}`);
+  }
+
   // 1. CACHE CHECK (GET requests only)
   if (extendedConfig.method?.toLowerCase() === 'get' && extendedConfig.cache) {
     const cacheKey = `${extendedConfig.url}?${JSON.stringify(extendedConfig.params || {})}`;
@@ -281,8 +285,12 @@ httpClient.interceptors.response.use(
       ? Date.now() - extendedConfig.metadata.startTime
       : 0;
 
-    if (__DEV__ && duration > SLOW_REQUEST_THRESHOLD_MS) {
-      console.warn(`[HTTP] Slow request (${duration}ms): ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    if (__DEV__) {
+      console.log(`[HTTP] ✅ Response: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url} (${duration}ms)`);
+
+      if (duration > SLOW_REQUEST_THRESHOLD_MS) {
+        console.warn(`[HTTP]  Slow request detected (${duration}ms)`);
+      }
     }
 
     // 2. CACHE STORE (GET requests only)
@@ -297,6 +305,12 @@ httpClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (__DEV__) {
+      const duration = error.config && error.config.metadata
+        ? Date.now() - error.config.metadata.startTime
+        : 'N/A';
+      console.error(`[HTTP]  Error: ${error.code || 'UNKNOWN'} ${error.config?.method?.toUpperCase()} ${error.config?.url} (${duration}ms) - ${error.message}`);
+    }
     // Normalize all errors to consistent format
     return Promise.reject(mapApiError(error));
   }

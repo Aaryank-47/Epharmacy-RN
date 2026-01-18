@@ -43,9 +43,6 @@ export const API_ROUTES = {
   },
   notifications: {
     registerToken: "/api/v1/notifications/register-token",
-    send: "/api/v1/notifications/send",
-    subscribeTopic: "/api/v1/notifications/subscribe-topic",
-    unsubscribeTopic: "/api/v1/notifications/unsubscribe-topic",
     activeLogs: "/api/v1/notifications/active-logs",
     myNotifications: "/api/v1/notifications/myNotification",
     logById: "/api/v1/notifications/log",
@@ -59,3 +56,9 @@ export const API_ROUTES = {
 } as const;
 
 export type ApiRouteTree = typeof API_ROUTES;
+
+// AI Chat Endpoints
+export const AI_ENDPOINTS = {
+  PREDICT: "https://ai-server-1-xzqm.onrender.com/predict",
+  REGISTER: "https://ai-server-1-xzqm.onrender.com/register",
+};

@@ -292,3 +292,30 @@ export interface GetNotificationsParams {
 export interface MarkMultipleAsReadParams {
   logIds: string[];
 }
+
+// ============================================================================
+// PRESCRIPTION / OCR TYPES
+// ============================================================================
+
+export interface MedicineDetails {
+  drugName: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  raw?: string;
+}
+
+export interface OcrResponse {
+  text: string;
+  medicines: MedicineDetails[];
+  meta: {
+    detectedCount: number;
+  };
+}
+
+export interface UploadedFilePayload {
+  name: string;
+  size: number;
+  type: string;
+  uri: string;
+}

@@ -1,387 +1,207 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Dimensions,
-  Animated,
-  Image,
-  StyleProp,
-  ViewStyle,
-  ToastAndroid,
-} from 'react-native';
+import React, { useEffect, useRef, memo, useCallback, useMemo, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Dimensions, Animated, Image, ToastAndroid } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { useDealsOfTheDay } from '../../../hooks/useDealsOfTheDay';
 import { useCart } from '../../../context/CartContext';
+import { useWishlist } from '../../../context/WishlistContext';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-interface SkeletonShimmerProps {
-  width: number | string;
-  height: number;
-  borderRadius?: number;
-  style?: StyleProp<ViewStyle>;
-}
-
-const SkeletonShimmer: React.FC<SkeletonShimmerProps> = ({
-  width,
-  height,
-  borderRadius = 8,
-  style,
-}) => {
+const SkeletonShimmer = memo<{ width: number | string; height: number; borderRadius?: number }>(({ width, height, borderRadius = 8 }) => {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [shimmerAnim]);
-
-  const opacity = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
-  });
-
   const { isDark } = useThemePalette();
 
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shimmerAnim]);
+
+  const opacity = shimmerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] });
+
+  return <Animated.View style={{ width: width as any, height, borderRadius, opacity, backgroundColor: isDark ? '#374151' : '#E5E7EB' }} />;
+});
+
+const TimerIcon = memo<{ isDark: boolean }>(({ isDark }) => {
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: -17, duration: 100, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 17, duration: 100, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -17, duration: 100, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 17, duration: 100, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
+        Animated.delay(800),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [shakeAnim]);
+
   return (
-    <Animated.View
-      style={[
-        {
-          width: width as any,
-          height,
-          borderRadius,
-          opacity,
-          backgroundColor: isDark ? '#374151' : '#E5E7EB',
-        },
-        style,
-      ]}
-    />
+    <Animated.View style={{ transform: [{ rotate: shakeAnim.interpolate({ inputRange: [-15, 15], outputRange: ['-15deg', '15deg'] }) }] }}>
+      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(245, 158, 11, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name="time-outline" size={18} color={isDark ? '#FBBF24' : '#DC2626'} />
+      </View>
+    </Animated.View>
   );
-};
+});
+
+const DealCard = memo<{ item: any; isDark: boolean; accentColor: string; onPress: () => void; onAddToCart: () => void; isInCart: boolean; onToggleWishlist: () => void; isInWishlist: boolean }>(
+  ({ item, isDark, accentColor, onPress, onToggleWishlist, isInWishlist }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const images = item.itemImages || [];
+    const hasMultipleImages = images.length > 1;
+
+    useEffect(() => {
+      if (!hasMultipleImages || isPaused) return;
+
+      const interval = setInterval(() => {
+        setCurrentImageIndex(prev => (prev + 1) % images.length);
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }, [hasMultipleImages, images.length, isPaused]);
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        onPressIn={() => setIsPaused(true)}
+        onPressOut={() => setIsPaused(false)}
+        style={{ width: (screenWidth - 18) / 2, marginHorizontal: 3, backgroundColor: isDark ? '#1F2937' : '#FFFFFF', borderRadius: 12, shadowOpacity: isDark ? 0.2 : 0.0, shadowRadius: 4, overflow: 'hidden', marginBottom: 0 }}
+      >
+        <View style={{ height: 190, width: '100%', backgroundColor: isDark ? '#374151' : '#F5F5F5', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+          <View style={{ width: '100%', height: '100%' }}>
+            <Image source={{ uri: images[currentImageIndex] || '' }} style={{ width: '100%', height: '100%', borderTopLeftRadius: 16, borderTopRightRadius: 26 }} resizeMode="contain" />
+          </View>
+          {item.itemDiscount && (
+            <View style={{ position: 'absolute', top: 0, left: 0, backgroundColor: '#10B981', paddingHorizontal: 8, paddingVertical: 4, borderTopLeftRadius: 16, borderBottomRightRadius: 12, shadowColor: '#10B981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 }}>-{item.itemDiscount}% OFF</Text>
+            </View>
+          )}
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); onToggleWishlist(); }} activeOpacity={0.7} style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.95)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
+            <Ionicons name={isInWishlist ? 'heart' : 'heart-outline'} size={18} color={isInWishlist ? '#EF4444' : (isDark ? '#E5E7EB' : '#EF4444')} />
+          </TouchableOpacity>
+          <View style={{ position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.95)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: isDark ? '#E5E7EB' : '#111827' }}>{item.itemRatings ? item.itemRatings.toFixed(1) : '4.5'}</Text>
+            <Ionicons name="star" size={11} color="#10B981" style={{ marginLeft: 2, marginRight: 2 }} />
+            <Text style={{ fontSize: 10, fontWeight: '400', color: isDark ? '#9CA3AF' : '#6B7280' }}>({item.itemReviews || '100'})</Text>
+          </View>
+        </View>
+        <View style={{ padding: 8 }}>
+          <Text numberOfLines={2} ellipsizeMode="tail" style={{ fontSize: 13, fontWeight: '400', color: isDark ? '#D1D5DB' : '#374151', marginBottom: 6, lineHeight: 17 }}>{item.itemName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              {item.itemInitialPrice && item.itemInitialPrice !== item.itemFinalPrice && (
+                <Text style={{ fontSize: 11, color: isDark ? '#6B7280' : '#9CA3AF', textDecorationLine: 'line-through', marginBottom: 2, fontWeight: '400' }}>
+                  ₹{item.itemInitialPrice.toLocaleString('en-IN')}
+                </Text>
+              )}
+              <Text style={{ fontSize: 17, fontWeight: '700', color: isDark ? '#FFFFFF' : '#111827', letterSpacing: -0.2 }}>
+                ₹{(item.itemFinalPrice || 0).toLocaleString('en-IN')}
+              </Text>
+            </View>
+            <TimerIcon isDark={isDark} />
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+);
 
 const DealOfDaySection: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isDark, accentColor } = useThemePalette();
   const { addToCart, isInCart } = useCart();
-
-  const handleAddToCart = (item: any) => {
-    if (isInCart((item as any)._id || (item as any).id)) {
-      ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
-      return;
-    }
-
-    addToCart({
-      id: item._id || item.id,
-      name: item.itemName,
-      price: item.itemFinalPrice || 0,
-      quantity: 1,
-    });
-    ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
-  };
-
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { data, isLoading, error } = useDealsOfTheDay();
   const deals = data?.deals || [];
   const totalDeals = data?.totalDeals || 0;
 
-  if (!isLoading && totalDeals < 3) {
-    return null;
-  }
+  const handleAddToCart = useCallback((item: any) => {
+    const itemId = item._id || item.id;
+    if (isInCart(itemId)) {
+      ToastAndroid.show('Item already in cart', ToastAndroid.SHORT);
+      return;
+    }
+    addToCart({ id: itemId, name: item.itemName, price: item.itemFinalPrice || 0, quantity: 1 });
+    ToastAndroid.show('Added to cart', ToastAndroid.SHORT);
+  }, [addToCart, isInCart]);
 
-  // Persistent shimmer logic
+  const handleToggleWishlist = useCallback((item: any) => {
+    const itemId = item._id || item.id;
+    if (isInWishlist(itemId)) {
+      removeFromWishlist(itemId);
+      ToastAndroid.show('Removed from wishlist', ToastAndroid.SHORT);
+    } else {
+      addToWishlist({ _id: itemId, itemName: item.itemName, itemFinalPrice: item.itemFinalPrice || 0, image: item.itemImages?.[0] || '' });
+      ToastAndroid.show('Added to wishlist', ToastAndroid.SHORT);
+    }
+  }, [addToWishlist, removeFromWishlist, isInWishlist]);
+
+  const handleProductPress = useCallback((item: any) => {
+    const itemId = item._id || item.id;
+    if (itemId) navigation.navigate('ProductDetail', { productId: itemId });
+  }, [navigation]);
+
+  const gradientColors = useMemo(() => (isDark ? ['#181A20', '#2A2D35'] : ['#F9FAFB', '#F3F4F6']), [isDark]);
+  const timerGradient = useMemo(() => (isDark ? ['#7F1D1D', '#991B1B'] : ['#FEE2E2', '#FECACA']), [isDark]);
+
+  if (!isLoading && totalDeals < 3) return null;
+
   const showShimmer = isLoading || error || deals.length === 0;
 
-  const renderShimmerPlaceholders = () => (
-    <FlatList
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      data={[1, 2, 3, 4]}
-      keyExtractor={(_, i) => `shimmer-${i}`}
-      contentContainerStyle={{ paddingHorizontal: 12 }}
-      renderItem={() => (
-        <View
-          style={{
-            width: screenWidth * 0.46,
-            marginRight: 12,
-            backgroundColor: isDark ? '#1A1C23' : '#FFFFFF',
-            borderRadius: 12,
-            padding: 8,
-            borderWidth: 1,
-            borderColor: isDark ? '#2D3038' : '#F3F4F6',
-          }}
-        >
-
-          <SkeletonShimmer width="100%" height={120} borderRadius={8} />
-
-
-          <SkeletonShimmer width="80%" height={14} borderRadius={4} style={{ marginTop: 12 }} />
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-            <View>
-              <SkeletonShimmer width={60} height={16} borderRadius={4} />
-              <SkeletonShimmer width={40} height={10} borderRadius={4} style={{ marginTop: 4 }} />
-            </View>
-            <SkeletonShimmer width={32} height={32} borderRadius={16} />
-          </View>
-        </View>
-      )}
-    />
-  );
-
-  const handleProductPress = (item: any) => {
-    const itemId = item._id || item.id;
-
-    if (itemId) {
-      navigation.navigate('ProductDetail', { productId: itemId });
-    }
-  };
-
   return (
-    <LinearGradient
-      colors={isDark ? ['#181A20', '#2A2D35'] : ['#F9FAFB', '#F3F4F6']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ marginTop: 0, paddingVertical: 24 }}
-    >
-      {/* Header */}
-      <View style={{
-        marginHorizontal: 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-      }}>
+    <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ marginTop: 0, paddingVertical: 24 }}>
+      <View style={{ marginHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <Ionicons name="flash" size={18} color={isDark ? '#FBBF24' : '#F59E0B'} style={{ marginRight: 6 }} />
-            <Text style={{
-              fontSize: 22,
-              fontWeight: '800',
-              color: isDark ? '#FFFFFF' : '#111827',
-              letterSpacing: -0.5,
-            }}>
-              DEAL OF THE DAY
-            </Text>
+            <Ionicons name="flash-outline" size={18} color={isDark ? '#FBBF24' : '#F59E0B'} style={{ marginRight: 6 }} />
+            <Text style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#FFFFFF' : '#111827', letterSpacing: -0.5 }}>DEAL OF THE DAY</Text>
           </View>
-          <Text style={{
-            fontSize: 13,
-            color: isDark ? '#9CA3AF' : '#6B7280',
-            fontWeight: '500',
-            marginLeft: 24
-          }}>
-            Prices slashed for 24 hours!
-          </Text>
+          <Text style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280', fontWeight: '500', marginLeft: 24 }}>Prices slashed for 24 hours!</Text>
         </View>
-
-        {/* Timer Badge */}
-        <LinearGradient
-          colors={isDark ? ['#7F1D1D', '#991B1B'] : ['#FEE2E2', '#FECACA']}
-          style={{
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: isDark ? '#B91C1C' : '#FCA5A5',
-          }}
-        >
-          <Text style={{
-            fontSize: 12,
-            fontWeight: '800',
-            color: isDark ? '#FECACA' : '#DC2626',
-            fontVariant: ['tabular-nums']
-          }}>
-            12:00:00 LEFT
-          </Text>
+        <LinearGradient colors={timerGradient} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: isDark ? '#B91C1C' : '#FCA5A5' }}>
+          <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? '#FECACA' : '#DC2626', fontVariant: ['tabular-nums'] }}>12:00:00 LEFT</Text>
         </LinearGradient>
       </View>
-
       {showShimmer ? (
-        renderShimmerPlaceholders()
+        <FlatList horizontal showsHorizontalScrollIndicator={false} data={[1, 2, 3, 4]} keyExtractor={(_, i) => `shimmer-${i}`} contentContainerStyle={{ paddingHorizontal: 12 }} renderItem={() => (
+          <View style={{ width: screenWidth * 0.46, marginRight: 12, backgroundColor: isDark ? '#1A1C23' : '#FFFFFF', borderRadius: 12, padding: 8, borderWidth: 1, borderColor: isDark ? '#2D3038' : '#F3F4F6' }}>
+            <SkeletonShimmer width="100%" height={120} borderRadius={8} />
+            <View style={{ marginTop: 12 }}>
+              <SkeletonShimmer width="80%" height={14} borderRadius={4} />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <View>
+                <SkeletonShimmer width={60} height={16} borderRadius={4} />
+                <View style={{ marginTop: 4 }}>
+                  <SkeletonShimmer width={40} height={10} borderRadius={4} />
+                </View>
+              </View>
+              <SkeletonShimmer width={32} height={32} borderRadius={16} />
+            </View>
+          </View>
+        )} />
       ) : (
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={deals}
-          keyExtractor={(item) => item._id || item.itemName || String(Math.random())}
-          contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 15 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              activeOpacity={0.92}
-              onPress={() => handleProductPress(item)}
-              style={{
-                width: screenWidth * 0.48,
-                marginHorizontal: 8,
-                backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
-                borderRadius: 20,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: isDark ? 0.4 : 0.08,
-                shadowRadius: 12,
-                elevation: 6,
-                borderWidth: isDark ? 1 : 0,
-                borderColor: isDark ? '#2D3038' : 'transparent',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Image Area - Classy & Modern */}
-              <View style={{
-                height: 160,
-                width: '100%',
-                backgroundColor: isDark ? '#2A2D35' : '#F8FAFC',
-                padding: 12,
-                justifyContent: 'center',
-                alignItems: 'center',
-                position: 'relative',
-              }}>
-                {/* Discount Tag */}
-                {item.itemDiscount && (
-                  <View style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    backgroundColor: '#EF4444',
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 8,
-                    zIndex: 10,
-                    shadowColor: '#EF4444',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}>
-                    <Text style={{
-                      color: '#FFFFFF',
-                      fontSize: 11,
-                      fontWeight: '800',
-                      letterSpacing: 0.5
-                    }}>
-                      -{item.itemDiscount}%
-                    </Text>
-                  </View>
-                )}
-
-                <Image
-                  source={{ uri: (item.itemImages && item.itemImages[0]) || '' }}
-                  style={{ width: '90%', height: '90%' }}
-                  resizeMode="contain"
-                />
-
-                {/* Rating Badge */}
-                <View style={{
-                  position: 'absolute',
-                  bottom: 12,
-                  left: 12,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                  borderRadius: 6,
-                }}>
-                  <Ionicons name="star" size={10} color="#FBBF24" />
-                  <Text style={{
-                    fontSize: 10,
-                    fontWeight: '700',
-                    color: isDark ? '#FFF' : '#1F2937',
-                    marginLeft: 3
-                  }}>
-                    {(item as any).itemRatings ? (item as any).itemRatings.toFixed(1) : '4.5'}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={{ padding: 14 }}>
-
-
-                <Text
-                  numberOfLines={2}
-                  style={{
-                    fontSize: 15,
-                    fontWeight: '700',
-                    color: isDark ? '#F3F4F6' : '#111827',
-                    marginBottom: 8,
-                    lineHeight: 20
-                  }}
-                >
-                  {item.itemName}
-                </Text>
-
-                {/* Price & Action Row */}
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-end',
-                  justifyContent: 'space-between',
-                  marginTop: 4,
-                }}>
-                  <View>
-                    {item.itemInitialPrice && (
-                      <Text style={{
-                        fontSize: 11,
-                        color: isDark ? '#6B7280' : '#9CA3AF',
-                        textDecorationLine: 'line-through',
-                        marginBottom: 1,
-                        fontWeight: '500'
-                      }}>
-                        ₹{item.itemInitialPrice}
-                      </Text>
-                    )}
-                    <Text style={{
-                      fontSize: 18,
-                      fontWeight: '800',
-                      color: isDark ? '#FFFFFF' : '#1F2937',
-                      letterSpacing: -0.5
-                    }}>
-                      ₹{item.itemFinalPrice || 0}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: isInCart((item as any)._id || (item as any).id) ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
-                      shadowColor: isInCart((item as any)._id || (item as any).id) ? 'transparent' : accentColor,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    }}
-                    activeOpacity={0.8}
-                    onPress={() => handleAddToCart(item)}
-                  >
-                    <Ionicons
-                      name={isInCart((item as any)._id || (item as any).id) ? "checkmark" : "add"}
-                      size={24}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
+        <FlatList horizontal showsHorizontalScrollIndicator={false} data={deals} keyExtractor={(item) => item._id || item.itemName || String(Math.random())} contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 12 }} renderItem={({ item }) => (
+          <DealCard item={item} isDark={isDark} accentColor={accentColor} onPress={() => handleProductPress(item)} onAddToCart={() => handleAddToCart(item)} isInCart={isInCart(item._id || (item as any).id)} onToggleWishlist={() => handleToggleWishlist(item)} isInWishlist={isInWishlist(item._id || (item as any).id)} />
+        )} />
       )}
     </LinearGradient>
   );
 };
 
-export default DealOfDaySection;
+export default memo(DealOfDaySection);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,196 +8,166 @@ import {
   Vibration,
   Animated,
   Platform,
+  Dimensions,
 } from 'react-native';
-import { Camera, useCameraDevices, useCodeScanner } from 'react-native-vision-camera';
+import { Camera, useCameraDevices, useCodeScanner, Code } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
 
 interface QRScannerScreenProps {
   navigation: any;
-  route?: any;
 }
+
+const { width } = Dimensions.get('window');
+const SCAN_FRAME_SIZE = 280;
 
 const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
   const { isDark, accentColor } = useThemePalette();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(true);
-  const [scannedData, setScannedData] = useState<string | null>(null);
-  
-  const devices = useCameraDevices();
-  const device = devices.find(d => d.position === 'back');
 
+  // Camera Setup
+  const devices = useCameraDevices();
+  const device = useMemo(() => devices.find(d => d.position === 'back'), [devices]);
+
+  // Animations with Native Driver
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Request camera permission
+  // Request camera permission on mount
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       const status = await Camera.requestCameraPermission();
-      setHasPermission(status === 'granted');
+      if (isMounted) setHasPermission(status === 'granted');
     })();
+    return () => { isMounted = false; };
   }, []);
 
-  // Animated scanning line
+  // Scanning Animation Loop
   useEffect(() => {
-    if (isScanning) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(scanLineAnim, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scanLineAnim, {
-            toValue: 0,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+    if (!isScanning) {
+      scanLineAnim.setValue(0);
+      return;
     }
-  }, [isScanning]);
 
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanLineAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLineAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+
+    return () => animation.stop();
+  }, [isScanning, scanLineAnim]);
+
+  // Optimized Success Handler
+  const handleScanSuccess = useCallback((value: string) => {
+    setIsScanning(false);
+    Vibration.vibrate(200);
+
+    // Success Pulse Animation
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Show Result Alert
+    // Using InteractionManager or requestAnimationFrame could be even better, 
+    // but setTimeout is sufficient for basic frame gap
+    setTimeout(() => {
+      Alert.alert(
+        'QR Code Scanned',
+        `Data: ${value}`,
+        [
+          {
+            text: 'Scan Again',
+            onPress: () => setIsScanning(true),
+          },
+          {
+            text: 'Close',
+            onPress: () => navigation.goBack(),
+            style: 'cancel',
+          },
+        ],
+        { cancelable: false }
+      );
+    }, 300);
+  }, [navigation, scaleAnim]);
+
+  // Code Scanner Callback
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'code-128', 'code-39'],
-    onCodeScanned: (codes) => {
+    onCodeScanned: useCallback((codes: Code[]) => {
       if (!isScanning || codes.length === 0) return;
 
       const code = codes[0];
-      if (code.value && code.value !== scannedData) {
-        setIsScanning(false);
-        setScannedData(code.value);
-        Vibration.vibrate(200);
-
-        // Success animation
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.1,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-        ]).start();
-
-        // Show result
-        setTimeout(() => {
-          Alert.alert(
-            'QR Code Scanned',
-            `Data: ${code.value}`,
-            [
-              {
-                text: 'Scan Again',
-                onPress: () => {
-                  setScannedData(null);
-                  setIsScanning(true);
-                },
-              },
-              {
-                text: 'Close',
-                onPress: () => navigation.goBack(),
-                style: 'cancel',
-              },
-            ],
-            { cancelable: false }
-          );
-        }, 300);
+      if (code.value) {
+        handleScanSuccess(code.value);
       }
-    },
+    }, [isScanning, handleScanSuccess]),
   });
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     navigation.goBack();
-  };
+  }, [navigation]);
 
-  const handleFlashToggle = () => {
-    // Implement flash toggle if needed
+  const handleFlashToggle = useCallback(() => {
     Alert.alert('Flash', 'Flash toggle coming soon!');
-  };
+  }, []);
+
+  const handleGrantPermission = useCallback(async () => {
+    const status = await Camera.requestCameraPermission();
+    setHasPermission(status === 'granted');
+  }, []);
+
+  // Memoized Interpolation
+  const scanLineTranslateY = scanLineAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 250],
+  });
+
+  // --- Render States ---
 
   if (hasPermission === null) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: '#000000',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 40,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: '700',
-            color: '#FFFFFF',
-            marginTop: 20,
-            textAlign: 'center',
-          }}
-        >
-          Requesting camera permission...
-        </Text>
+      <View className="flex-1 bg-black items-center justify-center px-10">
+        <Text className="text-white text-lg font-bold mt-5 text-center">Requesting camera permission...</Text>
       </View>
     );
   }
 
   if (hasPermission === false) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: '#000000',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 40,
-        }}
-      >
+      <View className="flex-1 bg-black items-center justify-center px-10">
         <Icon name="camera-off" size={72} color="#EF4444" />
-        <Text
-          style={{
-            fontSize: 22,
-            fontWeight: '800',
-            color: '#FFFFFF',
-            marginTop: 24,
-            textAlign: 'center',
-            letterSpacing: 0.2,
-          }}
-        >
-          No access to camera
-        </Text>
-        <Text
-          style={{
-            fontSize: 15,
-            color: '#9CA3AF',
-            marginTop: 10,
-            textAlign: 'center',
-            fontWeight: '500',
-          }}
-        >
-          Please grant camera permission to scan QR codes
-        </Text>
-        <TouchableOpacity
-          onPress={() => Camera.requestCameraPermission()}
-          style={{
-            marginTop: 28,
-            borderRadius: 14,
-            overflow: 'hidden',
-          }}
-        >
+        <Text className="text-white text-2xl font-extrabold mt-6 text-center tracking-wide">No access to camera</Text>
+        <Text className="text-gray-400 text-base mt-2.5 text-center font-medium">Please grant camera permission to scan QR codes</Text>
+
+        <TouchableOpacity onPress={handleGrantPermission} className="mt-7 rounded-2xl overflow-hidden">
           <LinearGradient
             colors={[accentColor, isDark ? '#7C3AED' : '#9333EA']}
-            style={{
-              paddingHorizontal: 36,
-              paddingVertical: 16,
-            }}
+            className="px-9 py-4"
           >
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#FFFFFF' }}>
-              Grant Permission
-            </Text>
+            <Text className="text-white text-lg font-extrabold">Grant Permission</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -206,152 +176,62 @@ const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
 
   if (!device) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: '#000000',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 40,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: '700',
-            color: '#FFFFFF',
-            textAlign: 'center',
-          }}
-        >
-          No camera device found
-        </Text>
+      <View className="flex-1 bg-black items-center justify-center px-10">
+        <Text className="text-white text-lg font-bold text-center">No camera device found</Text>
       </View>
     );
   }
 
-  const scanLineTranslateY = scanLineAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 250],
-  });
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+    <View className="flex-1 bg-black">
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       {/* Camera View */}
       <Camera
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         device={device}
-        isActive={true}
+        isActive={isScanning} // Only active when scanning to save battery
         codeScanner={codeScanner}
       />
 
       {/* Overlay */}
-      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+      <View className="flex-1 bg-transparent">
         {/* Header */}
         <LinearGradient
           colors={['rgba(0,0,0,0.85)', 'transparent']}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingTop: Platform.OS === 'android' ? 50 : 60,
-            paddingBottom: 22,
-          }}
+          className="flex-row items-center justify-between px-4 pt-[50px] pb-6"
+          style={{ paddingTop: Platform.OS === 'android' ? 50 : 60 }}
         >
-          <TouchableOpacity onPress={handleClose} style={{ padding: 8 }}>
+          <TouchableOpacity onPress={handleClose} className="p-2">
             <Icon name="arrow-left" size={30} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: '800',
-              color: '#FFFFFF',
-              letterSpacing: 0.3,
-            }}
-          >
-            Scan QR Code
-          </Text>
-          <TouchableOpacity onPress={handleFlashToggle} style={{ padding: 8 }}>
+          <Text className="text-white text-xl font-extrabold tracking-wide">Scan QR Code</Text>
+          <TouchableOpacity onPress={handleFlashToggle} className="p-2">
             <Icon name="flash" size={30} color="#FFFFFF" />
           </TouchableOpacity>
         </LinearGradient>
 
         {/* Scanning Frame */}
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View className="flex-1 items-center justify-center">
           <Animated.View
             style={{
-              width: 280,
-              height: 280,
+              width: SCAN_FRAME_SIZE,
+              height: SCAN_FRAME_SIZE,
               position: 'relative',
               transform: [{ scale: scaleAnim }],
             }}
           >
-            {/* Corner Borders */}
-            <View
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: 50,
-                height: 50,
-                borderTopWidth: 5,
-                borderLeftWidth: 5,
-                borderColor: accentColor,
-                borderTopLeftRadius: 10,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: 50,
-                height: 50,
-                borderTopWidth: 5,
-                borderRightWidth: 5,
-                borderColor: accentColor,
-                borderTopRightRadius: 10,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                width: 50,
-                height: 50,
-                borderBottomWidth: 5,
-                borderLeftWidth: 5,
-                borderColor: accentColor,
-                borderBottomLeftRadius: 10,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: 50,
-                height: 50,
-                borderBottomWidth: 5,
-                borderRightWidth: 5,
-                borderColor: accentColor,
-                borderBottomRightRadius: 10,
-              }}
-            />
+            {/* Corners */}
+            <View className="absolute top-0 left-0 w-[50px] h-[50px] border-t-[5px] border-l-[5px] rounded-tl-[10px]" style={{ borderColor: accentColor }} />
+            <View className="absolute top-0 right-0 w-[50px] h-[50px] border-t-[5px] border-r-[5px] rounded-tr-[10px]" style={{ borderColor: accentColor }} />
+            <View className="absolute bottom-0 left-0 w-[50px] h-[50px] border-b-[5px] border-l-[5px] rounded-bl-[10px]" style={{ borderColor: accentColor }} />
+            <View className="absolute bottom-0 right-0 w-[50px] h-[50px] border-b-[5px] border-r-[5px] rounded-br-[10px]" style={{ borderColor: accentColor }} />
 
             {/* Scanning Line */}
             {isScanning && (
               <Animated.View
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  height: 3,
-                  transform: [{ translateY: scanLineTranslateY }],
-                }}
+                className="absolute left-0 right-0 h-[3px]"
+                style={{ transform: [{ translateY: scanLineTranslateY }] }}
               >
                 <LinearGradient
                   colors={['transparent', accentColor, 'transparent']}
@@ -364,17 +244,7 @@ const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
           </Animated.View>
 
           {/* Instructions */}
-          <Text
-            style={{
-              marginTop: 36,
-              fontSize: 17,
-              color: '#FFFFFF',
-              textAlign: 'center',
-              paddingHorizontal: 40,
-              fontWeight: '600',
-              letterSpacing: 0.2,
-            }}
-          >
+          <Text className="mt-9 text-white text-[17px] text-center px-10 font-semibold tracking-wide">
             {isScanning ? 'Position QR code within the frame' : 'Processing...'}
           </Text>
         </View>
@@ -382,34 +252,17 @@ const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
         {/* Bottom Info */}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.85)']}
-          style={{
-            paddingHorizontal: 20,
-            paddingBottom: 44,
-            paddingTop: 24,
-          }}
+          className="px-5 pb-11 pt-6"
         >
           <View
+            className="flex-row items-center rounded-2xl p-[18px] border"
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
               backgroundColor: `${accentColor}20`,
-              borderRadius: 14,
-              padding: 18,
-              borderWidth: 1,
-              borderColor: `${accentColor}40`,
+              borderColor: `${accentColor}40`
             }}
           >
             <Icon name="information" size={26} color={accentColor} />
-            <Text
-              style={{
-                flex: 1,
-                marginLeft: 14,
-                fontSize: 15,
-                color: '#FFFFFF',
-                fontWeight: '600',
-                lineHeight: 21,
-              }}
-            >
+            <Text className="flex-1 ml-3.5 text-white text-[15px] font-semibold leading-5">
               Make sure the QR code is clear and well-lit
             </Text>
           </View>

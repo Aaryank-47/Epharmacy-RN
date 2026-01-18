@@ -73,9 +73,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (Platform.OS === 'android') {
             ToastAndroid.show(message, ToastAndroid.SHORT);
         } else {
-            // Fallback for iOS (simple alert or console for now since ToastAndroid isn't available)
-            // In a real production app, use react-native-toast-message
-            // Alert.alert('Wishlist', message);
+            Alert.alert('Wishlist', message);
         }
     };
 

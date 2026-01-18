@@ -6,11 +6,16 @@ export const useDealsOfTheDay = () => {
     queryKey: ['dealsOfTheDay'],
     queryFn: async () => {
       const response = await getDealsOfTheDay();
-      
-      // Extract data from response
       const data = response.data;
-      
-      // Handle the new response structure
+
+      if (Array.isArray(data)) {
+        return {
+          deals: data,
+          totalDeals: data.length,
+          displayedDeals: data.length,
+        };
+      }
+
       if (data && typeof data === 'object' && 'deals' in data) {
         return {
           deals: data.deals || [],
@@ -19,12 +24,7 @@ export const useDealsOfTheDay = () => {
         };
       }
 
-      // Fallback for empty response
-      return {
-        deals: [],
-        totalDeals: 0,
-        displayedDeals: 0,
-      };
+      return { deals: [], totalDeals: 0, displayedDeals: 0 };
     },
     staleTime: 1000 * 60 * 15, // 15 minutes
     retry: true,

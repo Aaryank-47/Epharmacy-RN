@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { memo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Product } from '../../../hooks/useProductDetail';
 
@@ -11,6 +11,11 @@ interface ProductInfoCardProps {
     onShare: () => void;
 }
 
+const LANGUAGES = [
+    'Hindi', 'Bengali', 'Telugu', 'Marathi', 'Tamil', 'Urdu', 'Gujarati',
+    'Kannada', 'Odia', 'Punjabi', 'Malayalam', 'Assamese', 'Maithili'
+];
+
 const ProductInfoCard: React.FC<ProductInfoCardProps> = memo(({
     product,
     isDark,
@@ -18,6 +23,9 @@ const ProductInfoCard: React.FC<ProductInfoCardProps> = memo(({
     setSelectedUnit,
     onShare
 }) => {
+    const [selectedLang, setSelectedLang] = useState('Hindi'); // Default Hindi logic
+    const [showLangModal, setShowLangModal] = useState(false);
+
     const renderUnit = (unit: string) => (
         <TouchableOpacity
             key={unit}
@@ -70,21 +78,34 @@ const ProductInfoCard: React.FC<ProductInfoCardProps> = memo(({
                 </View>
             )}
 
-            {/* Rating and reviews */}
-            <View className="flex-row items-center mb-2">
-                <View className="flex-row mr-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <Icon
-                            key={star}
-                            name={star <= Math.floor(product.rating) ? "star" : "star-outline"}
-                            size={16}
-                            color="#FFD166"
-                        />
-                    ))}
+            {/* Rating and reviews + Translator */}
+            <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center">
+                    <View className="flex-row mr-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <Icon
+                                key={star}
+                                name={star <= Math.floor(product.rating) ? "star" : "star-outline"}
+                                size={16}
+                                color="#FFD166"
+                            />
+                        ))}
+                    </View>
+                    <Text className="text-sm text-gray-500 dark:text-gray-400">
+                        {product.reviews.toLocaleString()} reviews
+                    </Text>
                 </View>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">
-                    {product.reviews.toLocaleString()} reviews
-                </Text>
+
+                {/* Minimal Translator Button */}
+                <TouchableOpacity
+                    onPress={() => setShowLangModal(true)}
+                    className="flex-row items-center py-1 px-2"
+                >
+                    <Icon name="language" size={14} color="#40C057" style={{ marginRight: 4 }} />
+                    <Text className="text-xs font-medium text-neutral-600 dark:text-gray-400">
+                        English <Text className="text-neutral-400">→</Text> <Text className="text-[#40C057]">{selectedLang}</Text>
+                    </Text>
+                </TouchableOpacity>
             </View>
 
             {/* Trust Markers */}
@@ -236,6 +257,58 @@ const ProductInfoCard: React.FC<ProductInfoCardProps> = memo(({
                     GST: {product.gst}
                 </Text>
             </View>
+
+            {/* Language Selection Modal */}
+            <Modal
+                transparent={true}
+                visible={showLangModal}
+                animationType="fade"
+                onRequestClose={() => setShowLangModal(false)}
+            >
+                <TouchableOpacity
+                    className="flex-1 bg-black/50 justify-center items-center p-5"
+                    activeOpacity={1}
+                    onPress={() => setShowLangModal(false)}
+                >
+                    <View className="w-full max-w-sm bg-white dark:bg-[#1E1E1E] rounded-3xl p-5 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Text className="text-xl font-bold text-gray-900 dark:text-white">Select Language</Text>
+                            <TouchableOpacity onPress={() => setShowLangModal(false)} className="p-1">
+                                <Icon name="close" size={24} color={isDark ? '#FFF' : '#000'} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <FlatList
+                            data={LANGUAGES}
+                            numColumns={2}
+                            keyExtractor={(item) => item}
+                            columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 10 }}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setSelectedLang(item);
+                                        setShowLangModal(false);
+                                    }}
+                                    className={`w-[48%] py-3 px-4 rounded-xl mb-2 flex-row items-center justify-between border ${selectedLang === item
+                                            ? 'bg-[#40C057]/10 border-[#40C057]'
+                                            : 'bg-gray-50 dark:bg-neutral-800 border-gray-100 dark:border-neutral-700'
+                                        }`}
+                                >
+                                    <Text className={`font-semibold ${selectedLang === item
+                                            ? 'text-[#40C057]'
+                                            : 'text-gray-700 dark:text-gray-300'
+                                        }`}>
+                                        {item}
+                                    </Text>
+                                    {selectedLang === item && (
+                                        <Icon name="checkmark-circle" size={18} color="#40C057" />
+                                    )}
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 });

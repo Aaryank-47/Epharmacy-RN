@@ -29,6 +29,7 @@ import QRScannerScreen from "./src/components/qr/QRScannerScreen";
 import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
 import HistoryPage from "./src/components/commonPage/HistoryPage";
 import WishlistScreen from "./src/components/pages/WishlistScreen";
+import NotificationsScreen from "./src/components/pages/NotificationsScreen";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -60,6 +61,7 @@ export type RootStackParamList = {
   PDFUploadScreen: undefined;
   HistoryPage: undefined;
   Wishlist: undefined;
+  Notifications: undefined;
   Welcome: undefined;
   Start: undefined;
   SignIn: undefined;
@@ -88,6 +90,7 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "Wishlist", component: WishlistScreen },
   { name: "QRScannerScreen", component: QRScannerScreen },
   { name: "OfferBannerSection", component: OfferBannerSection },
+  { name: "Notifications", component: NotificationsScreen },
 ];
 
 const PUBLIC_SCREENS: ScreenConfig[] = [
@@ -119,7 +122,12 @@ const AppNavigator: React.FC = () => {
       screenOptions={{ headerShown: false }}
     >
       {screensToRender.map(({ name, component }) => (
-        <Stack.Screen key={name} name={name} component={component} />
+        <Stack.Screen
+          key={name}
+          name={name}
+          component={component}
+          options={name === "HomeTabs" ? { animation: "none" } : undefined}
+        />
       ))}
     </Stack.Navigator>
   );

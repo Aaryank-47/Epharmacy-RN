@@ -1,23 +1,3 @@
-/**
- * PDFUploadScreen / Prescription OCR Extraction Component
- *
- * ========== BACKEND ENDPOINT CONFIGURATION ==========
- * This component sends prescription images to:
- * POST {API_BASE_URL}/api/v1/prescriptions/upload
- * Field name: "prescription"
- *
- * Expected response format:
- * {
- *   text: string,
- *   medicines: [
- *     { drugName, dosage, frequency, duration, raw }
- *   ],
- *   meta: { detectedCount }
- * }
- *
- * Update API_BASE_URL in src/api/config.ts as needed (local/staging/prod).
- * ====================================================
- */
 
 import React, { useState, useCallback, useRef } from 'react';
 import {
@@ -35,52 +15,25 @@ import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import { API_BASE_URL } from '../../api/config';
+import { uploadPrescription } from '../../api/prescriptionApi';
+import type { UploadedFilePayload, MedicineDetails, OcrResponse } from '../../api/types';
 import ShopAvailabilityModal from '../modals/ShopAvailabilityModal';
-
-/**
- * Medicine details extracted from OCR
- */
-export interface MedicineDetails {
-  drugName: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  raw?: string; // Original line from OCR for reference
-}
-
-/**
- * OCR extraction response from backend
- */
-interface OcrResponse {
-  text: string;
-  medicines: MedicineDetails[];
-  meta: {
-    detectedCount: number;
-  };
-}
+import PermissionService from '../../services/PermissionService';
 
 interface PDFUploadScreenProps {
   navigation: any;
   route?: any;
 }
 
-interface UploadedFile {
-  name: string;
-  size: number;
-  type: string;
-  uri: string;
-}
-
 interface EditableMedicine extends MedicineDetails {
   id: string; // Unique identifier for tracking edits
 }
 
-const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
+const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) => {
   const { isDark, accentColor, surfaceColor } = useThemePalette();
 
   // File upload state
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFilePayload[]>([]);
 
   // OCR extraction state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,6 +44,15 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
   // Debug state
   const [showDebugBlock, setShowDebugBlock] = useState(false);
   const debugExpand = useRef(new Animated.Value(0)).current;
+
+  // Handle auto-trigger from navigation params
+  React.useEffect(() => {
+    if (route.params?.mode === 'camera') {
+      setTimeout(() => handleTakePhoto(), 300);
+    } else if (route.params?.mode === 'gallery') {
+      setTimeout(() => handlePickDocument(), 300);
+    }
+  }, [route.params?.mode]);
 
   // Shop Availability Modal state
   const [showShopModal, setShowShopModal] = useState(false);
@@ -104,7 +66,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
    * - Only allow JPEG and PNG images
    * - Max file size: 6MB
    */
-  const validateFile = (file: UploadedFile): { valid: boolean; error?: string } => {
+  const validateFile = (file: UploadedFilePayload): { valid: boolean; error?: string } => {
     const allowedTypes = ['image/jpeg', 'image/png'];
     const maxSizeBytes = 6 * 1024 * 1024; // 6MB
 
@@ -131,7 +93,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
    * Sends prescription image to backend for OCR processing
    */
   const handleOcrExtraction = useCallback(
-    async (file: UploadedFile) => {
+    async (file: UploadedFilePayload) => {
       // Guard against double submission
       if (isSubmittingRef.current || isProcessing) {
         Alert.alert('Processing', 'Please wait for the current operation to complete.');
@@ -153,33 +115,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       setAllRawData('');
 
       try {
-        // Create FormData for multipart upload
-        const formData = new FormData();
-        formData.append('prescription', {
-          uri: file.uri,
-          name: file.name || 'prescription.jpg',
-          type: file.type || 'image/jpeg',
-        } as any);
-
-        // Construct backend URL - adjust if using local backend
-        const backendUrl = `${API_BASE_URL}/api/v1/prescriptions/upload`;
-
-        const response = await fetch(backendUrl, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Server error (${response.status}): ${errorText || response.statusText}`
-          );
-        }
-
-        const responseData: OcrResponse = await response.json();
+        const responseData = await uploadPrescription(file);
 
         // Process and store extracted medicines with editable state
         const editableMedicines: EditableMedicine[] = (responseData.medicines || []).map(
@@ -249,7 +185,27 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
     setExtractedMedicines([]);
     setAllRawData('');
     setError(null);
-  }, []);
+    if (route.params?.mode) {
+      navigation.setParams({ mode: undefined });
+    }
+  }, [navigation, route.params?.mode]);
+
+
+  /**
+   * Handle Proceed to Checkout / Cart
+   */
+  const handleProceed = useCallback(() => {
+    // Logic to add to cart or navigate to checkout
+    // For now, navigating to ShoppingBagScreen
+    Alert.alert(
+      "Success",
+      "Medicines added to list. Proceeding to review.",
+      [
+        { text: "OK", onPress: () => navigation.navigate('ShoppingBagScreen') }
+      ]
+    );
+  }, [navigation]);
+
 
   /**
    * Toggle debug block visibility with animation
@@ -292,7 +248,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
 
       if (result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        const newFile: UploadedFile = {
+        const newFile: UploadedFilePayload = {
           name: asset.fileName || 'prescription.jpg',
           size: asset.fileSize || 0,
           type: asset.type || 'image/jpeg',
@@ -307,11 +263,23 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to pick document');
-      }
+    }
   }, [handleOcrExtraction]);
 
   const handleTakePhoto = useCallback(async () => {
     try {
+      // Request Permission First
+      const hasPermission = await PermissionService.requestCameraPermission();
+
+      if (!hasPermission) {
+        Alert.alert(
+          'Permission Denied',
+          'Camera permission is required to take photos. Please enable it in app settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const result = await launchCamera({
         mediaType: 'photo',
         quality: 0.8,
@@ -323,12 +291,15 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
       }
 
       if (result.errorCode) {
-        Alert.alert('Error', result.errorMessage || 'Failed to take photo');
+        // Only show error if it's not a permission related 'standard' error that we already caught
+        if (result.errorCode !== 'permission') {
+          Alert.alert('Error', result.errorMessage || 'Failed to take photo');
+        }
         return;
       }
 
       if (result.assets && result.assets.length > 0) {
-        const newFile: UploadedFile = {
+        const newFile: UploadedFilePayload = {
           name: result.assets[0].fileName || 'Photo.jpg',
           size: result.assets[0].fileSize || 0,
           type: result.assets[0].type || 'image/jpeg',
@@ -342,15 +313,13 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
         handleOcrExtraction(newFile);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to take photo');
-      }
+      console.error(err);
+      // Removed generic Alert to avoid duplicate/confusing error messages
+    }
   }, [handleOcrExtraction]);
 
-  const getFileIcon = (type: string): string => {
-    if (type.includes('pdf')) return 'file-pdf-box';
-    if (type.includes('image')) return 'file-image';
-    return 'file-document';
-  };
+  const isAutoMode = route.params?.mode;
+  const showOptions = !extractedMedicines.length && !isProcessing && !isAutoMode;
 
   return (
     <LinearGradient
@@ -385,7 +354,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
             letterSpacing: 0.2,
           }}
         >
-          Upload Prescription
+          {extractedMedicines.length > 0 ? 'Review Medicines' : 'Upload Prescription'}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -395,138 +364,150 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
         contentContainerStyle={{ padding: 20 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Upload Options Cards */}
-        <View style={{ gap: 14 }}>
-          {/* Gallery Upload Card */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handlePickDocument}
-            disabled={isProcessing}
-            style={{
-              borderRadius: 20,
-              overflow: 'hidden',
-              shadowColor: accentColor,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.3,
-              shadowRadius: 16,
-              elevation: 8,
-              opacity: isProcessing ? 0.6 : 1,
-            }}
-          >
-            <LinearGradient
-              colors={[accentColor, isDark ? '#7C3AED' : '#9333EA']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ padding: 16, alignItems: 'center' }}
-            >
-              <View style={{ marginBottom: 8 }}>
-                <Icon name="image-multiple" size={48} color="#FFFFFF" />
-              </View>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '800',
-                  color: '#FFFFFF',
-                  marginBottom: 4,
-                  letterSpacing: 0.3,
-                }}
-              >
-                Choose from Gallery
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  marginBottom: 12,
-                  fontWeight: '500',
-                }}
-              >
-                Select prescription images
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  paddingHorizontal: 18,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  gap: 6,
-                }}
-              >
-                <Icon name="plus-circle" size={18} color="#FFFFFF" />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
-                  Select Files
-                </Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+        {/* Helper State during auto launch */}
+        {isAutoMode && !extractedMedicines.length && !isProcessing && (
+          <View style={{ alignItems: 'center', marginTop: 100 }}>
+            <ActivityIndicator size="large" color={accentColor} />
+            <Text style={{ marginTop: 20, color: isDark ? '#AAA' : '#555' }}>
+              Initializing {route.params?.mode === 'camera' ? 'Camera' : 'Gallery'}...
+            </Text>
+          </View>
+        )}
 
-          {/* Camera Card */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleTakePhoto}
-            disabled={isProcessing}
-            style={{
-              borderRadius: 20,
-              overflow: 'hidden',
-              shadowColor: '#2563EB',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.3,
-              shadowRadius: 16,
-              elevation: 8,
-              opacity: isProcessing ? 0.6 : 1,
-            }}
-          >
-            <LinearGradient
-              colors={[isDark ? '#2563EB' : '#3B82F6', isDark ? '#1E40AF' : '#2563EB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ padding: 16, alignItems: 'center' }}
+        {/* Upload Options Cards - HIDDEN if results exist or isAutoMode */}
+        {showOptions && (
+          <View style={{ gap: 14 }}>
+            {/* Gallery Upload Card */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handlePickDocument}
+              disabled={isProcessing}
+              style={{
+                borderRadius: 20,
+                overflow: 'hidden',
+                shadowColor: accentColor,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 8,
+                opacity: isProcessing ? 0.6 : 1,
+              }}
             >
-              <View style={{ marginBottom: 8 }}>
-                <Icon name="camera" size={48} color="#FFFFFF" />
-              </View>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '800',
-                  color: '#FFFFFF',
-                  marginBottom: 4,
-                  letterSpacing: 0.3,
-                }}
+              <LinearGradient
+                colors={[accentColor, isDark ? '#7C3AED' : '#9333EA']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 16, alignItems: 'center' }}
               >
-                Take Photo
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  marginBottom: 12,
-                  fontWeight: '500',
-                }}
-              >
-                Capture prescription directly
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  paddingHorizontal: 18,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  gap: 6,
-                }}
-              >
-                <Icon name="camera-outline" size={18} color="#FFFFFF" />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
-                  Open Camera
+                <View style={{ marginBottom: 8 }}>
+                  <Icon name="image-multiple" size={48} color="#FFFFFF" />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '800',
+                    color: '#FFFFFF',
+                    marginBottom: 4,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Choose from Gallery
                 </Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    marginBottom: 12,
+                    fontWeight: '500',
+                  }}
+                >
+                  Select prescription images
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    paddingHorizontal: 18,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    gap: 6,
+                  }}
+                >
+                  <Icon name="plus-circle" size={18} color="#FFFFFF" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+                    Select Files
+                  </Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Camera Card */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleTakePhoto}
+              disabled={isProcessing}
+              style={{
+                borderRadius: 20,
+                overflow: 'hidden',
+                shadowColor: '#2563EB',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 8,
+                opacity: isProcessing ? 0.6 : 1,
+              }}
+            >
+              <LinearGradient
+                colors={[isDark ? '#2563EB' : '#3B82F6', isDark ? '#1E40AF' : '#2563EB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 16, alignItems: 'center' }}
+              >
+                <View style={{ marginBottom: 8 }}>
+                  <Icon name="camera" size={48} color="#FFFFFF" />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '800',
+                    color: '#FFFFFF',
+                    marginBottom: 4,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  Take Photo
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    marginBottom: 12,
+                    fontWeight: '500',
+                  }}
+                >
+                  Capture prescription directly
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    paddingHorizontal: 18,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    gap: 6,
+                  }}
+                >
+                  <Icon name="camera-outline" size={18} color="#FFFFFF" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>
+                    Open Camera
+                  </Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* OCR Processing Indicator */}
         {isProcessing && (
@@ -817,333 +798,71 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation }) => {
                     />
                   </View>
 
-                  {/* Raw line (if available) */}
-                  {medicine.raw && (
-                    <View
-                      style={{
-                        padding: 10,
-                        borderRadius: 8,
-                        backgroundColor: isDark ? '#1F2937' : '#F3F4F6',
-                        borderLeftWidth: 2,
-                        borderLeftColor: accentColor,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontFamily: 'monospace',
-                          color: isDark ? '#9CA3AF' : '#6B7280',
-                          fontWeight: '500',
-                        }}
-                        numberOfLines={2}
-                      >
-                        {medicine.raw}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Availability Button */}
+                  {/* Shop Availability Button */}
                   <TouchableOpacity
                     onPress={() => handleShowShopAvailability(medicine.drugName)}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingVertical: 10,
-                      paddingHorizontal: 12,
+                      marginTop: 8,
+                      padding: 12,
+                      backgroundColor: isDark ? '#374151' : '#EEF2FF',
                       borderRadius: 8,
-                      backgroundColor: accentColor + '20',
+                      alignItems: 'center',
                       borderWidth: 1,
-                      borderColor: accentColor,
-                      gap: 8,
+                      borderColor: isDark ? '#4B5563' : '#C7D2FE',
                     }}
                   >
-                    <Icon name="store-outline" size={16} color={accentColor} />
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '700',
-                        color: accentColor,
-                      }}
-                    >
-                      Check Availability in Shops
+                    <Text style={{
+                      color: '#4F46E5',
+                      fontWeight: '600',
+                      fontSize: 14
+                    }}>
+                      Check Shop Availability
                     </Text>
                   </TouchableOpacity>
+
                 </View>
               </View>
             ))}
-          </View>
-        )}
 
-        {/* Debug Block - Collapsible Raw OCR Text */}
-        {allRawData && (
-          <View style={{ marginTop: 22 }}>
-            <TouchableOpacity
-              onPress={toggleDebugBlock}
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 14,
-                borderRadius: 12,
-                backgroundColor: isDark ? '#2A2D35' : '#F9FAFB',
-                marginBottom: 8,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Icon
-                  name={showDebugBlock ? 'chevron-down' : 'chevron-right'}
-                  size={22}
-                  color={isDark ? '#9CA3AF' : '#6B7280'}
-                />
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: isDark ? '#D1D5DB' : '#4B5563',
-                  }}
-                >
-                  Extracted Raw Text (Debug)
-                </Text>
-              </View>
-              <View
+            {/* PROCEED BUTTON */}
+            <View style={{ paddingBottom: 50 }}>
+              <TouchableOpacity
+                onPress={handleProceed}
                 style={{
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 6,
-                  backgroundColor: isDark ? '#374151' : '#E5E7EB',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '600',
-                    color: isDark ? '#F3F4F6' : '#1F2937',
-                  }}
-                >
-                  {allRawData.split('\n').length} lines
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {showDebugBlock && (
-              <View
-                style={{
-                  padding: 14,
+                  backgroundColor: accentColor,
+                  paddingVertical: 16,
                   borderRadius: 12,
-                  backgroundColor: isDark ? '#1F2937' : '#F3F4F6',
-                  borderWidth: 1,
-                  borderColor: isDark ? '#374151' : '#E5E7EB',
-                }}
-              >
-                <ScrollView
-                  nestedScrollEnabled
-                  style={{ maxHeight: 200 }}
-                  showsVerticalScrollIndicator
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-                      color: isDark ? '#9CA3AF' : '#4B5563',
-                      fontWeight: '500',
-                      lineHeight: 16,
-                      letterSpacing: 0.3,
-                    }}
-                  >
-                    {allRawData}
-                  </Text>
-                </ScrollView>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Uploaded Files List - Show file being processed */}
-        {uploadedFiles.length > 0 && !extractedMedicines.length && (
-          <View style={{ marginTop: 28 }}>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: '800',
-                marginBottom: 14,
-                color: isDark ? '#FFFFFF' : '#1F2937',
-                letterSpacing: 0.2,
-              }}
-            >
-              Selected File
-            </Text>
-
-            {uploadedFiles.map((file, index) => (
-              <View
-                key={index}
-                style={{
+                  shadowColor: accentColor,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 10,
+                  elevation: 6,
                   flexDirection: 'row',
+                  justifyContent: 'center',
                   alignItems: 'center',
-                  padding: 14,
-                  borderRadius: 12,
-                  marginBottom: 12,
-                  backgroundColor: isDark ? '#2A2D35' : '#FFFFFF',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: isDark ? 0.2 : 0.05,
-                  shadowRadius: 4,
-                  elevation: 2,
+                  gap: 8
                 }}
               >
-                <View style={{ marginRight: 12 }}>
-                  <Icon name={getFileIcon(file.type)} size={32} color={accentColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                        fontWeight: '700',
-                      marginBottom: 4,
-                      color: isDark ? '#FFFFFF' : '#1F2937',
-                    }}
-                    numberOfLines={1}
-                  >
-                    {file.name}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: isDark ? '#9CA3AF' : '#6B7280',
-                      fontWeight: '500',
-                    }}
-                  >
-                    {formatFileSize(file.size)}
-                  </Text>
-                </View>
-              </View>
-            ))}
+                <Text style={{
+                  color: 'white',
+                  fontSize: 18,
+                  fontWeight: 'bold'
+                }}>
+                  Proceed to Checkout
+                </Text>
+                <Icon name="arrow-right" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+
           </View>
         )}
-
-
-        {/* Instructions Card */}
-        <View
-          style={{
-            flexDirection: 'row',
-            padding: 18,
-            borderRadius: 16,
-            marginTop: 22,
-            gap: 14,
-            backgroundColor: isDark ? '#2A2D35' : '#FEF3C7',
-          }}
-        >
-          <Icon name="information" size={26} color="#F59E0B" />
-          <Text
-            style={{
-              flex: 1,
-              fontSize: 14,
-              lineHeight: 20,
-              fontWeight: '600',
-              color: isDark ? '#FCD34D' : '#92400E',
-            }}
-          >
-            Please ensure your prescription is clear and readable. Valid prescriptions are
-            required for prescription medicines.
-          </Text>
-        </View>
       </ScrollView>
-
-      {/* Bottom Action Buttons */}
-      {extractedMedicines.length > 0 && (
-        <View
-          style={{
-            padding: 16,
-            paddingBottom: Platform.OS === 'android' ? 16 : 28,
-            gap: 10,
-            backgroundColor: surfaceColor,
-            borderTopWidth: 1,
-            borderTopColor: isDark ? '#374151' : '#E5E7EB',
-          }}
-        >
-          {/* Confirm Button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={{
-              borderRadius: 14,
-              overflow: 'hidden',
-              shadowColor: '#22C55E',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.25,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <LinearGradient
-              colors={['#22C55E', '#16A34A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 16,
-                gap: 8,
-              }}
-            >
-              <Icon name="check-circle" size={22} color="#FFFFFF" />
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '800',
-                  color: '#FFFFFF',
-                  letterSpacing: 0.3,
-                }}
-              >
-                Proceed to Order ({extractedMedicines.length})
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Cancel / Start Over Button */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleClearResults}
-            style={{
-              borderRadius: 14,
-              paddingVertical: 16,
-              borderWidth: 1.5,
-              borderColor: isDark ? '#374151' : '#E5E7EB',
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <Icon
-                name="refresh"
-                size={20}
-                color={isDark ? '#9CA3AF' : '#6B7280'}
-              />
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '700',
-                  color: isDark ? '#9CA3AF' : '#6B7280',
-                  letterSpacing: 0.3,
-                }}
-              >
-                Start Over
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Shop Availability Modal */}
       <ShopAvailabilityModal
         visible={showShopModal}
-        medicineName={selectedMedicineName}
         onClose={() => setShowShopModal(false)}
+        medicineName={selectedMedicineName}
       />
     </LinearGradient>
   );

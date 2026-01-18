@@ -16,9 +16,10 @@ import LottieView from "lottie-react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import LinearGradient from "react-native-linear-gradient";
 import useThemePalette from "../hooks/useThemePalette";
+import type { RootStackParamList } from "../../AppNavigator";
 
 type WelcomePageProps = {
-  navigation: NavigationProp<Record<string, object | undefined>>;
+  navigation: NavigationProp<RootStackParamList>;
 };
 
 const { width } = Dimensions.get("window");
@@ -33,10 +34,8 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ navigation }) => {
   const {
     isDark,
     surfaceColor,
-    iconMutedBackground,
     statusBarBackground,
     statusBarStyle,
-    lottieFilters,
     ctaGradient,
     serifFontFamily,
   } = useThemePalette();
@@ -127,7 +126,6 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ navigation }) => {
             autoPlay
             loop
             key={isDark ? "delivery-dark" : "delivery-light"}
-            colorFilters={lottieFilters as any}
           />
         </View>
 
@@ -142,8 +140,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ navigation }) => {
             className="text-center text-base leading-6 text-slate-600 dark:text-slate-300"
             style={{ fontFamily: serifFontFamily }}
           >
-            Your health is our priority. Discover a seamless experience for all your healthcare needs. Your health is
-            our priority. Discover a seamless experience for all your healthcare needs.
+            Your health is our priority. Discover a seamless experience for all your healthcare needs.
           </Text>
         </View>
 
@@ -164,7 +161,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ navigation }) => {
               paddingHorizontal: 12,
             }}
           >
-            <View className="w-full flex-row items-center justify-center ">
+            <View className="w-full flex-row items-center justify-center">
               <Text
                 className="text-base font-semibold uppercase tracking-[2px] text-white"
                 style={{ fontFamily: serifFontFamily }}

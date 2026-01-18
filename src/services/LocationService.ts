@@ -1,265 +1,201 @@
-import { Platform, PermissionsAndroid, ToastAndroid, Alert, Linking } from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
-
+import { Platform, PermissionsAndroid, ToastAndroid, Linking } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
+import { promptForEnableLocationIfNeeded } from 'react-native-android-location-enabler';
 
 export interface LocationData {
   latitude: number;
   longitude: number;
 }
 
+export interface AddressDetails {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  formattedAddress: string;
+}
+
+/**
+ * LocationService - Production-Ready GPS & Geocoding Service
+ * Optimized with efficient fallback strategy pattern
+ */
 class LocationService {
-  /**
-   * Request location permission (Android)
-   */
-  async requestPermission(): Promise<boolean> {
-    if (Platform.OS === 'ios') {
-      const auth = await Geolocation.requestAuthorization('whenInUse');
-      return auth === 'granted';
-    }
 
-    if (Platform.OS === 'android') {
-      try {
-        // Android 12+ requires requesting both FINE and COARSE permissions
-        const granted = await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-        ]);
+  private readonly TIMEOUT_MS = 30000;
+  private readonly OSM_USER_AGENT = 'EPharmacyNative/1.0';
 
-        const fineLocation = granted[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
-        const coarseLocation = granted[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION];
-
-        if (
-          fineLocation === PermissionsAndroid.RESULTS.GRANTED ||
-          coarseLocation === PermissionsAndroid.RESULTS.GRANTED
-        ) {
-          return true;
-        }
-
-        if (
-          fineLocation === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ||
-          coarseLocation === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
-        ) {
-          Alert.alert(
-            'Permission Required',
-            'Location permission is disabled. Please enable it in App Settings.',
-            [
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-              { text: 'Cancel', style: 'cancel' },
-            ]
-          );
-          return false;
-        }
-
-        return false;
-      } catch (err) {
-        return false;
-      }
-    }
-    return false;
-  }
-
-
-  /**
-   * Get current location with retries and error handling
-   */
-  getCurrentLocation(): Promise<LocationData> {
-    return new Promise(async (resolve, reject) => {
-      // 1. Check/Request Permission
-      const hasPermission = await this.requestPermission();
-      if (!hasPermission) {
-        reject(new Error('PERMISSION_DENIED'));
-        return;
-      }
-
-      // Helper to get position with specific options
-      const getPosition = (options: Geolocation.GeoOptions): Promise<LocationData> => {
-        return new Promise((res, rej) => {
-          Geolocation.getCurrentPosition(
-            (position) => {
-              res({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              });
-            },
-            (error) => {
-              rej(error);
-            },
-            options
-          );
-        });
-      };
-
-      // 2. Try High Accuracy (GPS)
-      try {
-        const location = await getPosition({
-          enableHighAccuracy: true,
-          timeout: 10000, // 10s for GPS
-          maximumAge: 10000,
-          forceLocationManager: true, // Bypass Google Play Services
-        });
-        resolve(location);
-      } catch (error: any) {
-        // 3. Fallback to Low Accuracy (Network/WiFi)
-        try {
-          const location = await getPosition({
-            enableHighAccuracy: false,
-            timeout: 15000, // 15s for Network
-            maximumAge: 10000,
-            forceLocationManager: true,
-          });
-          resolve(location);
-        } catch (finalError: any) {
-          if (finalError.code === 1) reject(new Error('PERMISSION_DENIED'));
-          else if (finalError.code === 2) reject(new Error('GPS_DISABLED'));
-          else reject(new Error(finalError.message));
-        }
-      }
+  constructor() {
+    Geolocation.setRNConfiguration({
+      skipPermissionRequests: false,
+      authorizationLevel: 'whenInUse',
     });
   }
 
   /**
-   * Reverse Geocoding to get address from coordinates
-   * Uses OpenStreetMap Nominatim API (Free)
+   * Request Android location permission
+   * @returns Promise<boolean> - true if granted
    */
-  async getAddressFromCoordinates(latitude: number, longitude: number): Promise<string> {
+  async requestPermission(): Promise<boolean> {
+    if (Platform.OS !== 'android') return true;
+
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'EPharmacyNative/1.0', // Required by Nominatim
-          },
-        }
+      const isGranted = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
       );
 
-      const data = await response.json();
+      if (isGranted) return true;
 
-      if (data && data.address) {
-        const city = data.address.city || data.address.town || data.address.village || '';
-        const state = data.address.state || '';
-        const country = data.address.country || '';
-        const suburb = data.address.suburb || data.address.neighbourhood || '';
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      );
 
-        // Construct a readable address string
-        // Priority: Suburb/Area, City, State
-        const parts = [];
-        if (suburb) parts.push(suburb);
-        if (city) parts.push(city);
-        if (state) parts.push(state);
+      if (result === PermissionsAndroid.RESULTS.GRANTED) return true;
 
-        if (parts.length > 0) {
-          return parts.join(', ');
-        } else if (country) {
-          return country;
-        }
-      }
-
-      return 'Unknown Location';
-    } catch (error) {
-      return 'Location Updated';
+      ToastAndroid.show('Please Allow Location Permission in Settings', ToastAndroid.LONG);
+      setTimeout(() => Linking.openSettings(), 1000);
+      return false;
+    } catch {
+      return false;
     }
   }
+
   /**
-   * Get detailed address from coordinates
-   * Returns structured object for form population
+   * Get current GPS location with high accuracy
+   * Shows system dialog if GPS is disabled
+   * @returns Promise<LocationData>
    */
-  async getAddressDetails(latitude: number, longitude: number): Promise<{
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-    formattedAddress: string;
-  }> {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+  async getCurrentLocation(): Promise<LocationData> {
+    const hasPermission = await this.requestPermission();
+    if (!hasPermission) throw new Error('Permission denied');
+
+    if (Platform.OS === 'android') {
+      try {
+        await promptForEnableLocationIfNeeded({ interval: 10000 });
+      } catch {
+        throw new Error('Location services required. Please enable GPS.');
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => reject(new Error('GPS Required for precise location')),
         {
-          headers: {
-            'User-Agent': 'EPharmacyNative/1.0',
-          },
+          enableHighAccuracy: true,
+          timeout: this.TIMEOUT_MS,
+          maximumAge: 0,
         }
       );
+    });
+  }
 
-      const data = await response.json();
-
-      if (data && data.address) {
-        const addr = data.address;
-
-        // 1. Build a Super-Granular Address List
-        const parts = [];
-
-        // Specific House/Building Info
-        if (addr.house_number) parts.push(`House No ${addr.house_number}`);
-        if (addr.apartment) parts.push(addr.apartment);
-        if (addr.flat) parts.push(addr.flat);
-        if (addr.building) parts.push(addr.building);
-        if (addr.public_building) parts.push(addr.public_building);
-
-        // Street/Road Info
-        if (addr.road) parts.push(addr.road);
-        if (addr.street) parts.push(addr.street);
-        if (addr.pedestrian) parts.push(addr.pedestrian);
-
-        // Area/Colony/Locality Info (The "LIG, Sagbhar" part)
-        if (addr.residential) parts.push(addr.residential);
-        if (addr.suburb) parts.push(addr.suburb);
-        if (addr.neighbourhood) parts.push(addr.neighbourhood);
-        if (addr.hamlet) parts.push(addr.hamlet);
-        if (addr.locality) parts.push(addr.locality);
-        if (addr.croft) parts.push(addr.croft);
-        if (addr.district) parts.push(addr.district);
-        if (addr.quarter) parts.push(addr.quarter);
-        if (addr.block) parts.push(addr.block);
-
-        // Village/Town/City Info
-        if (addr.village) parts.push(addr.village);
-        if (addr.town) parts.push(addr.town);
-        if (addr.city_district) parts.push(addr.city_district);
-        if (addr.city) parts.push(addr.city);
-        if (addr.municipality) parts.push(addr.municipality);
-        if (addr.county) parts.push(addr.county);
-
-        // State/Region Info
-        if (addr.state_district) parts.push(addr.state_district);
-        if (addr.state) parts.push(addr.state);
-        if (addr.region) parts.push(addr.region);
-
-        // Country/Postal
-        if (addr.postcode) parts.push(addr.postcode);
-        if (addr.country) parts.push(addr.country);
-
-        // Deduplicate
-        const uniqueParts = [...new Set(parts)];
-        const formattedAddress = uniqueParts.filter(Boolean).join(', ');
-
-        // Basic fields for loose mapping (still useful for individual inputs if needed)
-        const city = addr.city || addr.town || addr.village || addr.municipality || '';
-        const state = addr.state || addr.province || '';
-        const zip = addr.postcode || '';
-        const country = addr.country || '';
-
-        // Street variable (House + Area) for fallback logic if needed
-        const street = uniqueParts
-          .filter(p => !p.includes(city) && !p.includes(state) && !p.includes(country) && !p.includes(zip))
-          .join(', ');
-
-        return {
-          street,
-          city,
-          state,
-          zip,
-          country,
-          formattedAddress
-        };
-      }
-
-      return { street: '', city: '', state: '', zip: '', country: '', formattedAddress: '' };
-    } catch (error) {
-      return { street: '', city: '', state: '', zip: '', country: '', formattedAddress: '' };
+  /**
+   * Get complete address details from coordinates
+   * Uses Google Maps API (primary) with OSM fallback
+   * @param latitude 
+   * @param longitude 
+   * @returns Promise<AddressDetails>
+   */
+  async getAddressDetails(latitude: number, longitude: number): Promise<AddressDetails> {
+    try {
+      return await this.getGoogleGeocode(latitude, longitude);
+    } catch {
+      return await this.getOSMGeocode(latitude, longitude);
     }
+  }
+
+  /**
+   * Google Maps Geocoding (Primary)
+   * Provides detailed Indian locality data
+   */
+  private async getGoogleGeocode(lat: number, lng: number): Promise<AddressDetails> {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=street_address|route|sublocality|postal_code&language=en`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== 'OK' || !data.results?.length) {
+      throw new Error('Google geocoding failed');
+    }
+
+    const result = data.results[0];
+    const components = result.address_components || [];
+
+    // DSA: Hash Map pattern for O(1) lookup
+    const addressMap: Record<string, string> = {};
+
+    components.forEach((comp: any) => {
+      const types = comp.types;
+      if (types.includes('street_number')) addressMap.houseNumber = comp.long_name;
+      if (types.includes('route')) addressMap.route = comp.long_name;
+      if (types.includes('sublocality_level_1')) addressMap.sublocality1 = comp.long_name;
+      if (types.includes('sublocality_level_2')) addressMap.sublocality2 = comp.long_name;
+      if (types.includes('locality')) addressMap.locality = comp.long_name;
+      if (types.includes('administrative_area_level_2')) addressMap.city = comp.long_name;
+      if (types.includes('administrative_area_level_1')) addressMap.state = comp.long_name;
+      if (types.includes('postal_code')) addressMap.zip = comp.long_name;
+      if (types.includes('country')) addressMap.country = comp.long_name;
+    });
+
+    const streetParts = [
+      addressMap.houseNumber,
+      addressMap.route,
+      addressMap.sublocality2,
+      addressMap.sublocality1
+    ].filter(Boolean);
+
+    return {
+      street: streetParts.join(', '),
+      city: addressMap.locality || addressMap.city || '',
+      state: addressMap.state || '',
+      zip: addressMap.zip || '',
+      country: addressMap.country || '',
+      formattedAddress: result.formatted_address || ''
+    };
+  }
+
+  /**
+   * OpenStreetMap Geocoding (Fallback)
+   */
+  private async getOSMGeocode(lat: number, lng: number): Promise<AddressDetails> {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': this.OSM_USER_AGENT }
+    });
+    const data = await response.json();
+    const addr = data?.address || {};
+
+    const streetParts = [
+      addr.house_number,
+      addr.road,
+      addr.locality,
+      addr.suburb,
+      addr.neighbourhood
+    ].filter(Boolean);
+
+    return {
+      street: streetParts.join(', '),
+      city: addr.city || addr.town || addr.village || '',
+      state: addr.state || '',
+      zip: addr.postcode || '',
+      country: addr.country || '',
+      formattedAddress: data.display_name || ''
+    };
+  }
+
+  /**
+   * Legacy method for simple address string
+   * @deprecated Use getAddressDetails() for complete data
+   */
+  async getAddressFromCoordinates(lat: number, lng: number): Promise<string> {
+    const details = await this.getAddressDetails(lat, lng);
+    return details.formattedAddress || 'Unknown Location';
   }
 }
 
 export default new LocationService();
-
