@@ -253,7 +253,7 @@ export interface PaginationInfo {
 }
 
 export interface NotificationLogsResponse {
-  logs: NotificationLog[];
+  notifications: NotificationLog[];
   pagination: PaginationInfo;
   filters?: Record<string, any>;
   meta?: Record<string, any>;

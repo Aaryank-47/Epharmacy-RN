@@ -7,6 +7,7 @@ import LottieView from 'lottie-react-native';
 import ProductImageCarousel from './product/ProductImageCarousel'; // Adjusted path if needed, assuming user moves them there or I put them in correct relative path
 import ProductInfoCard from './product/ProductInfoCard';
 import ProductBottomBar from './product/ProductBottomBar';
+import SimilarProducts from './product/SimilarProducts';
 import ShareOverlay from '../commonPage/ShareOverlay';
 
 // Hook
@@ -113,6 +114,8 @@ const ProductDetail: React.FC = () => {
           setSelectedUnit={setSelectedUnit}
           onShare={() => setShowShareArcOverlay(true)}
         />
+
+        <SimilarProducts productId={product.id} />
 
       </ScrollView>
 

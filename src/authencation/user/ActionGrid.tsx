@@ -17,22 +17,44 @@ interface MenuItem {
   badge?: number;
 }
 
+import { useFocusEffect } from '@react-navigation/native';
+import { getUnreadCount } from '../../api/notificationApi';
+
 const MENU_ITEMS: MenuItem[] = [
   { id: 1, title: 'Orders', icon: 'shopping-outline', route: 'Orders', color: '#EF4444' },
   { id: 2, title: 'History', icon: 'history', route: 'HistoryPage', color: '#F59E0B' },
-  { id: 3, title: 'Notify', icon: 'bell-outline', route: 'Notifications', color: '#8B5CF6', badge: 3 },
-  { id: 4, title: 'Settings', icon: 'cog-outline', route: 'Settings', color: '#10B981' },
-  { id: 5, title: 'Wishlist', icon: 'heart-outline', route: 'Wishlist', color: '#EC4899' },
+  { id: 3, title: 'Notify', icon: 'bell-outline', route: 'Notifications', color: '#8B5CF6' },
+  { id: 4, title: 'Wishlist', icon: 'heart-outline', route: 'Wishlist', color: '#EC4899' },
+  { id: 5, title: 'Settings', icon: 'cog-outline', route: 'Settings', color: '#10B981' },
 ];
 
 const ActionGrid = memo(() => {
   const navigation = useNavigation<NavigationProp<any>>();
   const { isDark } = useThemePalette();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const visibleItems = useMemo(() =>
-    isExpanded ? MENU_ITEMS : MENU_ITEMS.slice(0, 4),
-    [isExpanded]);
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const count = await getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to fetch unread count', error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+    }, [fetchUnreadCount])
+  );
+
+  const visibleItems = useMemo(() => {
+    const items = MENU_ITEMS.map(item =>
+      item.id === 3 ? { ...item, badge: unreadCount > 0 ? unreadCount : undefined } : item
+    );
+    return isExpanded ? items : items.slice(0, 4);
+  }, [isExpanded, unreadCount]);
 
   const toggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);

@@ -4,18 +4,23 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
+  StatusBar,
+  RefreshControl,
   Alert,
-  StatusBar
+  Image,
+  Modal
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import {
   getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  getUnreadCount,
 } from '../../api/notificationApi';
 import {
   NotificationLog,
@@ -37,7 +42,9 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Fetch Notifications
   const fetchNotifications = useCallback(
@@ -46,23 +53,28 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
         if (!append) setLoading(true);
         else setLoadingMore(true);
 
+        const isRead = filter === 'unread' ? false : filter === 'read' ? true : undefined;
+
         const response: NotificationLogsResponse = await getMyNotifications({
           page,
           limit: 20,
-          isRead: filter === 'unread' ? false : undefined,
+          isRead,
           sortBy: 'sentAt',
           order: 'desc',
         });
 
+
         if (append) {
-          setNotifications((prev) => [...prev, ...response.logs]);
+          setNotifications((prev) => [...prev, ...response.notifications]);
         } else {
-          setNotifications(response.logs);
+          setNotifications(response.notifications);
         }
 
         setCurrentPage(response.pagination.currentPage);
         setTotalPages(response.pagination.totalPages);
-        setUnreadCount(response.stats?.unreadLogs || 0);
+
+        // Fetch unread count separately as it might not be in the response stats
+        getUnreadCount().then(setUnreadCount).catch(console.error);
       } catch (error: any) {
         // Silent error or minimal alert if critical
         console.error("Failed to fetch notifications", error);
@@ -117,6 +129,12 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
     [navigation]
   );
 
+  const handleDeleteNotification = useCallback((id: string) => {
+    // Optimistic local delete
+    setNotifications((prev) => prev.filter((n) => n._id !== id));
+    // Provide a way to undo? For now just local remove as requested.
+  }, []);
+
   const handleMarkAllAsRead = useCallback(async () => {
     Alert.alert(
       'Mark all read',
@@ -140,11 +158,11 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
   // Helpers
   const getIconConfig = (type: string) => {
     switch (type) {
-      case 'order': return { name: 'cart-outline', color: '#3B82F6', bg: 'bg-blue-100 dark:bg-blue-900/30' }; // blue
-      case 'offer': return { name: 'tag-outline', color: '#10B981', bg: 'bg-emerald-100 dark:bg-emerald-900/30' }; // green
-      case 'advertisement': return { name: 'bullhorn-outline', color: '#F59E0B', bg: 'bg-amber-100 dark:bg-amber-900/30' }; // amber
-      case 'medicine': return { name: 'medical-bag', color: '#EC4899', bg: 'bg-pink-100 dark:bg-pink-900/30' }; // pink
-      default: return { name: 'bell-outline', color: '#6366F1', bg: 'bg-indigo-100 dark:bg-indigo-900/30' }; // indigo
+      case 'order': return { name: 'cart', color: '#3B82F6', bg: 'bg-blue-50 dark:bg-blue-900/20' };
+      case 'offer': return { name: 'tag', color: '#10B981', bg: 'bg-emerald-50 dark:bg-emerald-900/20' };
+      case 'advertisement': return { name: 'bullhorn', color: '#F59E0B', bg: 'bg-amber-50 dark:bg-amber-900/20' };
+      case 'medicine': return { name: 'pill', color: '#EC4899', bg: 'bg-pink-50 dark:bg-pink-900/20' };
+      default: return { name: 'bell', color: '#6366F1', bg: 'bg-indigo-50 dark:bg-indigo-900/20' };
     }
   };
 
@@ -154,65 +172,102 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
     const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 60) return `${diffMins}m`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffHours < 24) return `${diffHours}h`;
     const diffDays = Math.floor(diffHours / 24);
-    return diffDays < 7 ? `${diffDays}d ago` : date.toLocaleDateString();
+    return diffDays < 7 ? `${diffDays}d` : date.toLocaleDateString();
+  };
+
+  const renderRightActions = (id: string) => {
+    return (
+      <TouchableOpacity
+        onPress={() => handleDeleteNotification(id)}
+        className="bg-red-500 justify-center items-center w-20 mb-3 rounded-r-2xl h-full"
+        style={{ height: '88%' }} // visual adjustment to match card height
+      >
+        <Ionicons name="trash-outline" size={24} color="white" />
+      </TouchableOpacity>
+    );
   };
 
   const renderItem = ({ item }: { item: NotificationLog }) => {
     const config = getIconConfig(item.type);
     const isUnread = !item.isRead;
+    const hasImage = !!item.payload?.image;
 
+    // Use Swipeable from react-native-gesture-handler
     return (
-      <TouchableOpacity
-        onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.7}
-        className={`flex-row items-center p-4 mb-3 mx-4 rounded-2xl border ${isDark
-          ? 'bg-[#1E1E1E] border-neutral-800'
-          : 'bg-white border-gray-100'
-          } ${isUnread ? 'border-l-4 border-l-blue-500' : ''} shadow-sm`}
+      // @ts-ignore
+      <Swipeable
+        renderRightActions={() => renderRightActions(item._id)}
+        containerStyle={{ overflow: 'visible' }}
       >
-        {/* Icon */}
-        <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${config.bg}`}>
-          <MaterialCommunityIcons name={config.name} size={24} color={config.color} />
-        </View>
-
-        {/* Content */}
-        <View className="flex-1">
-          <View className="flex-row justify-between items-start mb-1">
-            <Text className={`text-base font-bold flex-1 mr-2 ${isDark ? 'text-gray-100' : 'text-gray-900'} ${isUnread ? '' : 'text-gray-600 dark:text-gray-400'}`}>
-              {item.title}
+        <TouchableOpacity
+          onPress={() => handleNotificationPress(item)}
+          activeOpacity={0.9}
+          className={`p-4 mb-3 mx-4 rounded-2xl border ${isDark
+            ? 'bg-[#1E1E1E] border-neutral-800'
+            : 'bg-white border-gray-100'
+            } shadow-sm`}
+        >
+          {/* Header Row: Icon + App/Type Name + Time */}
+          <View className="flex-row items-center mb-2">
+            <View className={`w-6 h-6 rounded-full items-center justify-center mr-2 ${config.bg}`}>
+              <MaterialCommunityIcons name={config.name} size={14} color={config.color} />
+            </View>
+            <Text className={`text-xs font-semibold mr-1 capitalize ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              {item.type.replace('_', ' ')}
             </Text>
-            <Text className="text-xs text-gray-400 font-medium">
+            <Text className="text-xs text-gray-400 mx-1">•</Text>
+            <Text className="text-xs text-gray-400 flex-1">
               {formatTime(item.sentAt)}
             </Text>
+            {isUnread && (
+              <View className="w-2 h-2 rounded-full bg-red-500 ml-2" />
+            )}
           </View>
-          <Text
-            className={`text-sm leading-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-            numberOfLines={2}
-          >
-            {item.body}
-          </Text>
-        </View>
 
-        {/* Unread Dot (redundant with border-l but good for visibility) */}
-        {isUnread && (
-          <View className="w-2 h-2 rounded-full bg-blue-500 ml-2 mt-1" />
-        )}
-      </TouchableOpacity>
+          {/* Content Row: Text Left, Image Right */}
+          <View className="flex-row items-start">
+            <View className="flex-1 mr-3">
+              <Text className={`text-[15px] font-bold mb-1 leading-5 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                {item.title}
+              </Text>
+              <Text
+                className={`text-[13px] leading-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                numberOfLines={3}
+              >
+                {item.body}
+              </Text>
+            </View>
+
+            {hasImage && (
+              <TouchableOpacity
+                onLongPress={() => setSelectedImage(item.payload.image)}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{ uri: item.payload.image }}
+                  className="w-20 h-14 rounded-lg bg-gray-200 dark:bg-gray-700 border border-gray-100 dark:border-gray-600"
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Swipeable>
     );
   };
 
   const renderEmpty = () => (
-    <View className="items-center justify-center py-20 px-6">
-      <View className="w-24 h-24 bg-gray-100 dark:bg-neutral-800 rounded-full items-center justify-center mb-6">
-        <Ionicons name="notifications-off-outline" size={48} color={isDark ? '#525252' : '#9CA3AF'} />
+    <View className="items-center justify-center py-24 px-6 opacity-60">
+      <View className="w-20 h-20 bg-gray-100 dark:bg-neutral-800 rounded-full items-center justify-center mb-6">
+        <Ionicons name="notifications-outline" size={40} color={isDark ? '#525252' : '#9CA3AF'} />
       </View>
-      <Text className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">No Notifications</Text>
-      <Text className="text-center text-gray-500 dark:text-gray-400">
-        You're all caught up! notifications will appear here when you have updates.
+      <Text className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">No Notifications</Text>
+      <Text className="text-center text-sm text-gray-500 dark:text-gray-400">
+        You're all caught up!
       </Text>
     </View>
   );
@@ -221,37 +276,52 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
     <SafeAreaView edges={['top']} className="flex-1 bg-gray-50 dark:bg-[#121212]">
       <StatusBar barStyle={statusBarStyle} backgroundColor={surfaceColor} />
 
-      {/* Header */}
-      <View className="px-4 pt-2 pb-4 flex-row items-center justify-between  dark:bg-[#1A1A1A] border-b border-gray-100 dark:border-neutral-800">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3 p-1">
-            <Ionicons name="arrow-back" size={24} color={isDark ? 'white' : 'black'} />
+      {/* Zoom Modal */}
+      <Modal visible={!!selectedImage} transparent={true} animationType="fade">
+        <View className="flex-1 bg-black/90 justify-center items-center relative">
+          <TouchableOpacity
+            onPress={() => setSelectedImage(null)}
+            className="absolute top-10 right-5 z-10 p-2 bg-white/20 rounded-full"
+          >
+            <Ionicons name="close" size={24} color="white" />
           </TouchableOpacity>
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">Notifications</Text>
-          {unreadCount > 0 && (
-            <View className="bg-red-500 rounded-full px-2 py-0.5 ml-2">
-              <Text className="text-white text-xs font-bold">{unreadCount}</Text>
-            </View>
+
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={{ width: '100%', height: '80%' }}
+              resizeMode="contain"
+            />
           )}
         </View>
-        <TouchableOpacity onPress={handleMarkAllAsRead} disabled={unreadCount === 0} className={unreadCount === 0 ? 'opacity-50' : ''}>
+      </Modal>
+
+      {/* Header */}
+      <View className="px-3.5 pt-0 pb-2 flex-row items-center justify-between dark:bg-[#121212]">
+        <View className="flex-row items-center">
+          <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3 p-1 rounded-full active:bg-gray-100 dark:active:bg-neutral-800">
+            <Ionicons name="arrow-back" size={24} color={isDark ? 'white' : 'black'} />
+          </TouchableOpacity>
+          <Text className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</Text>
+        </View>
+        <TouchableOpacity onPress={handleMarkAllAsRead} disabled={unreadCount === 0} className={`p-2 rounded-full ${unreadCount === 0 ? 'opacity-30' : 'active:bg-gray-100 dark:active:bg-neutral-800'}`}>
           <MaterialCommunityIcons name="check-all" size={24} color={isDark ? 'white' : '#1F2937'} />
         </TouchableOpacity>
       </View>
 
       {/* Filter Tabs */}
-      <View className="flex-row px-4 py-4 space-x-3">
-        {['all', 'unread'].map((tab) => (
+      <View className="flex-row px-4 py-3 space-x-2 border-b border-gray-100 dark:border-neutral-800/50 mb-2">
+        {['all', 'unread', 'read'].map((tab) => (
           <TouchableOpacity
             key={tab}
-            onPress={() => setFilter(tab as 'all' | 'unread')}
-            className={`px-5 py-2 rounded-full border ${filter === tab
-              ? isDark ? 'bg-white border-white' : 'bg-black border-black'
-              : isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-gray-200'
+            onPress={() => setFilter(tab as 'all' | 'unread' | 'read')}
+            className={`px-6 py-3 ml-2 rounded-full border ${filter === tab
+              ? 'bg-black dark:bg-white border-black dark:border-white'
+              : isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-200'
               }`}
           >
-            <Text className={`font-semibold capitalize ${filter === tab
-              ? isDark ? 'text-black' : 'text-white'
+            <Text className={`text-xs font-semibold capitalize ${filter === tab
+              ? 'text-white dark:text-black'
               : isDark ? 'text-gray-400' : 'text-gray-600'
               }`}>
               {tab}

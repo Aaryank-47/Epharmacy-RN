@@ -277,3 +277,89 @@ export const getItemDetails = async (
     throw error;
   }
 };
+// ============================================================================
+// WISHLIST API
+// ============================================================================
+
+export const addToWishlist = async (
+  itemId: string
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await httpClient.post<ApiResponse<any>>(
+      `${API_ROUTES.recentlyViewed.item}/wishlistitem${itemId}`
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getWishlist = async (): Promise<
+  ApiResponse<{ items: Medicine[] }>
+> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.items.wishlist,
+      { cache: { ttl: 5 * 60 * 1000 } } as any
+    );
+    const data = response.data;
+    // Map response structure: data.data.items or data.items depending on backend wrapping
+    const items = data?.data?.items || data?.data || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Wishlist fetched',
+      data: { items: Array.isArray(items) ? items : [] },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const removeWishlistItem = async (
+  itemId: string
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await httpClient.delete<ApiResponse<any>>(
+      `${API_ROUTES.items.wishlistRemove}/${itemId}`
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ============================================================================
+// SIMILAR PRODUCTS API
+// ============================================================================
+
+export interface SimilarProductsResponse {
+  sourceProduct: {
+    _id: string;
+    itemName: string;
+    itemCategory: string;
+    itemFinalPrice: number;
+  };
+  items: Medicine[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const getSimilarProducts = async (
+  itemId: string
+): Promise<ApiResponse<SimilarProductsResponse>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<SimilarProductsResponse>>(
+      `${API_ROUTES.items.similarItems}/${itemId}`
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

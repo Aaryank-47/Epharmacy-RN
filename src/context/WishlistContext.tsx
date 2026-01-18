@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ToastAndroid, Platform, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getWishlist, addToWishlist as addToWishlistApi, removeWishlistItem as removeWishlistItemApi } from '../api/medicinesApi';
 
 interface WishlistItem {
     _id: string;
     itemName: string;
     itemDescription?: string;
     image: string;
+    itemImages?: string[]; // Added to match API response
     itemRatings?: number;
     itemFinalPrice: number;
     itemDiscount?: number;
@@ -23,8 +24,6 @@ interface WishlistContextType {
 
 const WishlistContext = createContext<WishlistContextType | null>(null);
 
-const STORAGE_KEY = '@wishlist_items';
-
 export const useWishlist = () => {
     const context = useContext(WishlistContext);
     if (!context) {
@@ -35,39 +34,31 @@ export const useWishlist = () => {
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Load wishlist on mount
     useEffect(() => {
         const loadWishlist = async () => {
             try {
-                const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-                if (jsonValue != null) {
-                    setWishlistItems(JSON.parse(jsonValue));
+                setIsLoading(true);
+                const response = await getWishlist();
+                if (response.success && response.data?.items) {
+                    // Map API items to WishlistItem structure
+                    const mappedItems = response.data.items.map((item: any) => ({
+                        ...item,
+                        // API returns itemImages array, UI expects image string
+                        image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
+                    }));
+                    setWishlistItems(mappedItems as WishlistItem[]);
                 }
             } catch (e) {
                 console.error('Failed to load wishlist:', e);
             } finally {
-                setIsLoaded(true);
+                setIsLoading(false);
             }
         };
         loadWishlist();
     }, []);
-
-    // Save wishlist whenever it changes, but only after initial load
-    useEffect(() => {
-        if (!isLoaded) return;
-
-        const saveWishlist = async () => {
-            try {
-                const jsonValue = JSON.stringify(wishlistItems);
-                await AsyncStorage.setItem(STORAGE_KEY, jsonValue);
-            } catch (e) {
-                console.error('Failed to save wishlist:', e);
-            }
-        };
-        saveWishlist();
-    }, [wishlistItems, isLoaded]);
 
     const showToast = (message: string) => {
         if (Platform.OS === 'android') {
@@ -77,25 +68,40 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     };
 
-    const addToWishlist = useCallback((item: WishlistItem) => {
-        setWishlistItems(prev => {
-            if (prev.some(i => i._id === item._id)) {
-                showToast('Already in wishlist');
-                return prev;
-            }
-            showToast('Added to wishlist');
-            return [...prev, item];
-        });
-    }, []);
+    const addToWishlist = useCallback(async (item: WishlistItem) => {
+        // Optimistic check
+        if (wishlistItems.some(i => i._id === item._id)) {
+            showToast('Already in wishlist');
+            return;
+        }
 
-    const removeFromWishlist = useCallback((itemId: string) => {
-        setWishlistItems(prev => {
-            const newItems = prev.filter(item => item._id !== itemId);
-            if (newItems.length !== prev.length) {
-                showToast('Removed from wishlist');
-            }
-            return newItems;
-        });
+        try {
+            // API Call
+            await addToWishlistApi(item._id);
+
+
+            const itemWithImage = {
+                ...item,
+                image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
+            };
+
+            setWishlistItems(prev => [itemWithImage, ...prev]);
+            showToast('Added to wishlist');
+        } catch (error) {
+            console.error("Failed to add to wishlist", error);
+            showToast('Failed to add to wishlist');
+        }
+    }, [wishlistItems]);
+
+    const removeFromWishlist = useCallback(async (itemId: string) => {
+        try {
+            await removeWishlistItemApi(itemId);
+            // Ensure state is synced
+            setWishlistItems(prev => prev.filter(item => item._id !== itemId));
+        } catch (error) {
+            console.error("Failed to remove item", error);
+            showToast('Failed to remove item');
+        }
     }, []);
 
     const isInWishlist = useCallback((itemId: string) => {
@@ -103,13 +109,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [wishlistItems]);
 
     const clearWishlist = useCallback(async () => {
-        try {
-            await AsyncStorage.removeItem(STORAGE_KEY);
-            setWishlistItems([]);
-            showToast('Wishlist cleared');
-        } catch (e) {
-            console.error('Failed to clear wishlist:', e);
-        }
+        setWishlistItems([]);
     }, []);
 
     return (

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StatusBar, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { NavigationContainer } from "@react-navigation/native";
@@ -17,12 +17,14 @@ import loadIconFonts from "./src/utils/loadIconFonts";
 import NotificationSetup from "./src/config/notificationSetup";
 
 enableScreens(true);
-loadIconFonts();
 
 export default function App() {
   const colorScheme = useColorScheme();
 
-  console.log('[App] Startup - Bundle Loaded');
+  useEffect(() => {
+    loadIconFonts();
+    console.log('[App] Startup - Bundle Loaded & Fonts Loading');
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

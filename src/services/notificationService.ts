@@ -86,7 +86,7 @@ class NotificationService {
   // TOKEN MANAGEMENT
   // ==========================================================================
 
-  
+
   async getToken(): Promise<string | null> {
     try {
       const hasPermission = await this.requestPermissions();
@@ -155,6 +155,28 @@ class NotificationService {
   // ==========================================================================
 
 
+
+  private getImageUrl(data?: any, notification?: any): string | null {
+    if (notification?.android?.imageUrl) return notification.android.imageUrl;
+    if (data?.image) return data.image;
+
+    // Check nested payload
+    if (data?.payload) {
+   
+      if (typeof data.payload === 'string') {
+        try {
+          const parsed = JSON.parse(data.payload);
+          if (parsed?.image) return parsed.image;
+        } catch (e) {
+        }
+      } else if (typeof data.payload === 'object') {
+       
+        if (data.payload.image) return data.payload.image;
+      }
+    }
+    return null;
+  }
+
   async displayNotification(
     title: string,
     body: string,
@@ -169,11 +191,15 @@ class NotificationService {
         smallIcon: 'ic_launcher',
       };
 
-      // Add Image Support (BigPictureStyle)
-      if (data?.image) {
+      // Extract image
+      const imageUrl = this.getImageUrl(data);
+
+    
+      if (imageUrl) {
+        androidConfig.largeIcon = imageUrl; 
         androidConfig.style = {
           type: AndroidStyle.BIGPICTURE,
-          picture: data.image,
+          picture: imageUrl,
         };
       }
 
@@ -189,7 +215,7 @@ class NotificationService {
             badge: true,
             sound: true,
           },
-          attachments: data?.image ? [{ url: data.image }] : [],
+          attachments: imageUrl ? [{ url: imageUrl }] : [],
         },
       });
     } catch (error) {
@@ -208,6 +234,14 @@ class NotificationService {
     }
 
     const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+
+      if (remoteMessage.notification) {
+
+        const { title, body } = remoteMessage.notification;
+        if (title && body) {
+          await this.displayNotification(title, body, remoteMessage.data);
+        }
+      }
       callback(remoteMessage);
     });
 
@@ -215,7 +249,7 @@ class NotificationService {
     return unsubscribe;
   }
 
-  
+
   onNotificationOpenedApp(callback: (message: any) => void): () => void {
     if (this.onNotificationOpenedListener) {
       this.onNotificationOpenedListener();
@@ -253,7 +287,7 @@ class NotificationService {
    * @param remoteMessage - Firebase remote message
    */
   async handleBackgroundMessage(remoteMessage: any): Promise<void> {
-    const imageUrl = remoteMessage.notification?.android?.imageUrl || remoteMessage.data?.image;
+    const imageUrl = this.getImageUrl(remoteMessage.data, remoteMessage.notification);
 
     const androidConfig: any = {
       channelId: CHANNEL_ID,
@@ -264,6 +298,7 @@ class NotificationService {
 
     // Add Big Picture Style if image exists
     if (imageUrl) {
+      androidConfig.largeIcon = imageUrl; 
       androidConfig.style = {
         type: AndroidStyle.BIGPICTURE,
         picture: imageUrl,

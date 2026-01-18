@@ -1,7 +1,4 @@
 /**
- * HTTP CLIENT WITH JWT INTERCEPTORS & LRU CACHING (OPTIMIZED)
- * Handles token injection, expiry validation, error normalization, caching, and deduplication.
- * 
  * OPTIMIZATIONS IMPLEMENTED:
  * 1. LRU Cache (Least Recently Used): O(1) access for frequently used data.
  * 2. Request Deduplication: Prevents simultaneous duplicate network calls.
@@ -13,7 +10,8 @@ import axios, {
   InternalAxiosRequestConfig,
   AxiosResponse, // Added for deduplication response typing
 } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage'; // Migrated to MMKV
+import { secureStorage } from '../utils/storage';
 
 import { API_BASE_URL, API_TIMEOUT } from './config';
 import { mapApiError, NormalizedError } from '../utils/errorHandler';
@@ -97,7 +95,6 @@ class LRUCache<K, V> {
 // Global Cache Instance
 const apiCache = new LRUCache<string, { data: any; timestamp: number }>(MAX_CACHE_SIZE);
 
-// In-flight request deduplication map
 const pendingRequests = new Map<string, Promise<any>>();
 
 // ============================================================================
@@ -135,6 +132,7 @@ const tokenCache = new TokenCache();
 // UTILITY FUNCTIONS
 // ============================================================================
 
+
 /**
  * Check if token has expired
  */
@@ -144,17 +142,15 @@ const isTokenExpired = (expiryMs: number | null): boolean => {
 };
 
 /**
- * Read token from AsyncStorage with expiry validation
+ * Read token from Secure Storage (Synchronous implementation)
  */
-const readTokenFromStorage = async (): Promise<{
+const readTokenFromStorage = (): {
   token: string | null;
   expiry: number | null;
-}> => {
+} => {
   try {
-    const [token, expiryStr] = await Promise.all([
-      AsyncStorage.getItem(STORAGE_KEYS.TOKEN),
-      AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY),
-    ]);
+    const token = secureStorage.getString(STORAGE_KEYS.TOKEN);
+    const expiryStr = secureStorage.getString(STORAGE_KEYS.TOKEN_EXPIRY);
 
     if (!token || !expiryStr) {
       return { token: null, expiry: null };
@@ -164,10 +160,8 @@ const readTokenFromStorage = async (): Promise<{
 
     if (isTokenExpired(expiry)) {
       // Token expired, clear storage
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.TOKEN,
-        STORAGE_KEYS.TOKEN_EXPIRY,
-      ]);
+      secureStorage.delete(STORAGE_KEYS.TOKEN);
+      secureStorage.delete(STORAGE_KEYS.TOKEN_EXPIRY);
       return { token: null, expiry: null };
     }
 
@@ -187,8 +181,7 @@ const getValidToken = async (): Promise<string | null> => {
     return cached.token;
   }
 
-  // Fall back to storage
-  const { token, expiry } = await readTokenFromStorage();
+  const { token, expiry } = readTokenFromStorage();
 
   if (token && !isTokenExpired(expiry)) {
     tokenCache.set(token, expiry);
@@ -238,12 +231,7 @@ httpClient.interceptors.request.use(async (config) => {
         if (!isExpired) {
           // Serve from cache
           console.log(`[HTTP CACHE] Hit: ${extendedConfig.url}`);
-          // Cancel the actual network request using an adapter or throwing a specific error would be cleaner,
-          // but for Axios interceptors, we usually just let it pass and let the response interceptor handle it
-          // OR we return a pre-resolved promise if using an adapter.
-          // LIMITATION: Standard Axios interceptors can't easily skip the request entirely without throwing.
-          // To keep it robust, we will use a custom adapter approach or accept the network hit but return cached.
-          // ACTAULLY, Better Approach for simple impl: Attach cached data to config and check in adapter.
+         
           extendedConfig.adapter = async () => {
             return {
               data: cachedItem.data,
@@ -321,7 +309,7 @@ httpClient.interceptors.response.use(
 // ============================================================================
 
 /**
- * Store token in cache and AsyncStorage
+ * Store token in cache and Secure Storage
  */
 export const persistAuthToken = async (
   token: string,
@@ -331,11 +319,9 @@ export const persistAuthToken = async (
     // Update in-memory cache
     tokenCache.set(token, expiryMs);
 
-    // Persist to AsyncStorage
-    await Promise.all([
-      AsyncStorage.setItem(STORAGE_KEYS.TOKEN, token),
-      AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryMs.toString()),
-    ]);
+    // Persist to Secure Storage
+    secureStorage.set(STORAGE_KEYS.TOKEN, token);
+    secureStorage.set(STORAGE_KEYS.TOKEN_EXPIRY, expiryMs.toString());
   } catch (error) {
     throw error;
   }
@@ -347,18 +333,16 @@ export const persistAuthToken = async (
 export const clearAuthToken = async (): Promise<void> => {
   try {
     tokenCache.clear();
-    await AsyncStorage.multiRemove([
-      STORAGE_KEYS.TOKEN,
-      STORAGE_KEYS.TOKEN_EXPIRY,
-    ]);
+    secureStorage.delete(STORAGE_KEYS.TOKEN);
+    secureStorage.delete(STORAGE_KEYS.TOKEN_EXPIRY);
   } catch (error) {
-    // Don't throw - clear succeeded even if storage failed
+    // Don't throw
   }
 };
 
 export const getTokenExpiry = async (): Promise<number | null> => {
   try {
-    const expiryStr = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    const expiryStr = secureStorage.getString(STORAGE_KEYS.TOKEN_EXPIRY);
     if (!expiryStr) return null;
     return parseInt(expiryStr, 10);
   } catch (error) {
