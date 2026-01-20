@@ -119,14 +119,27 @@ const AppNavigator: React.FC = () => {
     <Stack.Navigator
       id={undefined}
       initialRouteName={isAuthenticated ? "HomeTabs" : "Welcome"}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'fade_from_bottom',
+        animationDuration: 150,
+        presentation: 'card',
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        animationTypeForReplace: 'push',
+      }}
     >
       {screensToRender.map(({ name, component }) => (
         <Stack.Screen
           key={name}
           name={name}
           component={component}
-          options={name === "HomeTabs" ? { animation: "none" } : undefined}
+          options={{
+            animation: name === "SignIn" || name === "SignUp" || name === "ForgotPassword" ? "fade" : 
+                      name === "HomeTabs" || name === "Welcome" ? "fade" : 
+                      "slide_from_right",
+            animationDuration: 150,
+          }}
         />
       ))}
     </Stack.Navigator>

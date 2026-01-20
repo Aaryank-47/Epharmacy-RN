@@ -145,3 +145,8 @@ dependencies {
     }
     implementation 'com.google.android.gms:play-services-location:21.0.1'
 }
+
+// Fix for react-native-splash-screen dependency conflict
+configurations.all {
+    exclude group: 'com.android.support', module: 'support-compat'
+}

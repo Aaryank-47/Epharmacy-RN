@@ -61,7 +61,7 @@ const InputField = memo(({
 }: any) => (
   <View className="mb-4">
     <View className="flex-row items-center border border-gray-300 dark:border-white/20 rounded-full px-4 py-3 bg-gray-50 dark:bg-white/5">
-      <MaterialCommunityIcons name={icon} size={20} color={theme.ctaGradient[0]} />
+      <MaterialCommunityIcons name={icon} size={20} color={theme.isDark ? '#fff' : '#1a1d24'} />
       <TextInput
         className="flex-1 ml-3 text-base text-slate-900 dark:text-white"
         placeholder={placeholder}
@@ -75,7 +75,7 @@ const InputField = memo(({
       />
       {showPasswordToggle && (
         <TouchableOpacity onPress={onTogglePassword} className="ml-2">
-          <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.ctaGradient[0]} />
+          <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.isDark ? '#fff' : '#1a1d24'} />
         </TouchableOpacity>
       )}
     </View>
@@ -171,10 +171,21 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
     });
   }, [formData, validateForm, mutation]);
 
+  const gradientColors = theme.isDark ? ['#000000', '#2A2D35'] : ['#FFFFFF', '#F3F4F6'];
+
   return (
-    <>
-      <StatusBar barStyle={theme.statusBarStyle} backgroundColor={theme.statusBarBackground} />
-      <SafeAreaView className="flex-1" style={{ backgroundColor: theme.surfaceColor }}>
+    <LinearGradient 
+      colors={gradientColors} 
+      start={{ x: 0, y: 0 }} 
+      end={{ x: 0, y: 1 }} 
+      style={{ flex: 1 }}
+    >
+      <StatusBar 
+        barStyle={theme.isDark ? "light-content" : "dark-content"} 
+        backgroundColor="transparent" 
+        translucent={true}
+      />
+      <SafeAreaView className="flex-1" style={{ paddingTop: 0 }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <ScrollView
@@ -218,7 +229,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </>
+    </LinearGradient>
   );
 };
 
