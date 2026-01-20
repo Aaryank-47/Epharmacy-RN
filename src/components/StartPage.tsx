@@ -9,13 +9,14 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
   type ImageStyle,
   type ViewStyle,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LinearGradient from "react-native-linear-gradient";
-
+import LottieView from "lottie-react-native";
 import type { RootStackParamList } from "../../AppNavigator";
 import useThemePalette from "../hooks/useThemePalette";
 
@@ -99,18 +100,25 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
   );
 
   const iconColor = isDark ? "#FFFFFF" : "#181A20";
+  const gradientColors = isDark ? ['#000000', '#2A2D35'] : ['#FFFFFF', '#F3F4F6'];
 
   return (
-    <SafeAreaView
-      edges={["top", "bottom"]}
-      className="flex-1 bg-white dark:bg-[#181A20]"
-      style={{ paddingTop: compactTopInset, backgroundColor: surfaceColor }}
+    <LinearGradient 
+      colors={gradientColors} 
+      start={{ x: 0, y: 0 }} 
+      end={{ x: 0, y: 1 }} 
+      style={{ flex: 1 }}
     >
-      <StatusBar
-        barStyle={statusBarStyle}
-        backgroundColor={statusBarBackground}
-        translucent={Platform.OS === "android"}
-      />
+      <SafeAreaView
+        edges={["top", "bottom"]}
+        className="flex-1"
+        style={{ paddingTop: 0 }}
+      >
+        <StatusBar
+          barStyle={isDark ? "light-content" : "dark-content"}
+          backgroundColor="transparent"
+          translucent={true}
+        />
 
       <View className="flex-1 w-full px-6 pt-0">
         <View className="w-full flex-row items-center justify-between pt-0">
@@ -125,11 +133,32 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
           <View className="w-11" />
         </View>
 
-        <Animated.Image
-          source={require("../assets/images/registration.png")}
-          resizeMode="cover"
-          style={heroAnimatedStyle}
-        />
+        <AnimatedView style={[heroAnimatedStyle, { backgroundColor: 'transparent', overflow: 'hidden' }]}>
+          {isDark ? (
+            // Dark mode: Show registration.png image
+            <Image
+              source={require("../assets/images/registration.png")}
+              resizeMode="contain"
+              style={{
+                width: screenWidth * 0.85,
+                height: screenHeight * 0.32,
+              }}
+            />
+          ) : (
+            // Light mode: Show Lottie Animation
+            <LottieView
+              source={require("../assets/animations/3D Doctor Dancing.json")}
+              autoPlay
+              loop
+              resizeMode="cover"
+              style={{
+                width: screenWidth * 0.85,
+                height: screenHeight * 0.32,
+                backgroundColor: 'transparent',
+              }}
+            />
+          )}
+        </AnimatedView>
 
         <AnimatedView
           className="mt-6 items-center space-y-4"
@@ -142,7 +171,7 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
             MediCare+ Digital Pharmacy
           </Text>
           <Text
-            className="text-center text-base leading-6 text-slate-600 dark:text-slate-300"
+            className="text-center text-base leading-6 text-slate-600 dark:text-slate-300 mt-4"
             style={{ fontFamily: serifFontFamily }}
           >
             Get authentic medicines delivered to your doorstep. Upload prescriptions, consult licensed pharmacists,
@@ -173,23 +202,24 @@ const StartPage: React.FC<StartPageProps> = ({ navigation }) => {
           <TouchableOpacity
             activeOpacity={0.8}
             className="mt-4 flex-row items-center justify-center"
-            onPress={() => navigation.navigate("SignUp")}
+
           >
             <View
               className="mr-3 rounded-full p-2 bg-slate-100 dark:bg-white/10"
             >
-              <Icon name="info" size={18} color={isDark ? "#FFFFFF" : "#181A20"} />
+              <Icon name="search" size={18} color={isDark ? "#FFFFFF" : "#181A20"} />
             </View>
             <Text
               className="text-sm font-semibold text-slate-600 dark:text-slate-300"
               style={{ fontFamily: serifFontFamily }}
             >
-              MADE BY VELCARD
+              Search for medicines
             </Text>
           </TouchableOpacity>
         </AnimatedView>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 

@@ -58,13 +58,8 @@ const Header = memo(({ navigation, isDark }: { navigation: any; isDark: boolean 
 
 const WelcomeSection = memo(({ theme }: { theme: any }) => (
   <View className="items-center pt-0">
-    <LottieView
-      source={require('../assets/animations/Social Media Influencer.json')}
-      autoPlay loop
-      style={{ width: screenWidth * 0.5, height: screenWidth * 0.4 }}
-    />
     <Text
-      className="mt-4 text-center text-3xl font-extrabold text-[#111827] dark:text-white"
+      className="mt-28 text-center text-3xl font-extrabold text-[#111827] dark:text-white"
       style={{ fontFamily: theme.serifFontFamily }}
       numberOfLines={1} adjustsFontSizeToFit
     >
@@ -119,7 +114,7 @@ const LoginForm = memo(({
 
       {/* Email */}
       <View className="mt-4 flex-row items-center rounded-full border border-slate-200 dark:border-white/20 bg-white/80 px-4 dark:bg-[#1a1d24]" style={{ minHeight: INPUT_HEIGHT }}>
-        <MaterialCommunityIcons name="email-outline" size={20} color={theme.isDark ? '#334155' : '#cbd5f5'} />
+        <MaterialCommunityIcons name="email-outline" size={20} color={theme.isDark ? '#fff' : '#1a1d24'} />
         <TextInput
           placeholder="Email address" placeholderTextColor="rgba(148,163,184,0.8)"
           autoCapitalize="none" keyboardType="email-address"
@@ -133,7 +128,7 @@ const LoginForm = memo(({
 
       {/* Password */}
       <View className="mt-3 flex-row items-center rounded-full border border-slate-200 dark:border-white/20 bg-white/80 px-4 dark:bg-[#1a1d24]" style={{ minHeight: INPUT_HEIGHT }}>
-        <MaterialCommunityIcons name="lock-outline" size={20} color={theme.isDark ? '#334155' : '#cbd5f5'} />
+        <MaterialCommunityIcons name="lock-outline" size={20} color={theme.isDark ? '#fff' : '#1a1d24'} />
         <TextInput
           placeholder="Password" placeholderTextColor="rgba(148,163,184,0.8)"
           secureTextEntry={!showPassword}
@@ -143,7 +138,7 @@ const LoginForm = memo(({
           onFocus={() => setKeyboardVisible(true)} onBlur={() => setKeyboardVisible(false)}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#8891a7" />
+          <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.isDark ? '#fff' : '#1a1d24'} />
         </TouchableOpacity>
       </View>
       {formErrors.password && <Text className="text-xs text-red-500 mt-1">{formErrors.password}</Text>}
@@ -272,14 +267,25 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
   const errorMsg = localError || (loginMutation.error ? toHumanReadableError(loginMutation.error as any) : null);
   const isLoading = loginMutation.isPending || googleMutation.isPending || isGoogleSigningIn;
+  const gradientColors = theme.isDark ? ['#000000', '#2A2D35'] : ['#FFFFFF', '#F3F4F6'];
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-[#0b0d14]" style={{ paddingTop: Math.max(insets.top - 24, 0), backgroundColor: theme.surfaceColor }}>
-      <StatusBar backgroundColor={theme.statusBarBackground} barStyle={theme.statusBarStyle} translucent={false} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <LinearGradient colors={[theme.surfaceColor, theme.surfaceColor]} style={{ flex: 1 }}>
-            <View className="flex-1 px-6 pb-6 pt-0">
+    <LinearGradient 
+      colors={gradientColors} 
+      start={{ x: 0, y: 0 }} 
+      end={{ x: 0, y: 1 }} 
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView className="flex-1" style={{ paddingTop: 0 }}>
+        <StatusBar 
+          backgroundColor="transparent" 
+          barStyle={theme.isDark ? "light-content" : "dark-content"} 
+          translucent={true} 
+        />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={{ flex: 1 }}>
+              <View className="flex-1 px-6 pb-6 pt-0">
               <Header navigation={navigation} isDark={theme.isDark} />
 
               {!keyboardVisible && <WelcomeSection theme={theme} />}
@@ -307,11 +313,12 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
               </View>
+              </View>
             </View>
-          </LinearGradient>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
