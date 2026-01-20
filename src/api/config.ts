@@ -1,4 +1,5 @@
-export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
+// export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
+export const API_BASE_URL = "http://10.207.167.226:5000";
 
 export const API_TIMEOUT = 60000;
 
@@ -44,6 +45,13 @@ export const API_ROUTES = {
     similarItems: "/api/v1/items/similar",
     wishlist: "/api/v1/items/wishlist",
     wishlistRemove: "/api/v1/items/wishlist/remove",
+    search: "/api/v1/items/search",
+    suggestions: "/api/v1/items/search/suggestions",
+    popularTerms: "/api/v1/items/search/popular-terms",
+    recentSearches: "/api/v1/items/search/recent",
+    getRecentSearches: "/api/v1/items/search/get-recent",
+    clearRecentSearches: "/api/v1/items/search/recent/clear",
+    deleteRecentSearch: "/api/v1/items/search/recent/delete",
   },
   notifications: {
     registerToken: "/api/v1/notifications/register-token",

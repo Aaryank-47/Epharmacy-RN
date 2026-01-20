@@ -1,6 +1,6 @@
 import httpClient from './httpClient';
 import { API_ROUTES } from './config';
-import type { ApiResponse, ItemFeedItem, ItemDetails, Advertisement, Medicine, DealItem, UserAddress } from './types';
+import type { ApiResponse, ItemFeedItem, ItemDetails, Advertisement, Medicine, DealItem, UserAddress, RecentSearch } from './types';
 
 // ============================================================================
 // MEDICINES API FUNCTIONS
@@ -363,3 +363,149 @@ export const getSimilarProducts = async (
     throw error;
   }
 };
+
+
+export const getSearchSuggestions = async (
+  query: string,
+  limit: number = 10
+): Promise<ApiResponse<{ suggestions: any[]; cached: boolean; query: string; count?: number }>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.items.suggestions,
+      {
+        params: { q: query, limit },
+      } as any
+    );
+    const data = response.data;
+    const suggestions = data?.data?.suggestions || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Suggestions fetched',
+      data: {
+        suggestions: Array.isArray(suggestions) ? suggestions : [],
+        cached: data?.data?.cached ?? false,
+        query: data?.data?.query ?? query,
+        count: data?.data?.count,
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getPopularSearchTerms = async (): Promise<
+  ApiResponse<{ terms: any[]; cached: boolean }>
+> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.items.popularTerms
+    );
+    const data = response.data;
+    const terms = data?.data?.terms || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Popular terms fetched',
+      data: {
+        terms: Array.isArray(terms) ? terms : [],
+        cached: data?.data?.cached ?? false,
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ============================================================================
+// RECENT SEARCH API
+// ============================================================================
+
+export const getRecentSearches = async (
+  limit: number = 10
+): Promise<ApiResponse<{ searches: RecentSearch[]; count: number }>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.items.getRecentSearches,
+      {
+        params: { limit },
+      } as any
+    );
+    const data = response.data;
+    const searches = data?.data?.searches || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Recent searches fetched',
+      data: {
+        searches: Array.isArray(searches) ? searches : [],
+        count: data?.data?.count ?? 0,
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const saveRecentSearch = async (data: {
+  query: string;
+  itemId?: string;
+  itemName?: string;
+  itemImage?: string;
+}): Promise<ApiResponse<{ query: string; saved: boolean }>> => {
+  try {
+    const response = await httpClient.post<ApiResponse<any>>(
+      API_ROUTES.items.recentSearches,
+      data
+    );
+    const resData = response.data;
+
+    return {
+      success: resData?.success ?? true,
+      message: resData?.message ?? 'Search saved successfully',
+      data: resData?.data || { query: data.query, saved: true },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteRecentSearch = async (
+  query: string
+): Promise<ApiResponse<{ deleted: boolean; query: string }>> => {
+  try {
+    const response = await httpClient.delete<ApiResponse<any>>(
+      `${API_ROUTES.items.recentSearches}/${encodeURIComponent(query)}`
+    );
+    const data = response.data;
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Search deleted successfully',
+      data: data?.data || { deleted: true, query },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const clearRecentSearches = async (): Promise<
+  ApiResponse<{ cleared: boolean }>
+> => {
+  try {
+    const response = await httpClient.delete<ApiResponse<any>>(
+      API_ROUTES.items.clearRecentSearches
+    );
+    const data = response.data;
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'All recent searches cleared',
+      data: data?.data || { cleared: true },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+

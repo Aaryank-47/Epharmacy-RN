@@ -187,6 +187,16 @@ export interface Medicine {
   category?: string;
 }
 
+export interface RecentSearch {
+  id: number;
+  query: string;
+  itemId?: string;
+  itemName?: string;
+  itemImage?: string;
+  timestamp: number;
+  timeAgo?: string;
+}
+
 export interface DealItem {
   _id: string;
   itemName: string;

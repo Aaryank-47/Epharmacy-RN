@@ -24,12 +24,28 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId }) => {
     useEffect(() => {
         let isMounted = true;
         const fetchSimilar = async () => {
-            // Reset state when productId changes
             setLoading(true);
             try {
                 const response = await getSimilarProducts(productId);
-                if (isMounted && response.success && response.data?.items) {
-                    setProducts(response.data.items);
+
+                let items = [];
+                if (response.success) {
+                    if (response.data?.items && Array.isArray(response.data.items)) {
+                        items = response.data.items;
+                    }
+                    else if (Array.isArray(response.data)) {
+                        items = response.data;
+                    }
+                    else if (response.data && (response.data as any).data && Array.isArray((response.data as any).data)) {
+                        items = (response.data as any).data;
+                    }
+                    else if ((response.data as any)?.similarItems && Array.isArray((response.data as any).similarItems)) {
+                        items = (response.data as any).similarItems;
+                    }
+                }
+
+                if (isMounted) {
+                    setProducts(items);
                 }
             } catch (error) {
                 console.error("Failed to fetch similar products", error);
