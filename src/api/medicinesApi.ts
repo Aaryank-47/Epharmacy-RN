@@ -365,13 +365,14 @@ export const getSimilarProducts = async (
 };
 
 
+// search apis
 export const getSearchSuggestions = async (
   query: string,
   limit: number = 10
 ): Promise<ApiResponse<{ suggestions: any[]; cached: boolean; query: string; count?: number }>> => {
   try {
     const response = await httpClient.get<ApiResponse<any>>(
-      API_ROUTES.items.suggestions,
+      API_ROUTES.search.suggestions,
       {
         params: { q: query, limit },
       } as any
@@ -399,7 +400,7 @@ export const getPopularSearchTerms = async (): Promise<
 > => {
   try {
     const response = await httpClient.get<ApiResponse<any>>(
-      API_ROUTES.items.popularTerms
+      API_ROUTES.search.popularTerms
     );
     const data = response.data;
     const terms = data?.data?.terms || [];
@@ -426,7 +427,7 @@ export const getRecentSearches = async (
 ): Promise<ApiResponse<{ searches: RecentSearch[]; count: number }>> => {
   try {
     const response = await httpClient.get<ApiResponse<any>>(
-      API_ROUTES.items.getRecentSearches,
+      API_ROUTES.search.getRecentSearches,
       {
         params: { limit },
       } as any
@@ -455,7 +456,7 @@ export const saveRecentSearch = async (data: {
 }): Promise<ApiResponse<{ query: string; saved: boolean }>> => {
   try {
     const response = await httpClient.post<ApiResponse<any>>(
-      API_ROUTES.items.recentSearches,
+      API_ROUTES.search.recentSearches,
       data
     );
     const resData = response.data;
@@ -475,7 +476,7 @@ export const deleteRecentSearch = async (
 ): Promise<ApiResponse<{ deleted: boolean; query: string }>> => {
   try {
     const response = await httpClient.delete<ApiResponse<any>>(
-      `${API_ROUTES.items.recentSearches}/${encodeURIComponent(query)}`
+      `${API_ROUTES.search.recentSearches}/${encodeURIComponent(query)}`
     );
     const data = response.data;
 
@@ -494,7 +495,7 @@ export const clearRecentSearches = async (): Promise<
 > => {
   try {
     const response = await httpClient.delete<ApiResponse<any>>(
-      API_ROUTES.items.clearRecentSearches
+      API_ROUTES.search.clearRecentSearches
     );
     const data = response.data;
 

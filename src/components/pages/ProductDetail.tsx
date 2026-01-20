@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, StatusBar, StyleSheet, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { SOCKET_EVENTS, ProductUpdatedPayload } from '../../services/socketEvents.types';
 
 // Components
 import ProductImageCarousel from './product/ProductImageCarousel'; // Adjusted path if needed, assuming user moves them there or I put them in correct relative path
@@ -23,6 +26,16 @@ const ProductDetail: React.FC = () => {
     handleToggleWishlist, handleAddToCart, handleShare, isInWishlist, navigation,
     handleScrollBeginDrag, handleScrollEnd
   } = useProductDetail();
+
+  // Listen for real-time updates
+  useSocketEvent<ProductUpdatedPayload>(
+    SOCKET_EVENTS.PRODUCT_UPDATED,
+    (payload) => {
+      if (product && payload.data._id === product.id) {   
+        console.log('[ProductDetail] Real-time update received:', payload.data.itemName);
+      }
+    }
+  );
 
   const shareOptions = [
     { id: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366' },

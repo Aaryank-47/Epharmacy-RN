@@ -1,5 +1,9 @@
 import 'react-native-gesture-handler';
 import { AppRegistry } from 'react-native';
+
+// Polyfill for Socket.IO
+global.Buffer = global.Buffer || require('buffer').Buffer;
+
 import messaging from '@react-native-firebase/messaging';
 import notifee from '@notifee/react-native';
 import { notificationService } from './src/services/notificationService';

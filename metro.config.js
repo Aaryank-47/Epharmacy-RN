@@ -9,4 +9,14 @@ const { withNativeWind } = require('nativewind/metro');
  */
 const config = getDefaultConfig(__dirname);
 
+config.resolver = {
+  ...config.resolver,
+  sourceExts: [...config.resolver.sourceExts, 'mjs', 'cjs'],
+  extraNodeModules: {
+    ...config.resolver.extraNodeModules,
+    buffer: require.resolve('buffer'),
+    events: require.resolve('events'),
+  },
+};
+
 module.exports = withNativeWind(config, { input: './global.css' });

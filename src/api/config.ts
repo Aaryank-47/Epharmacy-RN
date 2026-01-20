@@ -2,6 +2,9 @@
 export const API_BASE_URL = "https://phrma-production-app-backend-main-qbt9.onrender.com";
 // export const API_BASE_URL = "http://10.207.167.226:5000";
 
+// WebSocket URL (same as API base URL for Socket.IO)
+export const SOCKET_URL = API_BASE_URL;
+
 export const API_TIMEOUT = 60000;
 
 export const AUTH_TOKEN_STORAGE_KEY = "jwtToken";
@@ -46,6 +49,8 @@ export const API_ROUTES = {
     similarItems: "/api/v1/items/similar",
     wishlist: "/api/v1/items/wishlist",
     wishlistRemove: "/api/v1/items/wishlist/remove",
+  },
+  search: {
     search: "/api/v1/items/search",
     suggestions: "/api/v1/items/search/suggestions",
     popularTerms: "/api/v1/items/search/popular-terms",
