@@ -16,6 +16,7 @@ import { SocketProvider } from "./src/context/SocketContext";
 import AppNavigator from "./AppNavigator";
 import loadIconFonts from "./src/utils/loadIconFonts";
 import NotificationSetup from "./src/config/notificationSetup";
+import NetworkStatusMonitor from "./src/context/NetworkStatusMonitor";
 
 enableScreens(true);
 
@@ -52,9 +53,20 @@ export default function App() {
 
                   <WishlistProvider>
                     <SocketProvider>
-                      <NavigationContainer>
-                        <AppNavigator />
-                      </NavigationContainer>
+                      <NetworkStatusMonitor>
+                        <NavigationContainer
+                          linking={{
+                            prefixes: ['epharmacy://', 'https://epharmacy.app'],
+                            config: {
+                              screens: {
+                                ProductDetail: 'product/:productId',
+                              },
+                            },
+                          }}
+                        >
+                          <AppNavigator />
+                        </NavigationContainer>
+                      </NetworkStatusMonitor>
                     </SocketProvider>
                   </WishlistProvider>
                 </AuthProvider>

@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white"/>
+    <!-- Flipkart-style premium splash screen -->
+    
+    <!-- Full screen brand color background -->
+    <item android:drawable="@color/splashBackground"/>
+    
+    <!-- Centered large logo (200dp x 200dp) -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/logo"/>
+    </item>
 </layer-list>

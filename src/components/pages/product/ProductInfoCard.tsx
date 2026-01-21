@@ -156,15 +156,7 @@ const ProductInfoCard: React.FC<ProductInfoCardProps> = memo(({
             {/* Benefits */}
             {product.benefits && product.benefits.length > 0 && (
                 <View className="mb-5">
-                    <View className="flex-row items-center justify-between mb-2">
-                        <Text className="text-lg font-bold text-neutral-900 dark:text-white">Key Benefits</Text>
-                        <TouchableOpacity
-                            className="w-9 h-9 rounded-full border justify-center items-center ml-3 border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800"
-                            onPress={onShare}
-                        >
-                            <Icon name="share-social-outline" size={18} color="#40C057" />
-                        </TouchableOpacity>
-                    </View>
+                    <Text className="text-lg font-bold text-neutral-900 dark:text-white mb-2">Key Benefits</Text>
                     {product.benefits.map((benefit, index) => (
                         <View key={index} className="flex-row items-center mt-2.5">
                             <View className="w-6 h-6 rounded-full justify-center items-center mr-2.5 bg-gray-100 dark:bg-neutral-800">

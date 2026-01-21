@@ -5,7 +5,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import ConnectionIndicator from '../../common/ConnectionIndicator';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -78,7 +77,6 @@ const HeaderScreen: React.FC = () => {
       </View>
 
       <Animated.View style={{ transform: [{ translateX: rightIconsAnim }, { translateY: -15 }], flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-        <ConnectionIndicator size="small" />
         <TouchableOpacity activeOpacity={0.7} onPress={handleSearchPress} style={{ padding: 8, borderRadius: 20, backgroundColor: iconButtonBg, justifyContent: 'center', alignItems: 'center', width: 36, height: 36 }} accessibilityLabel="Search" accessibilityRole="button">
           <MaterialCommunityIcons name={SEARCH_ICONS[searchIconIndex]} size={20} color={iconColor} />
         </TouchableOpacity>

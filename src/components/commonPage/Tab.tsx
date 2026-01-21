@@ -13,6 +13,7 @@ import ExploreOverlay from './ExploreOverlay';
 import AiChatSupport from '../AiChatSupport';
 import QROptionsBottomSheet from '../qr/QROptionsBottomSheet';
 import ScrollToTopButton from './ScrollToTopButton';
+import RotatingCompassIcon from './RotatingCompassIcon';
 
 interface TabConfig {
   readonly name: string;
@@ -110,12 +111,14 @@ const TabBar = memo<{
             <TouchableOpacity key={`${route.name}-${index}`} onPress={() => handleTabPress(currentTab)} activeOpacity={0.6} disabled={isLoading} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               {currentTab.isProfile ? (
                 <ProfileTabIcon isActive={isActive} userData={userData} size={Math.min(screenWidth * 0.08, 32)} />
+              ) : currentTab.name === 'Explore' ? (
+                <RotatingCompassIcon isActive={isActive} color={activeColor} size={Math.min(screenWidth * 0.074, 36)} />
               ) : (
-                <Icon name={iconName || 'circle'} size={Math.min(screenWidth * 0.064, 26)} color={activeColor} />
+                <Icon name={iconName || 'circle'} size={Math.min(screenWidth * 0.074, 36)} color={activeColor} />
               )}
               {currentTab.name === 'Cart' && cartItemCount > 0 && (
                 <View style={{ position: 'absolute', top: -4, right: screenWidth * 0.05, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 }}>
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{cartItemCount > 99 ? '99+' : cartItemCount}</Text>
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>{cartItemCount > 99 ? '99+' : cartItemCount}</Text>
                 </View>
               )}
               <Text style={{ marginTop: 3, textAlign: 'center', paddingHorizontal: 4, color: activeColor, fontSize: Math.min(screenWidth * 0.026, 11), fontWeight: isActive ? '600' : '400' }} numberOfLines={1}>
@@ -139,13 +142,15 @@ const Tabs = memo<{
   translateY?: Animated.Value | Animated.AnimatedInterpolation<string | number>;
   scrollY?: Animated.Value;
   onScrollToTop?: () => void;
-}>(({ children, tabs = [
-  { name: 'Home', screenName: 'HomeTabs', icon: 'home', iconOutline: 'home-outline' },
-  { name: 'Cart', screenName: 'ShoppingBagScreen', icon: 'cart', iconOutline: 'cart-outline' },
-  { name: 'Explore', screenName: 'ExplorePage', icon: 'compass', iconOutline: 'compass-outline' },
-  { name: 'Store', screenName: 'HomeTabs', icon: 'storefront', iconOutline: 'storefront-outline' },
-  { name: 'Profile', screenName: 'ProfilePage', icon: 'person', iconOutline: 'person-outline', isProfile: true },
-], currentActiveTab = 'Home', onNavigate = () => { }, onTabReselect, onError = () => { }, translateY, scrollY, onScrollToTop }) => {
+}>(({
+  children, tabs = [
+    { name: 'Home', screenName: 'HomeTabs', icon: 'home', iconOutline: 'home-outline' },
+    { name: 'Cart', screenName: 'ShoppingBagScreen', icon: 'cart', iconOutline: 'cart-outline' },
+    { name: 'Explore', screenName: 'ExplorePage', icon: 'compass', iconOutline: 'compass-outline' },
+    { name: 'Store', screenName: 'HomeTabs', icon: 'storefront', iconOutline: 'storefront-outline' },
+    { name: 'Profile', screenName: 'ProfilePage', icon: 'person', iconOutline: 'person-outline', isProfile: true },
+  ],
+  currentActiveTab = 'Home', onNavigate = () => { }, onTabReselect, onError = () => { }, translateY, scrollY, onScrollToTop }) => {
   const { surfaceColor } = useThemePalette();
   const navigation = useNavigation();
 
@@ -167,8 +172,6 @@ const Tabs = memo<{
         const storedProfile = await AsyncStorage.getItem('userProfile');
         if (storedProfile) {
           const parsed = JSON.parse(storedProfile);
-          // Handle potential structure differences if stored differently
-          // Verify if it has profileImage
           setLocalUserData(parsed);
         }
       } catch (e) {

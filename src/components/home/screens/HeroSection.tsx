@@ -79,7 +79,7 @@ const RotatingBorder = memo(({ isDark }: { isDark: boolean }) => {
   );
 });
 
-const HeroSection: React.FC<{ navigation?: any; onReady?: () => void }> = memo(({ navigation, onReady }) => {
+const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshing?: boolean }> = memo(({ navigation, onReady, isRefreshing }) => {
   const { isDark, accentColor } = useThemePalette();
   const flatListRef = useRef<FlatList>(null);
   const scrollIndexRef = useRef(0);
@@ -88,7 +88,7 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void }> = memo((
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const isPausedRef = useRef(false);
 
-  const { data: medicinesData, isLoading: medicinesLoading } = useQuery({
+  const { data: medicinesData, isLoading: medicinesLoading, refetch: medicinesRefetch } = useQuery({
     queryKey: ['featured-medicines'],
     queryFn: async () => {
       const response = await getFeaturedMedicines();
@@ -100,7 +100,7 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void }> = memo((
     retryDelay: 2000,
   });
 
-  const { data: adsData, isLoading: adsLoading } = useQuery({
+  const { data: adsData, isLoading: adsLoading, refetch: adsRefetch } = useQuery({
     queryKey: ['running-advertisements'],
     queryFn: async () => {
       const response = await getRunningAdvertisements();
@@ -112,6 +112,14 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void }> = memo((
     retryDelay: 2000,
     refetchInterval: (query) => (!query.state.data?.length ? 3000 : false),
   });
+
+  // Force refetch when pulling to refresh
+  useEffect(() => {
+    if (isRefreshing) {
+      medicinesRefetch();
+      adsRefetch();
+    }
+  }, [isRefreshing]);
 
   // Sequential Rendering Trigger
   useEffect(() => {

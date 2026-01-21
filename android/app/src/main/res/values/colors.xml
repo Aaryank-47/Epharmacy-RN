@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors - Flipkart-style professional splash -->
+    <!-- Primary brand color for splash background (Medical Blue/Teal) -->
+    <color name="splashBackground">#1A73E8</color>
+    
+    <!-- Alternative brand colors (uncomment if needed) -->
+    <!-- Medical Green: #00A65A -->
+    <!-- Healthcare Teal: #00897B -->
+    <!-- Professional Blue: #1A73E8 -->
+    <!-- Deep Purple: #6200EA -->
+</resources>

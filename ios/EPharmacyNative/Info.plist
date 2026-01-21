@@ -41,6 +41,9 @@
 	<array>
 		<string>arm64</string>
 	</array>
+	<!-- Flipkart-style splash: Force Light mode for consistent brand color -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
