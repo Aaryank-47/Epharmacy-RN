@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ToastAndroid, Platform, Alert } from 'react-native';
 import { getWishlist, addToWishlist as addToWishlistApi, removeWishlistItem as removeWishlistItemApi } from '../api/medicinesApi';
+import { useSocketEvent } from '../hooks/useSocketEvent';
+import { SOCKET_EVENTS } from '../services/socketEvents.types';
 
 interface WishlistItem {
     _id: string;
@@ -36,29 +38,36 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const loadWishlist = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const response = await getWishlist();
+            if (response.success && response.data?.items) {
+                // Map API items to WishlistItem structure
+                const mappedItems = response.data.items.map((item: any) => ({
+                    ...item,
+                    // API returns itemImages array, UI expects image string
+                    image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
+                }));
+                console.log('Wishlist updated from socket/init');
+                setWishlistItems(mappedItems as WishlistItem[]);
+            }
+        } catch (e) {
+            console.error('Failed to load wishlist:', e);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     // Load wishlist on mount
     useEffect(() => {
-        const loadWishlist = async () => {
-            try {
-                setIsLoading(true);
-                const response = await getWishlist();
-                if (response.success && response.data?.items) {
-                    // Map API items to WishlistItem structure
-                    const mappedItems = response.data.items.map((item: any) => ({
-                        ...item,
-                        // API returns itemImages array, UI expects image string
-                        image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
-                    }));
-                    setWishlistItems(mappedItems as WishlistItem[]);
-                }
-            } catch (e) {
-                console.error('Failed to load wishlist:', e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         loadWishlist();
-    }, []);
+    }, [loadWishlist]);
+
+    // Listen for wishlist updates from socket
+    useSocketEvent(SOCKET_EVENTS.WISHLIST_UPDATE, () => {
+        loadWishlist();
+    });
 
     const showToast = (message: string) => {
         if (Platform.OS === 'android') {

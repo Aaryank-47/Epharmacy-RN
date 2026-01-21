@@ -27,6 +27,8 @@ import {
   NotificationLogsResponse,
 } from '../../api/types';
 import useThemePalette from '../../hooks/useThemePalette';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { SOCKET_EVENTS } from '../../services/socketEvents.types';
 
 interface NotificationsScreenProps {
   navigation?: any;
@@ -90,6 +92,17 @@ const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ navigation })
   useEffect(() => {
     fetchNotifications(1, false);
   }, [filter, fetchNotifications]);
+
+  // Listen for new notifications
+  useSocketEvent(SOCKET_EVENTS.NOTIFICATION_NEW, () => {
+    // Refresh list if on first page
+    if (currentPage === 1) {
+      fetchNotifications(1, false);
+    } else {
+      // Or just show dot/badge
+      setUnreadCount(prev => prev + 1);
+    }
+  });
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);

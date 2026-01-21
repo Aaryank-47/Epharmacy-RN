@@ -114,8 +114,10 @@ const ProfilePage: React.FC = () => {
       <View style={{
         marginHorizontal: screenWidth * 0.04,
         marginBottom: 20,
-        padding: screenWidth * 0.04,
-        backgroundColor: isDark ? 'transparent' : '#FFFFFF',
+        padding: screenWidth * 0.05,
+        borderRadius: 16,
+        backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
+
       }}>
         <TouchableOpacity
           className="flex-row items-center justify-between py-1.5"
@@ -131,9 +133,7 @@ const ProfilePage: React.FC = () => {
           />
         </TouchableOpacity>
         {privacyTermsExpanded && (
-          <View className="mt-4">
-            <PrivacyTermsPage />
-          </View>
+          <PrivacyTermsPage />
         )}
       </View>
 
@@ -197,10 +197,21 @@ const ProfilePage: React.FC = () => {
       <StatusBar backgroundColor={isDark ? '#1A1A1A' : '#FFFFFF'} barStyle={statusBarStyle} />
 
       {/* Header */}
-      <View style={{
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + (-25) : 45,
-        borderBottomColor: isDark ? '#3A3A3A' : '#E5E7EB',
-      }} className="flex-row items-center justify-between px-[4%] pb-[15px] border-b">
+      <LinearGradient
+        colors={isDark ? ['#000000', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{
+          paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + (-25) : 45,
+          borderBottomColor: isDark ? '#3A3A3A' : '#E5E7EB',
+          borderBottomWidth: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: screenWidth * 0.04,
+          paddingBottom: 15,
+        }}
+      >
         <TouchableOpacity
           onPress={handleGoBack}
           style={{ backgroundColor: isDark ? '#3A3A3A' : '#F3F4F6' }}
@@ -215,7 +226,7 @@ const ProfilePage: React.FC = () => {
         >
           <MaterialCommunityIcons name="bell-outline" size={24} color={isDark ? '#FFFFFF' : '#1F2937'} />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -235,4 +246,4 @@ const ProfilePage: React.FC = () => {
   );
 };
 
-export default React.memo(ProfilePage);
+export default ProfilePage;

@@ -16,7 +16,7 @@ export const useProfilePageUI = () => {
 
     // UI State
     const [personalDetailsExpanded, setPersonalDetailsExpanded] = useState<boolean>(true);
-    const [privacyTermsExpanded, setPrivacyTermsExpanded] = useState<boolean>(true);
+    const [privacyTermsExpanded, setPrivacyTermsExpanded] = useState<boolean>(false);
     const [isManualRefreshing, setIsManualRefreshing] = useState<boolean>(false);
     const [refreshKey, setRefreshKey] = useState<number>(0);
 

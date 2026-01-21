@@ -2,8 +2,12 @@ import React, { useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRecentlyViewedCategories } from '../../../hooks/useRecentlyViewed';
 import useThemePalette from '../../../hooks/useThemePalette';
+import { useSocketEvent } from '../../../hooks/useSocketEvent';
+import { SOCKET_EVENTS } from '../../../services/socketEvents.types';
+import { addCategoryToRecentlyViewed } from '../../../api/medicinesApi';
 
 const { width } = Dimensions.get('window');
 
@@ -17,12 +21,12 @@ const FULL_ITEM_WIDTH = ITEM_WIDTH + ITEM_MARGIN_RIGHT; // For getItemLayout
 interface CategoryItemProps {
     item: any;
     isDark: boolean;
-    onPress: () => void;
+    onPress: (categoryId: string) => void;
 }
 
 const CategoryItem = memo<CategoryItemProps>(({ item, isDark, onPress }) => (
     <TouchableOpacity
-        onPress={onPress}
+        onPress={() => onPress(item._id)}
         style={{ width: ITEM_WIDTH, marginRight: ITEM_MARGIN_RIGHT }}
         className="items-center justify-start"
         activeOpacity={0.7}
@@ -122,6 +126,24 @@ const RecentlyViewedCategory = ({ transparentBackground = false }: RecentlyViewe
     const { isDark } = useThemePalette();
     const { data: apiResponse, isLoading } = useRecentlyViewedCategories();
 
+    const queryClient = useQueryClient();
+
+    // Real-time updates - Category specific events
+    useSocketEvent(SOCKET_EVENTS.CATEGORY_VIEWED_UPDATE, () => {
+        console.log('[RecentlyViewedCategory] CATEGORY_VIEWED_UPDATE event received');
+        queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+    });
+
+    useSocketEvent(SOCKET_EVENTS.CATEGORY_PRODUCT_UPDATED, () => {
+        console.log('[RecentlyViewedCategory] CATEGORY_PRODUCT_UPDATED event received');
+        queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+    });
+
+    useSocketEvent(SOCKET_EVENTS.CATEGORY_PRODUCT_DELETED, () => {
+        console.log('[RecentlyViewedCategory] CATEGORY_PRODUCT_DELETED event received');
+        queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+    });
+
     // Algorithmic Optimization: O(N) deduplication using Set vs O(N^2) filter/findIndex
     const categories = useMemo(() => {
         const rawData = apiResponse?.data || [];
@@ -129,17 +151,26 @@ const RecentlyViewedCategory = ({ transparentBackground = false }: RecentlyViewe
 
         const seen = new Set();
         const uniqueData = [];
-        for (const item of rawData) {
+        // Forward loop to maintain backend order
+        for (let i = 0; i < rawData.length; i++) {
+            const item = rawData[i];
             if (item._id && !seen.has(item._id)) {
                 seen.add(item._id);
                 uniqueData.push(item);
             }
         }
-        return uniqueData;
+        // Reverse to show newest first (left) to oldest (right)
+        return uniqueData.reverse();
     }, [apiResponse]);
 
-    const handlePress = useCallback(() => {
-        // Placeholder for future navigation logic
+    const handlePress = useCallback(async (categoryId: string) => {
+        console.log('[RecentlyViewedCategory] Category clicked:', categoryId);
+        try {
+            await addCategoryToRecentlyViewed(categoryId);
+            console.log('[RecentlyViewedCategory] API call successful');
+        } catch (error) {
+            console.error('[RecentlyViewedCategory] Failed to add category to recently viewed:', error);
+        }
     }, []);
 
     const renderItem = useCallback(({ item }: { item: any }) => (

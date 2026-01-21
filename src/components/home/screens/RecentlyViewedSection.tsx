@@ -283,4 +283,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default  React.memo( RecentlyViewedSection);
+export default React.memo(RecentlyViewedSection);

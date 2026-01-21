@@ -99,7 +99,7 @@ const ExploreOverlay: React.FC<ExploreOverlayProps> = ({ onClose, onOpenAiChat, 
 
             {/* Fab Buttons */}
             {/* Left Button - AI Chat */}
-            {renderFab(anim1, -75, -20, 'brain', 'Ask AI', ['#4F46E5', '#7C3AED'], onOpenAiChat)}
+            {renderFab(anim1, -75, -20, 'robot-outline', 'Ask AI', ['#4F46E5', '#7C3AED'], onOpenAiChat)}
 
             {/* Center Button - Scanner (Higher) */}
             {renderFab(anim2, 0, -80, 'line-scan', 'Find Medicines', ['#059669', '#34D399'], onOpenScanner)}

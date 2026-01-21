@@ -122,7 +122,7 @@ const AppNavigator: React.FC = () => {
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        gestureEnabled: true,
+        gestureEnabled: false,
         gestureDirection: 'horizontal',
       }}
     >

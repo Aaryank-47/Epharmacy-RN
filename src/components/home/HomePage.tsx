@@ -17,6 +17,8 @@ import RecentlyViewedSection from './screens/RecentlyViewedSection';
 
 import { useItemFeed } from '../../hooks/useItemFeed';
 import { useThemePalette } from '../../hooks/useThemePalette';
+import { useSocketEvent } from '../../hooks/useSocketEvent';
+import { SOCKET_EVENTS } from '../../services/socketEvents.types';
 
 
 // --- Constants ---
@@ -249,6 +251,32 @@ const Home: React.FC = () => {
 
   const keyExtractor = useCallback((item: any) => item.id, []);
   const contentContainerStyle = useMemo(() => ({ paddingBottom: 10 }), []);
+
+  // --- Socket Integration ---
+  useSocketEvent(SOCKET_EVENTS.PRODUCT_UPDATED, () => {
+    // Invalidate queries that might display products
+    queryClient.invalidateQueries({ queryKey: ['itemFeed'] });
+    queryClient.invalidateQueries({ queryKey: ['trendingProducts'] });
+    queryClient.invalidateQueries({ queryKey: ['recentlyViewedItems'] });
+  });
+
+  useSocketEvent(SOCKET_EVENTS.PRODUCT_NEW, () => {
+    queryClient.invalidateQueries({ queryKey: ['itemFeed'] });
+    queryClient.invalidateQueries({ queryKey: ['trendingProducts'] });
+  });
+
+  useSocketEvent(SOCKET_EVENTS.PRODUCT_DELETED, () => {
+    queryClient.invalidateQueries({ queryKey: ['itemFeed'] });
+    queryClient.invalidateQueries({ queryKey: ['trendingProducts'] });
+    queryClient.invalidateQueries({ queryKey: ['recentlyViewedItems'] });
+    queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+  });
+
+  // Listen for Recently Viewed Updates (triggered when visiting details or categories)
+  useSocketEvent(SOCKET_EVENTS.RECENTLY_VIEWED_UPDATE, () => {
+    queryClient.invalidateQueries({ queryKey: ['recentlyViewedItems'] });
+    queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+  });
 
   return (
     <Tabs

@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  // TouchableOpacity, // Removed standard TouchableOpacity
+
   FlatList,
   Image,
   Dimensions,
@@ -285,7 +285,7 @@ const SearchScreen: React.FC = () => {
         className="rounded-xl overflow-hidden"
         style={{
           width: TRENDING_CARD_WIDTH,
-          backgroundColor: isDark ? '#1E2028' : '#FFFFFF',
+          backgroundColor: isDark ? 'transparent' : 'transparent',
         }}
         onPress={() => handleProductPress(item)}
         activeOpacity={0.9}
@@ -443,6 +443,8 @@ const SearchScreen: React.FC = () => {
           )}
         </View>
       </View>
+
+      
 
       {/* Main Content or Suggestions */}
       {query.length > 0 ? (

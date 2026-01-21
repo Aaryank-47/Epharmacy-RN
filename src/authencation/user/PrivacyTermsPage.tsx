@@ -11,8 +11,9 @@ const getResponsiveSize = (size: number): number => (screenWidth / 375) * size;
 const PolicySection = memo(({ title, content, theme, icon }: any) => (
   <View className="mb-4 p-1"
     style={{
-      backgroundColor: theme.isDark ? 'transparent' : theme.white,
-      borderColor: theme.headerBorderColor || '#333'
+      backgroundColor: theme.isDark ? '#2A2A2A' : theme.white,
+      borderColor: theme.isDark ? '#2A2A2A' : '#333',
+
     }}>
     <View className="flex-row items-center mb-3">
       <View className="w-8 h-8 rounded-full items-center justify-center mr-3"
@@ -33,49 +34,35 @@ const PolicySection = memo(({ title, content, theme, icon }: any) => (
 
 const PrivacyTermsPage: React.FC = () => {
   const theme = useThemePalette();
-  const navigation = useNavigation();
 
   return (
-    <View
-      style={{ backgroundColor: theme.backgroundColor }}
-      className="flex-1"
-    >
-      <StatusBar
-        backgroundColor={theme.isDark ? theme.darkBg : theme.white}
-        barStyle={theme.statusBarStyle}
+    <ScrollView className="flex-1 pt-2" showsVerticalScrollIndicator={false}>
+      <PolicySection
+        title="Privacy Policy"
+        theme={theme}
+        icon="shield-lock-outline"
+        content="We value your privacy and ensure that your personal data is handled securely. This section explains how your information is collected, stored, and used to provide you with a better experience."
       />
 
+      <PolicySection
+        title="Terms of Service"
+        theme={theme}
+        icon="file-document-outline"
+        content="By using our app, you agree to follow our guidelines and usage terms. Please read these terms carefully before continuing to ensure a safe environment for all users."
+      />
 
-      <ScrollView className="flex-1 px-4 pt-2" showsVerticalScrollIndicator={false}>
+      <PolicySection
+        title="About Us"
+        theme={theme}
+        icon="information-outline"
+        content="We are committed to delivering the best healthcare experience. Our platform connects you with trusted pharmacies and provides seamless access to essential medicines."
+      />
 
-        <PolicySection
-          title="Privacy Policy"
-          theme={theme}
-          icon="shield-lock-outline"
-          content="We value your privacy and ensure that your personal data is handled securely. This section explains how your information is collected, stored, and used to provide you with a better experience."
-        />
-
-        <PolicySection
-          title="Terms of Service"
-          theme={theme}
-          icon="file-document-outline"
-          content="By using our app, you agree to follow our guidelines and usage terms. Please read these terms carefully before continuing to ensure a safe environment for all users."
-        />
-
-        <PolicySection
-          title="About Us"
-          theme={theme}
-          icon="information-outline"
-          content="We are committed to delivering the best healthcare experience. Our platform connects you with trusted pharmacies and provides seamless access to essential medicines."
-        />
-
-        <View className="items-center mt-4 mb-10 opacity-50">
-          <Text className="text-xs" style={{ color: theme.placeholderColor }}>Version 11.0.0</Text>
-          <Text className="text-xs" style={{ color: theme.placeholderColor }}>© 2025 Epharmacy. All rights reserved.</Text>
-        </View>
-
-      </ScrollView>
-    </View>
+      <View className="items-center mt-4 mb-10 opacity-50">
+        <Text className="text-xs" style={{ color: theme.placeholderColor }}>Version 11.0.0</Text>
+        <Text className="text-xs" style={{ color: theme.placeholderColor }}>© 2025 Epharmacy. All rights reserved.</Text>
+      </View>
+    </ScrollView>
   );
 };
 

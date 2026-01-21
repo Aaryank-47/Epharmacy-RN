@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useSocketEvent } from '../hooks/useSocketEvent';
+import { SOCKET_EVENTS, ProductUpdatedPayload } from '../services/socketEvents.types';
 
 interface CartItem {
   id: string;
@@ -64,6 +66,28 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isInCart = (id: string) => {
     return items.some(item => item.id === id);
   };
+
+  useSocketEvent<ProductUpdatedPayload>(SOCKET_EVENTS.PRODUCT_UPDATED, (payload) => {
+    const updatedProduct = payload.data;
+    setItems(prevItems => {
+      const itemIndex = prevItems.findIndex(item => item.id === updatedProduct._id);
+      if (itemIndex > -1) {
+        const currentItem = prevItems[itemIndex];
+        // Only update if price changed
+        if (currentItem.price !== updatedProduct.itemFinalPrice) {
+          console.log(`[Cart] Updating price for ${updatedProduct.itemName}: ${currentItem.price} -> ${updatedProduct.itemFinalPrice}`);
+          const newItems = [...prevItems];
+          newItems[itemIndex] = {
+            ...currentItem,
+            price: updatedProduct.itemFinalPrice,
+            name: updatedProduct.itemName // Update name too just in case
+          };
+          return newItems;
+        }
+      }
+      return prevItems;
+    });
+  });
 
   return (
     <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, isInCart }}>

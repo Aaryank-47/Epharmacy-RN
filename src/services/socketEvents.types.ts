@@ -104,6 +104,7 @@ export const SOCKET_EVENTS = {
 
     // User-specific events (listen)
     RECENTLY_VIEWED_UPDATE: 'recentlyViewed:update',
+    CATEGORY_VIEWED_UPDATE: 'categoryViewed:update',
     WISHLIST_UPDATE: 'wishlist:update',
     CART_UPDATE: 'cart:update',
     ORDER_STATUS: 'order:status',
@@ -111,6 +112,8 @@ export const SOCKET_EVENTS = {
 
     // Category events (listen)
     CATEGORY_PRODUCT_NEW: 'category:product:new',
+    CATEGORY_PRODUCT_UPDATED: 'category:product:updated',
+    CATEGORY_PRODUCT_DELETED: 'category:product:deleted',
 
     // Global events (listen)
     TRENDING_PRODUCTS_UPDATE: 'trendingProducts:update',

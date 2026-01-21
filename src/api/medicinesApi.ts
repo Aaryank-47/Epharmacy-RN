@@ -175,12 +175,14 @@ export const addCategoryToRecentlyViewed = async (
 };
 
 
+
 export const addItemToRecentlyViewed = async (
   itemId: string
 ): Promise<ApiResponse<any>> => {
   try {
     const response = await httpClient.post<ApiResponse<any>>(
-      `${API_ROUTES.recentlyViewed.item}/${itemId}`
+      API_ROUTES.recentlyViewed.item,
+      { itemId }
     );
     return response.data;
   } catch (error) {
@@ -285,8 +287,10 @@ export const addToWishlist = async (
   itemId: string
 ): Promise<ApiResponse<any>> => {
   try {
+    // Both functionalities share the same endpoint but different payload formats
     const response = await httpClient.post<ApiResponse<any>>(
-      `${API_ROUTES.recentlyViewed.item}/wishlistitem${itemId}`
+      API_ROUTES.recentlyViewed.item,
+      { itemId: `wishlistitem${itemId}` }
     );
     return response.data;
   } catch (error) {
