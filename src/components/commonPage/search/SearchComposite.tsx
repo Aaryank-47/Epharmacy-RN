@@ -112,6 +112,7 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
                 keyboardShouldPersistTaps="handled"
                 onScroll={onScroll}
                 scrollEventThrottle={16}
+                contentContainerStyle={{ paddingBottom: 100 }}
             >
                 {suggestions.map((item: any, index) => {
                     const name = item.itemName || item.name || item.title || item.code;
@@ -242,6 +243,7 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
                     keyboardShouldPersistTaps="handled"
                     onScroll={onScroll}
                     scrollEventThrottle={16}
+                    contentContainerStyle={{ paddingBottom: 100 }}
                 >
                     {/* Recent Searches (External) */}
                     {renderRecent && renderRecent()}
@@ -251,8 +253,6 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
 
                     {/* Trending (External) */}
                     {renderTrending && renderTrending()}
-
-                    <View className="h-10" />
                 </Animated.ScrollView>
             )}
         </View>

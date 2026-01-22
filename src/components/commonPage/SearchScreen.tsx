@@ -9,10 +9,13 @@ import {
   TouchableOpacity,
   Dimensions,
   Animated,
+  ToastAndroid,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 import { useTrendingProducts } from '../../hooks/useTrendingProducts';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import type { RecentSearch, SearchFilters } from '../../api/types';
@@ -41,6 +44,10 @@ const SearchScreen: React.FC = () => {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [isRecentLoading, setIsRecentLoading] = useState(true);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+  const { addToCart, isInCart } = useCart();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
+  const { accentColor } = useThemePalette();
 
   // Search Results State
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -233,6 +240,40 @@ const SearchScreen: React.FC = () => {
     navigation.navigate('ProductDetail', { productId: item._id });
   };
 
+  const handleAddToCart = useCallback((item: any) => {
+    if (isInCart(item._id)) {
+      ToastAndroid.show('Item has already been added to the cart', ToastAndroid.SHORT);
+      return;
+    }
+
+    const price = item.itemDiscount ? (item.itemInitialPrice || 0) - ((item.itemInitialPrice || 0) * item.itemDiscount / 100) : (item.itemInitialPrice || item.itemFinalPrice || 0);
+
+    addToCart({
+      id: item._id,
+      name: item.itemName || '',
+      price: Math.round(price),
+      quantity: 1,
+    });
+    ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
+  }, [isInCart, addToCart]);
+
+  const handleToggleWishlist = useCallback((item: any) => {
+    if (isInWishlist(item._id)) {
+      removeFromWishlist(item._id);
+    } else {
+      addToWishlist({
+        _id: item._id,
+        itemName: item.itemName || '',
+        itemDescription: item.itemDescription || '',
+        image: item.image || (item.itemImages && item.itemImages[0]) || '',
+        itemFinalPrice: Math.round(item.itemFinalPrice || 0),
+        itemRatings: item.itemRatings || 0,
+        itemDiscount: item.itemDiscount || 0,
+        itemInitialPrice: item.itemInitialPrice || 0
+      });
+    }
+  }, [isInWishlist, removeFromWishlist, addToWishlist]);
+
   const handleSearchSubmit = async () => {
     if (query.trim().length >= 2) {
       // Save search
@@ -332,9 +373,9 @@ const SearchScreen: React.FC = () => {
             resizeMode="cover"
           />
 
-          {/* Trending Icon */}
+          {/* Trending Icon (Left) */}
           <View
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 justify-center items-center"
+            className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/90 justify-center items-center"
           >
             <Icon
               name="trending-up"
@@ -342,6 +383,20 @@ const SearchScreen: React.FC = () => {
               color="#EF4444"
             />
           </View>
+
+          {/* Wishlist Icon (Right) */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => handleToggleWishlist(item)}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 justify-center items-center"
+            style={{ elevation: 2 }}
+          >
+            <Icon
+              name={isInWishlist(item._id) ? "heart" : "heart-outline"}
+              size={16}
+              color="#EF4444"
+            />
+          </TouchableOpacity>
 
           {/* Rating Badge (Bottom Left of Image) */}
           <View className="absolute bottom-2 left-2 bg-white/90 flex-row items-center px-1.5 py-0.5 rounded">
@@ -380,6 +435,24 @@ const SearchScreen: React.FC = () => {
             <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-black'}`}>
               ₹{Math.round(item.itemFinalPrice || 0)}
             </Text>
+
+            {/* Add to Cart Button */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => handleAddToCart(item)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: isInCart(item._id) ? (isDark ? '#374151' : '#9CA3AF') : accentColor,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginLeft: 'auto',
+                elevation: 2,
+              }}
+            >
+              <Icon name={isInCart(item._id) ? "checkmark" : "cart-outline"} size={16} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
 
           {/* Deal Badge */}
