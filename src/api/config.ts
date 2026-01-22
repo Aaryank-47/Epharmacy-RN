@@ -1,5 +1,5 @@
-//  export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
- export const API_BASE_URL = "http://10.207.167.226:5000";
+ export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
+
  
 
 // WebSocket URL (same as API base URL for Socket.IO)
