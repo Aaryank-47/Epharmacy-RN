@@ -2,51 +2,120 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   View,
   Text,
-  TextInput,
-
-  FlatList,
-  Image,
-  Dimensions,
-  ActivityIndicator,
   Keyboard,
   BackHandler,
-
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Animated,
 } from 'react-native';
-import { ScrollView, TouchableOpacity } from 'react-native-gesture-handler';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useTrendingProducts } from '../../hooks/useTrendingProducts';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import type { RecentSearch } from '../../api/types';
+import type { RecentSearch, SearchFilters } from '../../api/types';
 import {
   getRecentSearches,
   saveRecentSearch,
   clearRecentSearches,
-  deleteRecentSearch
+  deleteRecentSearch,
+  searchMedicines
 } from '../../api/medicinesApi';
 
+// Components
+import SearchComposite from './search/SearchComposite';
+import RecentSearches from './search/RecentSearches';
+import Tabs from './Tab';
+
 const { width } = Dimensions.get('window');
-// Trending card: 2 cards visible per frame (Screen - 32px Padding - 12px Gap) / 2
 const TRENDING_CARD_WIDTH = (width - 35) / 2;
-const RECENT_ITEM_WIDTH = (width - 70) / 4; // Width - Padding(32) - Gaps(3x16)
 const TRENDING_CARD_SPACING = 15;
 
-// TrendingCarousel Component - Simple horizontal FlatList
-interface TrendingCarouselProps {
-  products: any[];
-  renderItem: (props: { item: any }) => React.ReactElement;
-  onProductPress: (item: any) => void;
-}
+const SearchScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const { isDark } = useThemePalette();
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [isRecentLoading, setIsRecentLoading] = useState(true);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
-const TrendingCarousel: React.FC<TrendingCarouselProps> = ({ products, renderItem }) => {
+  // Search Results State
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isResultsLoading, setIsResultsLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  // Trending Logic
+  const { data: trendingProducts, isLoading: isTrendingLoading } = useTrendingProducts();
   const row2Ref = useRef<ScrollView>(null);
 
-  // Split products: first 6 in row1, next 6 in row2
-  const row1Data = useMemo(() => products.slice(0, 6), [products]);
-  const row2Data = useMemo(() => products.slice(6, 12).length > 0 ? products.slice(6, 12) : products.slice(0, 6), [products]);
+  const row1Data = useMemo(() => trendingProducts ? trendingProducts.slice(0, 6) : [], [trendingProducts]);
+  const row2Data = useMemo(() => {
+    if (!trendingProducts) return [];
+    return trendingProducts.slice(6, 12).length > 0 ? trendingProducts.slice(6, 12) : trendingProducts.slice(0, 6);
+  }, [trendingProducts]);
+  // Tab Bar Animation
+  const translateY = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+  const isTabBarHidden = useRef(false);
+  const TAB_BAR_HIDDEN_OFFSET = 100;
 
-  // Scroll row 2 to end initially for right-to-left effect
+  const handleScrollRaw = useCallback((event: any) => {
+    const currentY = event.nativeEvent.contentOffset.y;
+    const dy = currentY - lastScrollY.current;
+
+    // Detect if close to bottom
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const isCloseToBottom = layoutHeight + currentY >= contentHeight - 20;
+
+    if (isCloseToBottom) {
+      if (isTabBarHidden.current) {
+        isTabBarHidden.current = false;
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    } else if (currentY > 50) {
+      if (dy > 10 && !isTabBarHidden.current) {
+        isTabBarHidden.current = true;
+        Animated.timing(translateY, {
+          toValue: TAB_BAR_HIDDEN_OFFSET,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      } else if (dy < -5 && isTabBarHidden.current) {
+        isTabBarHidden.current = false;
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    } else if (currentY <= 50 && isTabBarHidden.current) {
+      isTabBarHidden.current = false;
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+    lastScrollY.current = currentY;
+  }, [translateY]);
+
+  const onScrollEvent = useMemo(() => Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: true,
+      listener: handleScrollRaw,
+    }
+  ), [scrollY, handleScrollRaw]);
+
   useEffect(() => {
     if (row2Data.length > 0) {
       setTimeout(() => {
@@ -55,55 +124,6 @@ const TrendingCarousel: React.FC<TrendingCarouselProps> = ({ products, renderIte
     }
   }, [row2Data]);
 
-  if (products.length === 0) return null;
-
-  return (
-    <View>
-      {/* Row 1: Left to Right */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-      >
-        {row1Data.map((item, idx) => (
-          <View key={`row1-${item._id || idx}`} style={{ marginRight: idx === row1Data.length - 1 ? 0 : TRENDING_CARD_SPACING }}>
-            {renderItem({ item })}
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Row 2: Right to Left (Starts at end) */}
-      {row2Data.length > 0 && (
-        <ScrollView
-          ref={row2Ref}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, marginTop: 12 }}
-        >
-          {row2Data.map((item, idx) => (
-            <View key={`row2-${item._id || idx}`} style={{ marginRight: idx === row2Data.length - 1 ? 0 : TRENDING_CARD_SPACING }}>
-              {renderItem({ item })}
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
-};
-
-const SearchScreen: React.FC = () => {
-  const navigation = useNavigation<any>();
-  const { isDark, accentColor, inputBg, textColor, placeholderColor } = useThemePalette();
-  const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const [isRecentLoading, setIsRecentLoading] = useState(true);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-
-  // State for suggestions and API loading
-  const { data: trendingProducts, isLoading: isTrendingLoading } = useTrendingProducts();
-
-  // Unified page loading state
   const isPageLoading = isRecentLoading || isTrendingLoading;
 
   const fetchRecentSearches = async () => {
@@ -120,20 +140,24 @@ const SearchScreen: React.FC = () => {
     }
   };
 
-  // Re-fetch when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchRecentSearches();
     }, [])
   );
 
-  // Custom Debounce Hook or simple timeout
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (query.trim().length < 2) {
         setSuggestions([]);
         setIsLoadingSuggestions(false);
         return;
+      }
+
+
+      // If we are showing results, typing should revert to suggestions mode
+      if (showResults) {
+        setShowResults(false);
       }
 
       setIsLoadingSuggestions(true);
@@ -154,13 +178,12 @@ const SearchScreen: React.FC = () => {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query]);
+  }, [query, showResults]);
 
   const [popularTerms, setPopularTerms] = useState<any[]>([]);
-  const [isPopularLoading, setIsPopularLoading] = useState(true);
+  const [_isPopularLoading, setIsPopularLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch Popular Terms on Mount
     setIsPopularLoading(true);
     import('../../api/medicinesApi').then(mod => {
       mod.getPopularSearchTerms().then(res => {
@@ -199,27 +222,7 @@ const SearchScreen: React.FC = () => {
     fetchRecentSearches();
   };
 
-  const renderPopularTermItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      className="p-4 rounded-3xl border justify-center"
-      style={{
-        borderColor: isDark ? '#2D3038' : '#F3F4F6',
-        minHeight: 60,
-      }}
-      onPress={() => handleTermPress(item.term)}
-      activeOpacity={0.7}
-    >
-      <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-bold flex-1 mr-2" numberOfLines={2} style={{ color: textColor }}>
-          {item.term}
-        </Text>
-        <Icon name="timer-outline" size={18} color={accentColor} />
-      </View>
-    </TouchableOpacity>
-  );
-
   const handleProductPress = async (item: any) => {
-    // Save to recent searches
     saveRecentSearch({
       query: item.itemName || item.name,
       itemId: item._id || item.id,
@@ -232,51 +235,82 @@ const SearchScreen: React.FC = () => {
 
   const handleSearchSubmit = async () => {
     if (query.trim().length >= 2) {
+      // Save search
       await saveRecentSearch({
         query: query.trim(),
       });
       fetchRecentSearches();
       Keyboard.dismiss();
+
+      // Trigger Search
+      setShowResults(true);
+      performSearch(query.trim());
     }
   };
 
-  const renderRecentSearchItem = ({ item }: { item: RecentSearch }) => {
-    const displayText = item.itemName || item.query;
-    const imageUrl = item.itemImage;
-
-    return (
-      <TouchableOpacity
-        className="items-center"
-        style={{ width: RECENT_ITEM_WIDTH }}
-        activeOpacity={0.7}
-        onPress={() => setQuery(displayText)}
-        onLongPress={() => handleDeleteRecentSearch(item.query)}
-      >
-        <View
-          className="w-full aspect-square rounded-3xl border p-2 justify-center items-center mb-1"
-          style={{
-            borderColor: isDark ? '#333' : '#E5E7EB',
-            backgroundColor: isDark ? '#222' : '#F9FAFB'
-          }}
-        >
-          {imageUrl ? (
-            <Image source={{ uri: imageUrl }} className="w-full h-full rounded-2xl" />
-          ) : (
-            <Icon name="time-outline" size={28} color={placeholderColor} />
-          )}
-        </View>
-        <Text
-          className="text-xs font-semibold text-center w-full leading-4"
-          style={{ color: textColor }}
-          numberOfLines={2}
-        >
-          {displayText}
-        </Text>
-      </TouchableOpacity>
-    );
+  const performSearch = async (searchQuery: string) => {
+    setIsResultsLoading(true);
+    try {
+      const response = await searchMedicines(searchQuery, 1, 20, {}); // Empty filters
+      setSearchResults(response.data.result || []);
+    } catch (error) {
+      console.error("Search failed", error);
+    } finally {
+      setIsResultsLoading(false);
+    }
   };
 
-  const renderTrendingItem = ({ item }: { item: any }) => {
+
+
+  const handleBackNavigation = () => {
+    if (showResults) {
+      setShowResults(false);
+      return;
+    }
+    if (query.length > 0) {
+      setQuery('');
+      Keyboard.dismiss();
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (showResults) {
+          setShowResults(false);
+          return true;
+        }
+        if (query.length > 0) {
+          setQuery('');
+          Keyboard.dismiss();
+          return true;
+        }
+        return false;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [query, showResults])
+  );
+
+  // Gradient colors
+  const gradientColors = isDark ? ['#060606ff', '#272a31ff'] : ['#FFFFFF', '#F3F4F6'];
+
+  // --- Render Functions for Recent & Trending Slots ---
+
+  const renderRecent = () => (
+    <RecentSearches
+      recentSearches={recentSearches}
+      onPress={(q) => setQuery(q)}
+      onDelete={handleDeleteRecentSearch}
+      onClearAll={handleClearAll}
+    />
+  );
+
+  const renderTrendingProductItem = ({ item }: { item: any }) => {
     const discount = item.itemDiscount || 0;
     const hasDiscount = discount > 0;
 
@@ -364,289 +398,115 @@ const SearchScreen: React.FC = () => {
     );
   };
 
-  const handleBackNavigation = () => {
-    if (query.length > 0) {
-      setQuery('');
-      Keyboard.dismiss();
-    } else {
-      navigation.goBack();
-    }
+  const renderTrending = () => {
+    if (!trendingProducts || trendingProducts.length === 0) return null;
+
+    return (
+      <View>
+        <View className="flex-row justify-between items-center px-5 mt-6 mb-3">
+          <Text className="text-lg font-bold" style={{ color: isDark ? '#FFFFFF' : '#000000' }}>Trending Now</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16 }}
+        >
+          {row1Data.map((item: any, idx) => (
+            <View key={`row1-${item._id || idx}`} style={{ marginRight: idx === row1Data.length - 1 ? 0 : TRENDING_CARD_SPACING }}>
+              {renderTrendingProductItem({ item })}
+            </View>
+          ))}
+        </ScrollView>
+
+        {row2Data.length > 0 && (
+          <ScrollView
+            ref={row2Ref}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, marginTop: 12 }}
+          >
+            {row2Data.map((item: any, idx) => (
+              <View key={`row2-${item._id || idx}`} style={{ marginRight: idx === row2Data.length - 1 ? 0 : TRENDING_CARD_SPACING }}>
+                {renderTrendingProductItem({ item })}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    );
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        if (query.length > 0) {
-          setQuery('');
-          Keyboard.dismiss();
-          return true;
-        }
-        return false;
-      };
+  /* Camera Logic */
 
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      return () => subscription.remove();
-    }, [query])
-  );
-
-  // Gradient colors matching HeroSection exactly
-  const gradientColors = isDark ? ['#060606ff', '#272a31ff'] : ['#FFFFFF', '#F3F4F6'];
 
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
+    <Tabs
+      translateY={translateY}
+      onNavigate={(screen) => navigation.navigate(screen)}
+      currentActiveTab="Home"
     >
-      {/* Search Header - Premium Redesign */}
-      <View
-        className="flex-row items-center px-4 py-3 pb-4"
-        style={{
-          zIndex: 10,
-          backgroundColor: isDark ? '#040404ff' : '#FFFFFF'
-        }}
+      <LinearGradient
+        colors={gradientColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
       >
-        <TouchableOpacity
-          onPress={handleBackNavigation}
-          className="p-2 -ml-1 mr-1 rounded-full"
-          activeOpacity={0.7}
-        >
-          <Icon name="arrow-back" size={24} color={textColor} />
-        </TouchableOpacity>
-
-        <View
-          className="flex-1 flex-row items-center h-12 rounded-3xl px-4"
-          style={{
-            backgroundColor: isDark ? '#1E2028' : '#F3F4F6',
-            borderWidth: 1,
-            borderColor: isDark ? '#2D3038' : 'transparent'
-          }}
-        >
-          <Icon name="search" size={20} color={placeholderColor} className="mr-2 opacity-70" />
-          <TextInput
-            className="flex-1 text-base font-medium h-full"
-            style={{ color: textColor }}
-            placeholder="Search medicines, vitamins..."
-            placeholderTextColor={placeholderColor}
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSearchSubmit}
-            returnKeyType="search"
-            autoFocus={true}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} className="p-1">
-              <Icon name="close-circle" size={18} color={placeholderColor} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      
-
-      {/* Main Content or Suggestions */}
-      {query.length > 0 ? (
-        isLoadingSuggestions ? (
-          <View className="flex-1 px-5 pt-2">
-            {[1, 2, 3, 4, 5, 6].map((item) => (
-              <View key={item} className="flex-row items-center py-3.5 border-b" style={{ borderBottomColor: isDark ? '#2D3038' : '#F3F4F6' }}>
-                <View className="w-12 h-12 rounded-xl mr-3" style={{ backgroundColor: isDark ? '#2D3038' : '#E5E7EB', opacity: 0.5 }} />
-                <View className="flex-1">
-                  <View className="h-4 rounded mb-2" style={{ backgroundColor: isDark ? '#2D3038' : '#E5E7EB', opacity: 0.5, width: '70%' }} />
-                  <View className="h-3 rounded" style={{ backgroundColor: isDark ? '#2D3038' : '#E5E7EB', opacity: 0.3, width: '40%' }} />
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : suggestions.length > 0 ? (
-          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-            {suggestions.map((item: any, index) => {
-              const name = item.itemName || item.name || item.title || item.code;
-              const price = item.itemFinalPrice || item.itemInitialPrice || item.price;
-              const image = item.image || (item.itemImages && item.itemImages[0]);
-              const id = item._id || item.id;
-
-
+        <SearchComposite
+          query={query}
+          onQueryChange={setQuery}
+          onSubmitEditing={handleSearchSubmit}
+          onBackPress={handleBackNavigation}
+          suggestions={suggestions}
+          isSuggestionsLoading={isLoadingSuggestions}
+          onSuggestionPress={handleProductPress}
+          popularTerms={popularTerms}
+          onPopularTermPress={handleTermPress}
+          isPageLoading={isPageLoading}
+          renderRecent={renderRecent}
+          renderTrending={renderTrending}
+          showCamera={true}
+          onScroll={onScrollEvent}
+          showResults={showResults}
+          renderSearchResults={() => {
+            if (isResultsLoading) {
               return (
-                <TouchableOpacity
-                  key={id || index}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 20,
-                    paddingVertical: 14,
-                    borderBottomWidth: 0.5,
-                    borderBottomColor: isDark ? '#374151' : '#E5E7EB',
-                  }}
-                  onPress={() => handleProductPress({ ...item, _id: id })}
-                  activeOpacity={0.6}
-                >
-                  {/* Image */}
-                  {image ? (
-                    <Image
-                      source={{ uri: image }}
-                      style={{ width: 56, height: 56, borderRadius: 25 }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 14,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: isDark ? '#1F2937' : '#F3F4F6'
-                      }}
-                    >
-                      <Icon name="bandage-outline" size={24} color={placeholderColor} />
-                    </View>
-                  )}
-
-                  {/* Name */}
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      flex: 1,
-                      fontSize: 15,
-                      fontWeight: '600',
-                      marginLeft: 14,
-                      marginRight: 10,
-                      color: textColor
-                    }}
-                  >
-                    {name}
-                  </Text>
-
-                  {/* Price */}
-                  {price && (
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: '700',
-                        marginRight: 10,
-                        color: accentColor
-                      }}
-                    >
-                      ₹{price}
-                    </Text>
-                  )}
-
-                  {/* Arrow Icon */}
-                  <Icon
-                    name="chevron-forward"
-                    size={18}
-                    color={placeholderColor}
-                  />
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        ) : (
-          <View className="flex-1 justify-center items-center px-5">
-            <Icon name="search-outline" size={48} color={placeholderColor} className="mb-3 opacity-30" />
-            <Text className="text-base" style={{ color: placeholderColor }}>No results found</Text>
-          </View>
-        )
-      ) : isPageLoading ? (
-        /* Unified Skeleton Loading - All sections shown together */
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {/* Recent Searches Skeleton */}
-          <View className="px-5 mt-5">
-            <View style={{ width: 140, height: 20, borderRadius: 6, marginBottom: 12, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {[1, 2, 3, 4].map((item) => (
-                <View key={item} style={{ width: RECENT_ITEM_WIDTH, marginRight: 16 }}>
-                  <View style={{ width: '100%', aspectRatio: 1, borderRadius: 20, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-                  <View style={{ width: '80%', height: 12, borderRadius: 4, marginTop: 8, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Popular Searches Skeleton */}
-          <View className="px-5 mt-8">
-            <View style={{ width: 140, height: 20, borderRadius: 6, marginBottom: 16, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-            <View className="flex-row flex-wrap justify-between">
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <View key={item} style={{ width: '48%', marginBottom: 12 }}>
-                  <View style={{ width: '100%', height: 40, borderRadius: 10, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Trending Now Skeleton */}
-          <View className="px-5 mt-6 mb-3">
-            <View style={{ width: 120, height: 20, borderRadius: 6, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            {[1, 2, 3].map((item) => (
-              <View key={item} style={{ width: 150, marginRight: 12 }}>
-                <View style={{ width: '100%', height: 150, borderRadius: 16, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-                <View style={{ width: '80%', height: 14, borderRadius: 4, marginTop: 10, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-                <View style={{ width: '50%', height: 12, borderRadius: 4, marginTop: 6, backgroundColor: isDark ? '#2D3038' : '#E5E7EB' }} />
-              </View>
-            ))}
-          </ScrollView>
-          <View className="h-10" />
-        </ScrollView>
-      ) : (
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          {/* Recently Searched */}
-          {recentSearches.length > 0 && (
-            <>
-              <View className="flex-row justify-between items-center px-5 mt-5 mb-3">
-                <Text className="text-lg font-bold" style={{ color: textColor }}>Recent Searches</Text>
-                <TouchableOpacity onPress={handleClearAll}>
-                  <Text className="text-sm" style={{ color: accentColor }}>Clear all</Text>
-                </TouchableOpacity>
-              </View>
-              <FlatList
-                data={recentSearches}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-                renderItem={renderRecentSearchItem}
-                ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-                contentContainerClassName="px-4"
-              />
-            </>
-          )}
-
-          {/* Popular Searches / Terms */}
-          {popularTerms.length > 0 && (
-            <View>
-              <View className="flex-row justify-between items-center px-5 mt-8 mb-8">
-                <Text className="text-lg font-bold" style={{ color: textColor }}>Popular Searches</Text>
-              </View>
-              <View className="flex-row flex-wrap justify-between px-5">
-                {popularTerms.map((term: any, index) => (
-                  <View key={term.id || index} style={{ width: '48%', marginBottom: 8 }}>
-                    {renderPopularTermItem({ item: term })}
+                <View className="flex-1 justify-center items-center">
+                  <View className="p-4 bg-white/10 rounded-full mb-4">
+                    <Icon name="search" size={32} color={isDark ? '#FFF' : '#000'} className="animate-pulse" />
                   </View>
-                ))}
-              </View>
-            </View>
-          )}
+                  <Text style={{ color: isDark ? '#FFF' : '#000' }}>Searching...</Text>
+                </View>
+              );
+            }
 
-          {/* Trending Now */}
-          <View className="flex-row justify-between items-center px-5 mt-6 mb-3">
-            <Text className="text-lg font-bold" style={{ color: textColor }}>Trending Now</Text>
-          </View>
-          <TrendingCarousel
-            products={trendingProducts || []}
-            renderItem={renderTrendingItem}
-            onProductPress={handleProductPress}
-          />
+            if (searchResults.length === 0) {
+              return (
+                <View className="flex-1 justify-center items-center mt-20">
+                  <Icon name="cube-outline" size={48} color={isDark ? '#555' : '#CCC'} />
+                  <Text className="text-gray-500 mt-2">No products found for "{query}"</Text>
+                </View>
+              );
+            }
 
-          {/* Bottom Buffer */}
-          <View className="h-10" />
-        </ScrollView>
-      )}
-    </LinearGradient>
+            return (
+              <Animated.ScrollView
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                onScroll={onScrollEvent}
+                scrollEventThrottle={16}
+              >
+                <View className="flex-row flex-wrap justify-between">
+                  {searchResults.map((item) => (
+                    <View key={item._id} style={{ width: '48%', marginBottom: 15 }}>
+                      {renderTrendingProductItem({ item })}
+                    </View>
+                  ))}
+                </View>
+              </Animated.ScrollView>
+            );
+          }}
+        />
+      </LinearGradient>
+    </Tabs>
   );
 };
 

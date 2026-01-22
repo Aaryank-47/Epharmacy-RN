@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, memo, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Animated, Image, useWindowDimensions } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useCategories } from '../../../hooks/useCategories';
 import { useThemePalette } from '../../../hooks/useThemePalette';
@@ -65,11 +66,15 @@ const CategoriesSection: React.FC<{ visible?: boolean; onReady?: () => void }> =
     }
   }, [isLoading, onReady]);
 
-  const handleSelectCategory = useCallback(async (categoryId: string) => {
+  const navigation = useNavigation<any>();
+
+  const handleSelectCategory = useCallback(async (categoryId: string, categoryName: string) => {
     try {
       await addCategoryToRecentlyViewed(categoryId);
     } catch { }
-  }, []);
+
+    navigation.navigate('CategoryProducts', { categoryId, categoryName });
+  }, [navigation]);
 
   const gradientColors = useMemo(() => (isDark ? ['#2A2D35', '#181A20'] : ['#F3F4F6', '#FFFFFF']), [isDark]);
 
