@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import socketService from '../services/socketService';
 import { ConnectionStatus } from '../services/socketEvents.types';
 
@@ -28,8 +29,20 @@ export function useSocket(): UseSocketReturn {
             socketService.connect();
         }
 
+        // Handle app state changes - reconnect when returning from background
+        const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'active') {
+                // Reconnect if disconnected when app comes to foreground
+                if (!socketService.isConnected()) {
+                    console.log('[useSocket] App active - reconnecting socket');
+                    socketService.connect();
+                }
+            }
+        });
+
         return () => {
             unsubscribe();
+            subscription.remove();
         };
     }, []);
 

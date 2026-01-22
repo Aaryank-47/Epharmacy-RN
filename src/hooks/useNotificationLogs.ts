@@ -3,7 +3,8 @@
  * Custom hook for managing notification logs state and operations
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import {
   getMyNotifications,
   getUnreadCount,
@@ -102,7 +103,17 @@ export const useNotificationLogs = (
       fetchUnreadCount();
     }, 30000); // 30 seconds
 
-    return () => clearInterval(interval);
+    // Pause interval when app goes to background
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background') {
+        clearInterval(interval);
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
   }, [fetchUnreadCount]);
 
   // ============================================================================
@@ -171,11 +182,14 @@ export const useUnreadCount = (): {
   refreshCount: () => Promise<void>;
 } => {
   const [unreadCount, setUnreadCount] = useState(0);
+  const isMountedRef = useRef(true);
 
   const refreshCount = useCallback(async () => {
     try {
       const count = await getUnreadCount();
-      setUnreadCount(count);
+      if (isMountedRef.current) {
+        setUnreadCount(count);
+      }
     } catch (err) {
       throw err;
 
@@ -184,12 +198,24 @@ export const useUnreadCount = (): {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     refreshCount();
 
     // Poll every 30 seconds
     const interval = setInterval(refreshCount, 30000);
 
-    return () => clearInterval(interval);
+    // Pause interval when app goes to background
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background') {
+        clearInterval(interval);
+      }
+    });
+
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(interval);
+      subscription.remove();
+    };
   }, [refreshCount]);
 
   return { unreadCount, refreshCount };
