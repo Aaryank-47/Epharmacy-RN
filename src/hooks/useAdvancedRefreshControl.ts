@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 
 interface AdvancedRefreshConfig {
   /** Array of async functions to refresh */
@@ -162,10 +163,28 @@ export const useAdvancedRefreshControl = ({
       handleRefresh();
     }, autoRefreshInterval);
 
+    // Stop auto-refresh when app goes to background
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background') {
+        if (autoRefreshTimer.current) {
+          clearInterval(autoRefreshTimer.current);
+          autoRefreshTimer.current = null;
+        }
+      } else if (nextAppState === 'active' && enableAutoRefresh) {
+        // Restart auto-refresh when returning to foreground
+        if (!autoRefreshTimer.current) {
+          autoRefreshTimer.current = setInterval(() => {
+            handleRefresh();
+          }, autoRefreshInterval);
+        }
+      }
+    });
+
     return () => {
       if (autoRefreshTimer.current) {
         clearInterval(autoRefreshTimer.current);
       }
+      subscription.remove();
     };
   }, [enableAutoRefresh, autoRefreshInterval, handleRefresh]);
 

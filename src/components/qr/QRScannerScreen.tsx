@@ -9,6 +9,8 @@ import {
   Animated,
   Platform,
   Dimensions,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { Camera, useCameraDevices, useCodeScanner, Code } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -26,6 +28,7 @@ const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
   const { isDark, accentColor } = useThemePalette();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(true);
+  const [isCameraActive, setIsCameraActive] = useState(true);
 
   // Camera Setup
   const devices = useCameraDevices();
@@ -43,6 +46,25 @@ const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
       if (isMounted) setHasPermission(status === 'granted');
     })();
     return () => { isMounted = false; };
+  }, []);
+
+  // Handle app state changes - pause camera when backgrounded
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Stop camera when app goes to background
+        setIsCameraActive(false);
+        setIsScanning(false);
+      } else if (nextAppState === 'active') {
+        // Resume camera when app returns to foreground
+        setIsCameraActive(true);
+        setIsScanning(true);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   // Scanning Animation Loop
@@ -190,7 +212,7 @@ const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ navigation }) => {
       <Camera
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         device={device}
-        isActive={isScanning} // Only active when scanning to save battery
+        isActive={isCameraActive && isScanning} // Only active when scanning and app is in foreground
         codeScanner={codeScanner}
       />
 
