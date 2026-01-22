@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect, useMemo, useContext } from 'react';
-import { Animated, Dimensions, Easing, FlatList } from 'react-native';
+import { Animated, Dimensions, Easing, FlatList, Platform } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Share from 'react-native-share';
+import axios from 'axios';
+import RNFS from 'react-native-fs';
+import { PermissionsAndroid, Alert } from 'react-native';
 
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -181,13 +185,148 @@ export const useProductDetail = () => {
                 price: product.finalPrice,
                 quantity: quantity
             });
-           // navigation.navigate('Cart');
+            // navigation.navigate('Cart');
         }
     };
 
-    const handleShare = (platform: string) => {
-        // Implement actual share logic here if needed
-        setShowShareOptions(false);
+    const handleShare = async (platform: string) => {
+        if (!product) return;
+
+        // Use https URL for WhatsApp clickability
+        const productUrl = `https://epharmacy.app/product/${product.id}`;
+        const imageUrl = product.images[0];
+        
+        try {
+            setShowShareArcOverlay(false);
+
+            // Download image and save to file
+            console.log('Downloading image from:', imageUrl);
+            const imageName = `${product.name.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.jpg`;
+            const imagePath = `${RNFS.CachesDirectoryPath}/${imageName}`;
+            
+            // Download image to file
+            await RNFS.downloadFile({
+                fromUrl: imageUrl,
+                toFile: imagePath,
+            }).promise;
+            
+            console.log('Image saved to:', imagePath);
+
+            // Professional formatted message like Amazon/Flipkart
+            const productMessage = `🏥 *Medicare - Your Health Partner*\n\n🛒 *${product.name}*\n\n⭐ Rating: ${product.rating}/5 (${product.reviews} reviews)\n💊 Pack: ${product.units[0]}\n💰 Price: ₹${product.finalPrice} (${product.discountPercent}% OFF)\n\n🔥 Tap to open in app:\n${productUrl}`;
+
+            if (platform === 'whatsapp') {
+                console.log('Sharing to WhatsApp with image file');
+                
+                const shareOptions = {
+                    title: product.name,
+                    message: productMessage,
+                    url: `file://${imagePath}`,
+                    type: 'image/jpeg',
+                    social: Share.Social.WHATSAPP as any,
+                };
+                
+                await Share.shareSingle(shareOptions).catch(async (error) => {
+                    console.log('WhatsApp shareSingle failed:', error.message);
+                    // Fallback to Share.open
+                    await Share.open({
+                        title: product.name,
+                        message: productMessage,
+                        url: `file://${imagePath}`,
+                        type: 'image/jpeg',
+                    }).catch((err) => {
+                        console.log('Share.open also failed:', err.message);
+                    });
+                });
+                
+                // Clean up temp file after delay
+                setTimeout(() => {
+                    RNFS.unlink(imagePath).catch(() => {});
+                }, 5000);
+                
+            } else if (platform === 'instagram') {
+                await Share.shareSingle({
+                    title: product.name,
+                    message: productMessage,
+                    url: `file://${imagePath}`,
+                    type: 'image/jpeg',
+                    social: Share.Social.INSTAGRAM_STORIES as any,
+                    appId: 'com.instagram.android',
+                    backgroundImage: `file://${imagePath}`,
+                }).catch(async () => {
+                    await Share.shareSingle({
+                        title: product.name,
+                        message: productMessage,
+                        url: `file://${imagePath}`,
+                        type: 'image/jpeg',
+                        social: Share.Social.INSTAGRAM as any,
+                    });
+                });
+                
+                // Clean up temp file after delay
+                setTimeout(() => {
+                    RNFS.unlink(imagePath).catch(() => {});
+                }, 5000);
+                
+            } else if (platform === 'facebook') {
+                await Share.shareSingle({
+                    title: product.name,
+                    message: productMessage,
+                    url: `file://${imagePath}`,
+                    type: 'image/jpeg',
+                    social: Share.Social.FACEBOOK as any,
+                });
+                
+                // Clean up temp file after delay
+                setTimeout(() => {
+                    RNFS.unlink(imagePath).catch(() => {});
+                }, 5000);
+                
+            } else if (platform === 'telegram') {
+                await Share.shareSingle({
+                    title: product.name,
+                    message: productMessage,
+                    url: `file://${imagePath}`,
+                    type: 'image/jpeg',
+                    social: Share.Social.TELEGRAM as any,
+                });
+                
+                // Clean up temp file after delay
+                setTimeout(() => {
+                    RNFS.unlink(imagePath).catch(() => {});
+                }, 5000);
+                
+            } else {
+                await Share.open({
+                    title: product.name,
+                    message: productMessage,
+                    url: `file://${imagePath}`,
+                    type: 'image/jpeg',
+                });
+                
+                // Clean up temp file after delay
+                setTimeout(() => {
+                    RNFS.unlink(imagePath).catch(() => {});
+                }, 5000);
+            }
+            
+        } catch (error: any) {
+            console.log('Error sharing:', error.message || error);
+            // Final fallback - message only with https URL
+            const productUrl = `https://epharmacy.app/product/${product.id}`;
+            const fallbackMessage = `🏥 *Medicare - Your Health Partner*\n\n🛒 *${product.name}*\n\n⭐ Rating: ${product.rating}/5\n💰 ₹${product.finalPrice} (${product.discountPercent}% OFF)\n\n🔥 Tap to open in app:\n${productUrl}`;
+            
+            if (platform === 'whatsapp') {
+                Share.shareSingle({
+                    message: fallbackMessage,
+                    social: Share.Social.WHATSAPP as any,
+                }).catch(() => {
+                    Alert.alert('Share Failed', 'Unable to share. Please try again.');
+                });
+            } else {
+                Share.open({ message: fallbackMessage });
+            }
+        }
     };
 
     // Scroll Handlers

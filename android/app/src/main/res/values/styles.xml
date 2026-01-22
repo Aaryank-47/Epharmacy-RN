@@ -1,18 +1,28 @@
 <resources>
 
-    <!-- Base application theme. -->
+    <!-- Base application theme -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
-    <!-- Splash Screen Theme -->
+    <!-- Flipkart-style Splash Screen Theme -->
+    <!-- Fixed brand color, no dark mode flicker, premium feel -->
     <style name="SplashScreenTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Brand color background with centered logo -->
         <item name="android:windowBackground">@drawable/background_splash</item>
+        
+        <!-- Disable dark mode to maintain brand consistency -->
+        <item name="android:forceDarkAllowed">false</item>
+        
+        <!-- Full screen immersive splash -->
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
+        
+        <!-- Smooth transition settings -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@color/splashBackground</item>
     </style>
 
 </resources>

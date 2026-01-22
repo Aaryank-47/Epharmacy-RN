@@ -6,6 +6,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../AppNavigator';
 
 import { UserProfilePayload } from '../../api/types';
+import ConnectionIndicator from '../../utils/ConnectionIndicator';
+import { managePanProps } from 'react-native-gesture-handler/lib/typescript/handlers/PanGestureHandler';
 
 const { width: screenWidth } = Dimensions.get('window');
 const getResponsiveSize = (size: number): number => (screenWidth / 375) * size;
@@ -181,6 +183,7 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({ userData, isDark, refetc
                                 {userData.name || 'User'}
                             </Text>
                         )}
+                        
                         <Text
                             style={{
                                 color: 'rgba(255, 255, 255, 0.9)',
@@ -209,7 +212,8 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({ userData, isDark, refetc
                             e.stopPropagation(); // Prevent card expansion when clicking edit
                             navigation.navigate('EditProfile', { userData: userData as any, refreshProfile: refetch });
                         }}
-                    >
+                    >   
+                    <ConnectionIndicator size="small" style={{marginLeft: 20}} />
                         <MaterialCommunityIcons name="pencil" size={18} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
@@ -259,6 +263,7 @@ const ProfileCard: React.FC<ProfileCardProps> = memo(({ userData, isDark, refetc
                         textAlign: 'center'
                     }}>
                         Trusted Partners
+                        
                     </Text>
                 </View>
 

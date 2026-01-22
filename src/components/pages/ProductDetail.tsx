@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, StatusBar, StyleSheet, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LottieView from 'lottie-react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocketEvent } from '../../hooks/useSocketEvent';
 import { SOCKET_EVENTS, ProductUpdatedPayload } from '../../services/socketEvents.types';
@@ -31,7 +32,7 @@ const ProductDetail: React.FC = () => {
   useSocketEvent<ProductUpdatedPayload>(
     SOCKET_EVENTS.PRODUCT_UPDATED,
     (payload) => {
-      if (product && payload.data._id === product.id) {   
+      if (product && payload.data._id === product.id) {
         console.log('[ProductDetail] Real-time update received:', payload.data.itemName);
       }
     }
@@ -80,15 +81,33 @@ const ProductDetail: React.FC = () => {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-4 py-3 z-10 bg-white dark:bg-[#1A1A1A] shadow-sm"
-        style={{ paddingTop: Math.max(12) }}
+      <LinearGradient
+        colors={isDark ? ['#000000', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          paddingTop: Math.max(12),
+          zIndex: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+          elevation: 2,
+        }}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
           <Icon name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-black dark:text-white">Product Details</Text>
         <View className="flex-row items-center">
+          <TouchableOpacity className="p-2 ml-2" onPress={() => setShowShareArcOverlay(true)}>
+            <Icon name="share-social-outline" size={22} color={isDark ? '#fff' : '#000'} />
+          </TouchableOpacity>
           <TouchableOpacity className="p-2 ml-2" onPress={handleToggleWishlist}>
             <Icon
               name={isInWishlist(product.id) ? "heart" : "heart-outline"}
@@ -100,7 +119,7 @@ const ProductDetail: React.FC = () => {
             <Icon name="cart-outline" size={22} color={isDark ? '#fff' : '#000'} />
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         className="flex-1"
@@ -132,7 +151,7 @@ const ProductDetail: React.FC = () => {
 
       </ScrollView>
 
-      {/* Share Modal */}
+      Share Modal
       <Modal
         visible={showShareOptions}
         transparent={true}

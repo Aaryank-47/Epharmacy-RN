@@ -43,9 +43,9 @@ class SocketService {
         this.socket = io(SOCKET_URL, {
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            reconnectionAttempts: this.maxReconnectAttempts,
+            reconnectionDelay: 3000,        // 3 seconds initial delay
+            reconnectionDelayMax: 4000,     // Max 4 seconds between retries
+            reconnectionAttempts: Infinity, // Infinite retry attempts
             timeout: 20000,
             autoConnect: true,
         });
@@ -81,13 +81,8 @@ class SocketService {
         this.socket.on(SOCKET_EVENTS.CONNECT_ERROR, (error) => {
             console.error('[Socket] Connection error:', error.message);
             this.reconnectAttempts++;
-
-            if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                this.setStatus('error');
-                console.error('[Socket] Max reconnect attempts reached');
-            } else {
-                this.setStatus('connecting');
-            }
+            console.log(`[Socket] Reconnect attempt #${this.reconnectAttempts} - Retrying in 3-4s...`);
+            this.setStatus('connecting');
         });
 
         // Forward all events to registered listeners

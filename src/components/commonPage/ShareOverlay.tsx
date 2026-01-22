@@ -14,7 +14,7 @@ interface ShareOverlayProps {
     onShareTelegram: () => void;
 }
 
-const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, onShareInsta, onShareFB, onShareX, onShareTelegram }) => {
+const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, onShareInsta, onShareFB, onShareTelegram,onShareX }) => {
 
     // Animation values
     const anim1 = useRef(new Animated.Value(0)).current;
@@ -106,11 +106,11 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ onClose, onShareWhatsapp, o
             {/* Middle Left */}
             {renderFab(anim3, -150, 0, 'facebook', 'Facebook', ['#1877F2', '#0e52b5'], onShareFB)}
 
-            {/* Mid-Bottom Left */}
-            {renderFab(anim4, -120, 90, 'twitter', 'X', ['#000000', '#333333'], onShareX)}
+            {/* Mid-Bottom Left - Telegram */}
+            {renderFab(anim4, -120, 90, 'send', 'Telegram', ['#229ED9', '#0088cc'], onShareTelegram)}
 
-            {/* Bottom-Left (Low) */}
-            {renderFab(anim5, -60, 140, 'send', 'Telegram', ['#229ED9', '#0088cc'], onShareTelegram)}
+            {/* Bottom-Left (Low) - More comes last */}
+            {renderFab(anim5, -60, 140, 'pulse', 'More', ['#000', '#333333'], onShareX)}
         </View>
     );
 };

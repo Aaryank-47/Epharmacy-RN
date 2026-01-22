@@ -13,18 +13,20 @@
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <rect key="frame" x="0.0" y="0.0" width="705" height="707"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <!-- Flipkart-style centered large logo (700x700) -->
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="logo" translatesAutoresizingMaskIntoConstraints="NO" id="tWc-Dq-wcI">
-                                <rect key="frame" x="87.5" y="233.5" width="200" height="200"/>
+                                <rect key="frame" x="67.5" y="213.5" width="700" height="700"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="200" id="JHq-ub-APM"/>
-                                    <constraint firstAttribute="height" constant="200" id="sYO-7D-eHa"/>
+                                    <constraint firstAttribute="width" constant="700" id="JHq-ub-APM"/>
+                                    <constraint firstAttribute="height" constant="700" id="sYO-7D-eHa"/>
                                 </constraints>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <!-- Brand color background (Medical Blue #1A73E8) - RGB: 0.102, 0.451, 0.910 -->
+                        <color key="backgroundColor" red="0.102" green="0.451" blue="0.910" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="tWc-Dq-wcI" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Fzi-3F-Rcn"/>
                             <constraint firstItem="tWc-Dq-wcI" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="VQL-0I-g8m"/>
@@ -38,6 +40,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="logo" width="200" height="200"/>
+        <image name="logo" width="700" height="700"/>
     </resources>
 </document>

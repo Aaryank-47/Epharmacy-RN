@@ -5,8 +5,8 @@
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { useSocketContext } from '../../context/SocketContext';
-import { ConnectionStatus } from '../../services/socketEvents.types';
+import { useSocketContext } from '../context/SocketContext';
+import { ConnectionStatus } from '../services/socketEvents.types';
 
 interface ConnectionIndicatorProps {
     showLabel?: boolean;
