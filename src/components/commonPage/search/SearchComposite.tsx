@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Dimensions, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import UnifiedSearchSkeleton from './UnifiedSearchSkeleton';
+import SearchHeader from './SearchHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -30,7 +31,15 @@ interface SearchCompositeProps {
 
     // Actions
     onCameraPress?: () => void;
+
+    // Results
+    showResults?: boolean;
+    renderSearchResults?: () => React.ReactNode;
+    onFilterPress?: () => void;
+    showCamera?: boolean;
+    onScroll?: (event: any) => void;
 }
+
 
 const SearchComposite: React.FC<SearchCompositeProps> = ({
     query,
@@ -45,63 +54,30 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
     isPageLoading,
     renderRecent,
     renderTrending,
-    onCameraPress
+    onCameraPress,
+    showResults = false,
+    renderSearchResults,
+    onFilterPress,
+    showCamera = false,
+    onScroll
 }) => {
     const { isDark, textColor, placeholderColor, accentColor } = useThemePalette();
 
-    // --- Render Functions (previously separate components) ---
+    // --- Render Functions ---
 
     const renderHeader = () => (
-        <View
-            className="flex-row items-center px-4 py-3 pb-4"
-            style={{
-                zIndex: 10,
-                backgroundColor: isDark ? '#040404ff' : '#FFFFFF'
-            }}
-        >
-            <TouchableOpacity
-                onPress={onBackPress}
-                className="p-2 -ml-1 mr-1 rounded-full"
-                activeOpacity={0.7}
-            >
-                <Icon name="arrow-back" size={24} color={textColor} />
-            </TouchableOpacity>
-
-            <View
-                className="flex-1 flex-row items-center h-12 rounded-3xl px-4"
-                style={{
-                    backgroundColor: isDark ? '#1E2028' : '#F3F4F6',
-                    borderWidth: 1,
-                    borderColor: isDark ? '#2D3038' : 'transparent'
-                }}
-            >
-                <Icon name="search" size={20} color={placeholderColor} className="mr-2 opacity-70" />
-                <TextInput
-                    className="flex-1 text-base font-medium h-full"
-                    style={{ color: textColor }}
-                    placeholder="Search medicines, vitamins..."
-                    placeholderTextColor={placeholderColor}
-                    value={query}
-                    onChangeText={onQueryChange}
-                    onSubmitEditing={onSubmitEditing}
-                    returnKeyType="search"
-                    autoFocus={true}
-                />
-                {query.length > 0 && (
-                    <TouchableOpacity onPress={() => onQueryChange('')} className="p-1">
-                        <Icon name="close-circle" size={18} color={placeholderColor} />
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            <TouchableOpacity
-                onPress={onCameraPress}
-                className="p-2 ml-1 -mr-1 rounded-full"
-                activeOpacity={0.7}
-            >
-                <Icon name="camera-outline" size={24} color={textColor} />
-            </TouchableOpacity>
-        </View>
+        <SearchHeader
+            query={query}
+            onQueryChange={onQueryChange}
+            onSubmitEditing={onSubmitEditing}
+            onBackPress={onBackPress}
+            onCameraPress={onCameraPress}
+            onFilterPress={onFilterPress}
+            showCamera={showCamera}
+            isDark={isDark}
+            textColor={textColor}
+            placeholderColor={placeholderColor}
+        />
     );
 
     const renderSuggestions = () => {
@@ -131,7 +107,12 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
         }
 
         return (
-            <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+            <Animated.ScrollView
+                className="flex-1"
+                keyboardShouldPersistTaps="handled"
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+            >
                 {suggestions.map((item: any, index) => {
                     const name = item.itemName || item.name || item.title || item.code;
                     const price = item.itemFinalPrice || item.itemInitialPrice || item.price;
@@ -204,7 +185,7 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
                         </TouchableOpacity>
                     );
                 })}
-            </ScrollView>
+            </Animated.ScrollView>
         );
     };
 
@@ -248,12 +229,20 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
         <View style={{ flex: 1 }}>
             {!isPageLoading && renderHeader()}
 
-            {query.length > 0 ? (
+            {showResults ? (
+                renderSearchResults ? renderSearchResults() : null
+            ) : query.length > 0 ? (
                 renderSuggestions()
             ) : isPageLoading ? (
                 <UnifiedSearchSkeleton />
             ) : (
-                <ScrollView className="flex-1" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <Animated.ScrollView
+                    className="flex-1"
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    onScroll={onScroll}
+                    scrollEventThrottle={16}
+                >
                     {/* Recent Searches (External) */}
                     {renderRecent && renderRecent()}
 
@@ -264,10 +253,11 @@ const SearchComposite: React.FC<SearchCompositeProps> = ({
                     {renderTrending && renderTrending()}
 
                     <View className="h-10" />
-                </ScrollView>
+                </Animated.ScrollView>
             )}
         </View>
     );
 };
+
 
 export default SearchComposite;

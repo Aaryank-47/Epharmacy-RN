@@ -30,6 +30,7 @@ import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
 import HistoryPage from "./src/components/commonPage/HistoryPage";
 import WishlistScreen from "./src/components/pages/WishlistScreen";
 import NotificationsScreen from "./src/components/pages/NotificationsScreen";
+import CategoryProductsScreen from "./src/components/pages/CategoryProductsScreen";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -52,6 +53,7 @@ export type RootStackParamList = {
     refreshProfile?: () => void;
   };
   Search: undefined;
+  CategoryProducts: { categoryId: string; categoryName: string };
   ProductDetail: { productId?: string } | undefined;
   ShoppingBagScreen: undefined;
   CheckoutPage: undefined;
@@ -81,6 +83,7 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "ProfilePage", component: ProfilePage },
   { name: "EditProfile", component: EditProfileScreen },
   { name: "Search", component: SearchScreen },
+  { name: "CategoryProducts", component: CategoryProductsScreen },
   { name: "ProductDetail", component: ProductDetail },
   { name: "ShoppingBagScreen", component: ShoppingBagScreen },
   { name: "CheckoutPage", component: CheckoutPage },

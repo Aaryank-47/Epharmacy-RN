@@ -1,6 +1,6 @@
 import httpClient from './httpClient';
 import { API_ROUTES } from './config';
-import type { ApiResponse, ItemFeedItem, ItemDetails, Advertisement, Medicine, DealItem, UserAddress, RecentSearch } from './types';
+import type { ApiResponse, ItemFeedItem, ItemDetails, Advertisement, Medicine, DealItem, UserAddress, RecentSearch, SearchFilters } from './types';
 
 // ============================================================================
 // MEDICINES API FUNCTIONS
@@ -399,6 +399,7 @@ export const getSearchSuggestions = async (
   }
 };
 
+
 export const getPopularSearchTerms = async (): Promise<
   ApiResponse<{ terms: any[]; cached: boolean }>
 > => {
@@ -421,6 +422,38 @@ export const getPopularSearchTerms = async (): Promise<
     throw error;
   }
 };
+
+export const searchMedicines = async (
+  query: string,
+  page: number = 1,
+  limit: number = 20,
+  filters?: SearchFilters
+): Promise<ApiResponse<{ result: Medicine[] }>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      API_ROUTES.search.search,
+      {
+        params: {
+          q: query,
+          page,
+          limit,
+          ...filters
+        }
+      } as any
+    );
+    const data = response.data;
+    const items = data?.data || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Search results fetched',
+      data: { result: Array.isArray(items) ? items : [] },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 // ============================================================================
 // RECENT SEARCH API
@@ -507,6 +540,43 @@ export const clearRecentSearches = async (): Promise<
       success: data?.success ?? true,
       message: data?.message ?? 'All recent searches cleared',
       data: data?.data || { cleared: true },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+// ============================================================================
+// CATEGORY API
+// ============================================================================
+
+export const getItemsByCategory = async (
+  category: string,
+  page: number = 1,
+  limit: number = 14,
+  filters?: SearchFilters
+): Promise<ApiResponse<{ result: Medicine[] }>> => {
+  try {
+    const response = await httpClient.get<ApiResponse<any>>(
+      `${API_ROUTES.items.getItemByCategory}/${encodeURIComponent(category)}`,
+      {
+        params: {
+          page,
+          limit,
+          ...filters
+        }
+      } as any
+    );
+    const data = response.data;
+    // Backend returns data structure: { items: [], pagination: {...}, filters: {...} }
+    // So we need to access data.data.items
+    const items = data?.data?.items || [];
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message ?? 'Category items fetched',
+      data: { result: Array.isArray(items) ? items : [] },
     };
   } catch (error) {
     throw error;

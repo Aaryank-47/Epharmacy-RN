@@ -8,23 +8,26 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTrendingProducts } from '../../hooks/useTrendingProducts';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import type { RecentSearch } from '../../api/types';
+import type { RecentSearch, SearchFilters } from '../../api/types';
 import {
   getRecentSearches,
   saveRecentSearch,
   clearRecentSearches,
-  deleteRecentSearch
+  deleteRecentSearch,
+  searchMedicines
 } from '../../api/medicinesApi';
 
 // Components
 import SearchComposite from './search/SearchComposite';
 import RecentSearches from './search/RecentSearches';
+import Tabs from './Tab';
 
 const { width } = Dimensions.get('window');
 const TRENDING_CARD_WIDTH = (width - 35) / 2;
@@ -39,6 +42,11 @@ const SearchScreen: React.FC = () => {
   const [isRecentLoading, setIsRecentLoading] = useState(true);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
+  // Search Results State
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isResultsLoading, setIsResultsLoading] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
   // Trending Logic
   const { data: trendingProducts, isLoading: isTrendingLoading } = useTrendingProducts();
   const row2Ref = useRef<ScrollView>(null);
@@ -48,6 +56,65 @@ const SearchScreen: React.FC = () => {
     if (!trendingProducts) return [];
     return trendingProducts.slice(6, 12).length > 0 ? trendingProducts.slice(6, 12) : trendingProducts.slice(0, 6);
   }, [trendingProducts]);
+  // Tab Bar Animation
+  const translateY = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+  const isTabBarHidden = useRef(false);
+  const TAB_BAR_HIDDEN_OFFSET = 100;
+
+  const handleScrollRaw = useCallback((event: any) => {
+    const currentY = event.nativeEvent.contentOffset.y;
+    const dy = currentY - lastScrollY.current;
+
+    // Detect if close to bottom
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const isCloseToBottom = layoutHeight + currentY >= contentHeight - 20;
+
+    if (isCloseToBottom) {
+      if (isTabBarHidden.current) {
+        isTabBarHidden.current = false;
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    } else if (currentY > 50) {
+      if (dy > 10 && !isTabBarHidden.current) {
+        isTabBarHidden.current = true;
+        Animated.timing(translateY, {
+          toValue: TAB_BAR_HIDDEN_OFFSET,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      } else if (dy < -5 && isTabBarHidden.current) {
+        isTabBarHidden.current = false;
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }
+    } else if (currentY <= 50 && isTabBarHidden.current) {
+      isTabBarHidden.current = false;
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+    lastScrollY.current = currentY;
+  }, [translateY]);
+
+  const onScrollEvent = useMemo(() => Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: true,
+      listener: handleScrollRaw,
+    }
+  ), [scrollY, handleScrollRaw]);
 
   useEffect(() => {
     if (row2Data.length > 0) {
@@ -87,6 +154,12 @@ const SearchScreen: React.FC = () => {
         return;
       }
 
+
+      // If we are showing results, typing should revert to suggestions mode
+      if (showResults) {
+        setShowResults(false);
+      }
+
       setIsLoadingSuggestions(true);
       try {
         const response = await import('../../api/medicinesApi').then(mod => mod.getSearchSuggestions(query));
@@ -105,13 +178,12 @@ const SearchScreen: React.FC = () => {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query]);
+  }, [query, showResults]);
 
   const [popularTerms, setPopularTerms] = useState<any[]>([]);
-  const [isPopularLoading, setIsPopularLoading] = useState(true);
+  const [_isPopularLoading, setIsPopularLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch Popular Terms on Mount
     setIsPopularLoading(true);
     import('../../api/medicinesApi').then(mod => {
       mod.getPopularSearchTerms().then(res => {
@@ -163,15 +235,38 @@ const SearchScreen: React.FC = () => {
 
   const handleSearchSubmit = async () => {
     if (query.trim().length >= 2) {
+      // Save search
       await saveRecentSearch({
         query: query.trim(),
       });
       fetchRecentSearches();
       Keyboard.dismiss();
+
+      // Trigger Search
+      setShowResults(true);
+      performSearch(query.trim());
     }
   };
 
+  const performSearch = async (searchQuery: string) => {
+    setIsResultsLoading(true);
+    try {
+      const response = await searchMedicines(searchQuery, 1, 20, {}); // Empty filters
+      setSearchResults(response.data.result || []);
+    } catch (error) {
+      console.error("Search failed", error);
+    } finally {
+      setIsResultsLoading(false);
+    }
+  };
+
+
+
   const handleBackNavigation = () => {
+    if (showResults) {
+      setShowResults(false);
+      return;
+    }
     if (query.length > 0) {
       setQuery('');
       Keyboard.dismiss();
@@ -183,6 +278,10 @@ const SearchScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
+        if (showResults) {
+          setShowResults(false);
+          return true;
+        }
         if (query.length > 0) {
           setQuery('');
           Keyboard.dismiss();
@@ -194,7 +293,7 @@ const SearchScreen: React.FC = () => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
       return () => subscription.remove();
-    }, [query])
+    }, [query, showResults])
   );
 
   // Gradient colors
@@ -337,33 +436,77 @@ const SearchScreen: React.FC = () => {
     );
   };
 
+  /* Camera Logic */
+
+
   return (
-    <LinearGradient
-      colors={gradientColors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
+    <Tabs
+      translateY={translateY}
+      onNavigate={(screen) => navigation.navigate(screen)}
+      currentActiveTab="Home"
     >
-      <SearchComposite
-        query={query}
-        onQueryChange={setQuery}
-        onSubmitEditing={handleSearchSubmit}
-        onBackPress={handleBackNavigation}
-        
-        suggestions={suggestions}
-        isSuggestionsLoading={isLoadingSuggestions}
-        onSuggestionPress={handleProductPress}
+      <LinearGradient
+        colors={gradientColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <SearchComposite
+          query={query}
+          onQueryChange={setQuery}
+          onSubmitEditing={handleSearchSubmit}
+          onBackPress={handleBackNavigation}
+          suggestions={suggestions}
+          isSuggestionsLoading={isLoadingSuggestions}
+          onSuggestionPress={handleProductPress}
+          popularTerms={popularTerms}
+          onPopularTermPress={handleTermPress}
+          isPageLoading={isPageLoading}
+          renderRecent={renderRecent}
+          renderTrending={renderTrending}
+          showCamera={true}
+          onScroll={onScrollEvent}
+          showResults={showResults}
+          renderSearchResults={() => {
+            if (isResultsLoading) {
+              return (
+                <View className="flex-1 justify-center items-center">
+                  <View className="p-4 bg-white/10 rounded-full mb-4">
+                    <Icon name="search" size={32} color={isDark ? '#FFF' : '#000'} className="animate-pulse" />
+                  </View>
+                  <Text style={{ color: isDark ? '#FFF' : '#000' }}>Searching...</Text>
+                </View>
+              );
+            }
 
-        popularTerms={popularTerms}
-        onPopularTermPress={handleTermPress}
+            if (searchResults.length === 0) {
+              return (
+                <View className="flex-1 justify-center items-center mt-20">
+                  <Icon name="cube-outline" size={48} color={isDark ? '#555' : '#CCC'} />
+                  <Text className="text-gray-500 mt-2">No products found for "{query}"</Text>
+                </View>
+              );
+            }
 
-        isPageLoading={isPageLoading}
-        
-        renderRecent={renderRecent}
-        renderTrending={renderTrending}
-        onCameraPress={() => console.log('Camera pressed')}
-      />
-    </LinearGradient>
+            return (
+              <Animated.ScrollView
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                onScroll={onScrollEvent}
+                scrollEventThrottle={16}
+              >
+                <View className="flex-row flex-wrap justify-between">
+                  {searchResults.map((item) => (
+                    <View key={item._id} style={{ width: '48%', marginBottom: 15 }}>
+                      {renderTrendingProductItem({ item })}
+                    </View>
+                  ))}
+                </View>
+              </Animated.ScrollView>
+            );
+          }}
+        />
+      </LinearGradient>
+    </Tabs>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { View, Text, TouchableOpacity, Image, useWindowDimensions, Animated, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, useWindowDimensions, Animated, StyleSheet, Keyboard, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -159,9 +159,19 @@ const Tabs = memo<{
 
   // Local state for instant load (Stale-While-Revalidate pattern)
   const [localUserData, setLocalUserData] = useState<any>(null);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   // Load from AsyncStorage on mount to prevent "U" flash
   useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
     const loadLocalProfile = async () => {
       try {
         const storedProfile = await AsyncStorage.getItem('userProfile');
@@ -176,6 +186,11 @@ const Tabs = memo<{
       }
     };
     loadLocalProfile();
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
   }, []);
 
   // Update local storage when API data comes in (keep it fresh)
@@ -219,7 +234,9 @@ const Tabs = memo<{
   return (
     <View style={{ flex: 1, backgroundColor: surfaceColor }}>
       <View style={{ flex: 1 }}>{children}</View>
-      <TabBar state={state} tabs={tabs} activeTab={activeTab} setActiveTab={handleTabChange} userData={userData} onNavigate={handleNavigate} onTabReselect={onTabReselect} isLoading={isLoadingUserData} translateY={translateY} />
+      {!isKeyboardVisible && (
+        <TabBar state={state} tabs={tabs} activeTab={activeTab} setActiveTab={handleTabChange} userData={userData} onNavigate={handleNavigate} onTabReselect={onTabReselect} isLoading={isLoadingUserData} translateY={translateY} />
+      )}
       {showExploreOverlay && (
         <>
           <Animated.View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 101 }}>

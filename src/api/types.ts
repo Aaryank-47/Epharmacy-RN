@@ -177,14 +177,23 @@ export interface Advertisement {
 
 export interface Medicine {
   _id: string;
-  title: string;
-  imageUrl: string;
+  title?: string;
+  imageUrl?: string;
   price?: number;
   originalPrice?: number;
   discount?: number;
   rating?: number;
   description?: string;
   category?: string;
+  // Additional properties used in the app
+  itemName?: string;
+  itemDescription?: string;
+  itemImages?: string[];
+  image?: string;
+  itemInitialPrice?: number;
+  itemFinalPrice?: number;
+  itemRatings?: number;
+  itemDiscount?: number;
 }
 
 export interface RecentSearch {
@@ -196,6 +205,15 @@ export interface RecentSearch {
   timestamp: number;
   timeAgo?: string;
 }
+
+export interface SearchFilters {
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  minDiscount?: number;
+  isTrending?: boolean;
+}
+
 
 export interface DealItem {
   _id: string;
