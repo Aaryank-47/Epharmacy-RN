@@ -1,19 +1,16 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StatusBar, Dimensions } from 'react-native';
+import React, { useCallback, useState, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
-import LinearGradient from 'react-native-linear-gradient';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Tabs from '../commonPage/Tab';
 
-const { width } = Dimensions.get('window');
-
 const WishlistScreen = () => {
     const navigation = useNavigation<any>();
-    const { isDark, accentColor } = useThemePalette();
+    const { isDark} = useThemePalette();
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
 
