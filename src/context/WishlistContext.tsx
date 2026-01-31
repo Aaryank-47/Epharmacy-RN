@@ -38,6 +38,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [_isLoading, setIsLoading] = useState(false);
     const [pendingOperations, setPendingOperations] = useState<Set<string>>(new Set());
+    const hasMounted = React.useRef(false);
 
     const loadWishlist = useCallback(async (force: boolean = false) => {
         // Skip if we have pending operations (optimistic updates in progress)
@@ -56,7 +57,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     // API returns itemImages array, UI expects image string
                     image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
                 }));
-                console.log('Wishlist loaded:', mappedItems.length, 'items');
+                console.log('User-specific wishlist loaded:', mappedItems.length, 'items');
                 setWishlistItems(mappedItems as WishlistItem[]);
             }
         } catch (e) {
@@ -68,8 +69,15 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Load wishlist on mount ONLY
     useEffect(() => {
-        loadWishlist(true);
-    }, []); // Empty dependency array - run only once on mount
+        if (!hasMounted.current) {
+            hasMounted.current = true;
+            loadWishlist(true);
+        }
+    }, [loadWishlist]); 
+
+    //     useEffect(() => {
+    //     loadWishlist(true);
+    // }, []); 
 
     // Listen for wishlist updates from socket
     useSocketEvent(SOCKET_EVENTS.WISHLIST_UPDATE, () => {

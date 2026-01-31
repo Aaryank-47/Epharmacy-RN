@@ -307,8 +307,10 @@ export const getWishlist = async (): Promise<
       { cache: { ttl: 5 * 60 * 1000 } } as any
     );
     const data = response.data;
+    console.log("data to get wishlist : ", data );
     // Map response structure: data.data.items or data.items depending on backend wrapping
     const items = data?.data?.items || data?.data || [];
+    console.log("Items to get wishlsit : ", items);
 
     return {
       success: data?.success ?? true,
