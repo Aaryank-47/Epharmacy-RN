@@ -44,7 +44,11 @@ const SimilarProductCard: React.FC<SimilarProductCardProps> = ({
                 {/* Wishlist Button */}
                 <TouchableOpacity
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 justify-center items-center"
-                    onPress={() => onToggleWishlist(item)}
+                    onPress={(e) => {
+                        e?.stopPropagation?.();
+                        onToggleWishlist(item);
+                    }}
+                    activeOpacity={0.7}
                 >
                     <Ionicons
                         name={isInWishlist ? "heart" : "heart-outline"}

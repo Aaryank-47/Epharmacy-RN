@@ -67,26 +67,26 @@ const WishlistScreen = () => {
         setToastVisible(false);
     }, []);
 
-    const renderRightActions = (progress: any, dragX: any, item: any) => {
-        return (
-            <TouchableOpacity
-                onPress={() => handleDelete(item)}
-                className="justify-center items-center mb-5 bg-red-600 rounded-r-[24px]"
-                style={{ width: 90 }}
-            >
-                <View className="items-center">
-                    <Ionicons name="trash-outline" size={26} color="white" />
-                    <Text className="text-white text-[10px] font-bold mt-1">Remove</Text>
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
     const renderItem = useCallback(({ item }: { item: any }) => {
         if (deletedItem?.item._id === item._id) return null; // Optimistically hide
 
         // Mock color options for visual fidelity as per reference image
         const colors = ['#FCA5A5', '#FCD34D', '#111827'];
+
+        const renderRightActions = (progress: any, dragX: any, item: any) => {
+            return (
+                <TouchableOpacity
+                    onPress={() => handleDelete(item)}
+                    className="justify-center items-center mb-5 bg-red-600 rounded-r-[24px]"
+                    style={{ width: 90 }}
+                >
+                    <View className="items-center">
+                        <Ionicons name="trash-outline" size={26} color="white" />
+                        <Text className="text-white text-[10px] font-bold mt-1">Remove</Text>
+                    </View>
+                </TouchableOpacity>
+            );
+        };
 
         return (
             <GestureHandlerRootView>
@@ -247,7 +247,7 @@ const WishlistScreen = () => {
                     )}
                 </View>
 
-                {/* Custom Undo Toast */}
+
                 {/* Custom Undo Toast */}
                 {toastVisible && (
                     <View

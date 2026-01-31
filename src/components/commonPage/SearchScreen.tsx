@@ -18,7 +18,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useTrendingProducts } from '../../hooks/useTrendingProducts';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import type { RecentSearch, SearchFilters } from '../../api/types';
+import type { RecentSearch } from '../../api/types';
 import {
   getRecentSearches,
   saveRecentSearch,
@@ -387,7 +387,10 @@ const SearchScreen: React.FC = () => {
           {/* Wishlist Icon (Right) */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => handleToggleWishlist(item)}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              handleToggleWishlist(item);
+            }}
             className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 justify-center items-center"
             style={{ elevation: 2 }}
           >

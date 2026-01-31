@@ -57,8 +57,8 @@ const TimerIcon = memo<{ isDark: boolean }>(({ isDark }) => {
   );
 });
 
-const DealCard = memo<{ item: any; isDark: boolean; accentColor: string; onPress: () => void; onAddToCart: () => void; isInCart: boolean; onToggleWishlist: () => void; isInWishlist: boolean }>(
-  ({ item, isDark, accentColor, onPress, onToggleWishlist, isInWishlist }) => {
+const DealCard = memo<{ item: any; isDark: boolean; accentColor: string; onPress: () => void; onAddToCart: () => void; isInCart: boolean; onToggleWishlist: (item: any) => void; isInWishlist: boolean }>(
+  ({ item, isDark, onPress, onToggleWishlist, isInWishlist }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const images = item.itemImages || [];
@@ -91,7 +91,7 @@ const DealCard = memo<{ item: any; isDark: boolean; accentColor: string; onPress
               <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 }}>-{item.itemDiscount}% OFF</Text>
             </View>
           )}
-          <TouchableOpacity onPress={(e) => { e.stopPropagation(); onToggleWishlist(); }} activeOpacity={0.7} style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.95)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); onToggleWishlist(item); }} activeOpacity={0.7} style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.95)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
             <Ionicons name={isInWishlist ? 'heart' : 'heart-outline'} size={18} color={isInWishlist ? '#EF4444' : (isDark ? '#E5E7EB' : '#EF4444')} />
           </TouchableOpacity>
           <View style={{ position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.95)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
@@ -147,13 +147,21 @@ const DealOfDaySection: React.FC<{ visible?: boolean; onReady?: () => void }> = 
   }, [addToCart, isInCart]);
 
   const handleToggleWishlist = useCallback((item: any) => {
-    const itemId = item._id || item.id;
+    if (!item || !item._id) {
+      console.warn('Invalid item passed to handleToggleWishlist');
+      return;
+    }
+    const itemId = item._id;
     if (isInWishlist(itemId)) {
       removeFromWishlist(itemId);
-      ToastAndroid.show('Removed from wishlist', ToastAndroid.SHORT);
     } else {
-      addToWishlist({ _id: itemId, itemName: item.itemName, itemFinalPrice: item.itemFinalPrice || 0, image: item.itemImages?.[0] || '' });
-      ToastAndroid.show('Added to wishlist', ToastAndroid.SHORT);
+      addToWishlist({ 
+        _id: itemId, 
+        itemName: item.itemName, 
+        itemFinalPrice: item.itemFinalPrice || 0, 
+        image: item.itemImages?.[0] || '',
+        itemImages: item.itemImages || []
+      });
     }
   }, [addToWishlist, removeFromWishlist, isInWishlist]);
 

@@ -279,7 +279,10 @@ const CategoryProductsScreen: React.FC = () => {
                     {/* Wishlist Icon */}
                     <TouchableOpacity
                         activeOpacity={0.7}
-                        onPress={() => handleToggleWishlist(item)}
+                        onPress={(e) => {
+                            e?.stopPropagation?.();
+                            handleToggleWishlist(item);
+                        }}
                         style={{
                             position: 'absolute',
                             top: 8,

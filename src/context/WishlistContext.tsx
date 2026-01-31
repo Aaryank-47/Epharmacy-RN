@@ -37,8 +37,15 @@ export const useWishlist = () => {
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [_isLoading, setIsLoading] = useState(false);
+    const [pendingOperations, setPendingOperations] = useState<Set<string>>(new Set());
 
-    const loadWishlist = useCallback(async () => {
+    const loadWishlist = useCallback(async (force: boolean = false) => {
+        // Skip if we have pending operations (optimistic updates in progress)
+        if (!force && pendingOperations.size > 0) {
+            console.log('Skipping wishlist reload due to pending operations');
+            return;
+        }
+
         try {
             setIsLoading(true);
             const response = await getWishlist();
@@ -49,7 +56,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     // API returns itemImages array, UI expects image string
                     image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
                 }));
-                console.log('Wishlist updated from socket/init');
+                console.log('Wishlist loaded:', mappedItems.length, 'items');
                 setWishlistItems(mappedItems as WishlistItem[]);
             }
         } catch (e) {
@@ -57,16 +64,17 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [pendingOperations]);
 
-    // Load wishlist on mount
+    // Load wishlist on mount ONLY
     useEffect(() => {
-        loadWishlist();
-    }, [loadWishlist]);
+        loadWishlist(true);
+    }, []); // Empty dependency array - run only once on mount
 
     // Listen for wishlist updates from socket
     useSocketEvent(SOCKET_EVENTS.WISHLIST_UPDATE, () => {
-        loadWishlist();
+        // Only reload if no pending operations
+        loadWishlist(false);
     });
 
     const showToast = (message: string) => {
@@ -84,34 +92,84 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
 
+        // Optimistic update - add to UI immediately
+        const itemWithImage = {
+            ...item,
+            image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
+        };
+        setWishlistItems(prev => [itemWithImage, ...prev]);
+        showToast('Added to wishlist');
+
+        // Mark operation as pending
+        setPendingOperations(prev => new Set(prev).add(item._id));
+
         try {
-            // API Call
-            await addToWishlistApi(item._id);
-
-
-            const itemWithImage = {
-                ...item,
-                image: item.itemImages && item.itemImages.length > 0 ? item.itemImages[0] : (item.image || ''),
-            };
-
-            setWishlistItems(prev => [itemWithImage, ...prev]);
-            showToast('Added to wishlist');
+            // API Call in background
+            const response = await addToWishlistApi(item._id);
+            console.log("Add to wishlist response:", response);
+            
+            // Check if API returned failure
+            if (!response.success) {
+                console.error('API returned failure:', response);
+                // Rollback optimistic update
+                setWishlistItems(prev => prev.filter(i => i._id !== item._id));
+                showToast('Item could not be added to wishlist');
+            }
         } catch (error) {
             console.error("Failed to add to wishlist", error);
+            // Rollback optimistic update on failure
+            setWishlistItems(prev => prev.filter(i => i._id !== item._id));
             showToast('Failed to add to wishlist');
+        } finally {
+            // Remove from pending operations
+            setPendingOperations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(item._id);
+                return newSet;
+            });
         }
     }, [wishlistItems]);
 
     const removeFromWishlist = useCallback(async (itemId: string) => {
+        // Store item for potential rollback
+        const itemToRemove = wishlistItems.find(item => item._id === itemId);
+        
+        // Optimistic update - remove from UI immediately
+        setWishlistItems(prev => prev.filter(item => item._id !== itemId));
+        
+        // Mark operation as pending
+        setPendingOperations(prev => new Set(prev).add(itemId));
+
         try {
-            await removeWishlistItemApi(itemId);
-            // Ensure state is synced
-            setWishlistItems(prev => prev.filter(item => item._id !== itemId));
+            // API Call in background
+            const response = await removeWishlistItemApi(itemId);
+            console.log("Remove from wishlist response:", response);
+            
+            // Check if API returned failure
+            if (!response.success) {
+                console.error('API returned failure:', response);
+                // Rollback optimistic update
+                if (itemToRemove) {
+                    setWishlistItems(prev => [itemToRemove, ...prev]);
+                }
+                showToast('Item could not be removed from wishlist');
+            }
         } catch (error) {
             console.error("Failed to remove item", error);
+            // Rollback optimistic update on failure
+            if (itemToRemove) {
+                setWishlistItems(prev => [itemToRemove, ...prev]);
+            }
             showToast('Failed to remove item');
+        } finally {
+            // Remove from pending operations
+            setPendingOperations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(itemId);
+                return newSet;
+            });
         }
-    }, []);
+    }, [wishlistItems]);
 
     const isInWishlist = useCallback((itemId: string) => {
         return wishlistItems.some(item => item._id === itemId);
