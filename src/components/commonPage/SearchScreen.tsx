@@ -440,11 +440,6 @@ const SearchScreen: React.FC = () => {
 
 
   return (
-    <Tabs
-      translateY={translateY}
-      onNavigate={(screen) => navigation.navigate(screen)}
-      currentActiveTab="Home"
-    >
       <LinearGradient
         colors={gradientColors}
         start={{ x: 0, y: 0 }}
@@ -506,7 +501,6 @@ const SearchScreen: React.FC = () => {
           }}
         />
       </LinearGradient>
-    </Tabs>
   );
 };
 

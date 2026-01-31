@@ -270,12 +270,17 @@ const Home: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['trendingProducts'] });
     queryClient.invalidateQueries({ queryKey: ['recentlyViewedItems'] });
     queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+    // Immediate refetch for real-time UI update
+    queryClient.refetchQueries({ queryKey: ['recentlyViewedCategories'] });
   });
 
   // Listen for Recently Viewed Updates (triggered when visiting details or categories)
   useSocketEvent(SOCKET_EVENTS.RECENTLY_VIEWED_UPDATE, () => {
     queryClient.invalidateQueries({ queryKey: ['recentlyViewedItems'] });
     queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
+    // Immediate refetch for instant real-time update
+    queryClient.refetchQueries({ queryKey: ['recentlyViewedItems'] });
+    queryClient.refetchQueries({ queryKey: ['recentlyViewedCategories'] });
   });
 
   return (

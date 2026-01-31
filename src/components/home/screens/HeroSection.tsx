@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from '
 import { View, Text, TouchableOpacity, Image, ScrollView, Dimensions, Easing, FlatList, Animated, ActivityIndicator, Platform, ToastAndroid } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import LocationService from '../../../services/LocationService';
-import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import { trackAdvertisementClick, updateUserProfile, getFeaturedMedicines, getRunningAdvertisements } from '../../../api/medicinesApi';
 import { getUserProfile } from '../../../api/authApi';
+import type { Medicine as APIMedicine } from '../../../api/types';
 
 interface Medicine { _id: string; title: string; imageUrl: string; price?: number; originalPrice?: number; discount?: number }
 interface Advertisement { _id: string; title: string; description: string; imageUrl: string; startDate: string; endDate: string; offerText?: string }
@@ -132,7 +132,21 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
     }
   }, [medicinesLoading, adsLoading, onReady]);
 
-  const medicines: Medicine[] = useMemo(() => medicinesData || [], [medicinesData]);
+  const medicines: Medicine[] = useMemo(() => {
+    if (!medicinesData) return [];
+    // Filter and map to ensure required properties
+    return (medicinesData as APIMedicine[])
+      .filter(m => m._id && (m.title || m.itemName) && (m.imageUrl || m.image))
+      .map(m => ({
+        _id: m._id,
+        title: m.title || m.itemName || '',
+        imageUrl: m.imageUrl || m.image || '',
+        price: m.price || m.itemFinalPrice,
+        originalPrice: m.originalPrice || m.itemInitialPrice,
+        discount: m.discount || m.itemDiscount,
+      }));
+  }, [medicinesData]);
+  
   const advertisements: Advertisement[] = useMemo(() => adsData || [], [adsData]);
   const infiniteOffers = useMemo(() => advertisements.length === 0 ? [] : Array(100).fill(advertisements).flat(), [advertisements]);
 

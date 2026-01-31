@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchCamera } from 'react-native-image-picker';
 
@@ -16,6 +16,7 @@ interface SearchHeaderProps {
     editable?: boolean;
     onSearchPress?: () => void;
     onFilterPress?: () => void;
+    activeFilterCount?: number;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -30,7 +31,8 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
     placeholderColor,
     editable = true,
     onSearchPress,
-    onFilterPress
+    onFilterPress,
+    activeFilterCount = 0
 }) => {
     const handleDefaultCameraPress = async () => {
         try {
@@ -118,10 +120,17 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
             {onFilterPress && (
                 <TouchableOpacity
                     onPress={onFilterPress}
-                    className="p-2 ml-1 -mr-1 rounded-full"
+                    className="p-2 ml-1 -mr-1 rounded-full relative"
                     activeOpacity={0.7}
                 >
                     <Icon name="options-outline" size={24} color={textColor} />
+                    {activeFilterCount > 0 && (
+                        <View className="absolute top-1 right-1 bg-red-500 rounded-full w-4 h-4 justify-center items-center border border-white dark:border-black">
+                            <Text className="text-[10px] font-bold text-white leading-3">
+                                {activeFilterCount}
+                            </Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             )}
         </View>

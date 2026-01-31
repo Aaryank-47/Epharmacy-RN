@@ -47,7 +47,9 @@ export const useAddToRecentlyViewedCategory = () => {
             return await addCategoryToRecentlyViewed(categoryId);
         },
         onSuccess: () => {
+            // Invalidate and immediately refetch for real-time UI update
             queryClient.invalidateQueries({ queryKey: RECENTLY_VIEWED_CATEGORIES_KEY });
+            queryClient.refetchQueries({ queryKey: RECENTLY_VIEWED_CATEGORIES_KEY });
         },
     });
 };

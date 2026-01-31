@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useCategories } from '../../../hooks/useCategories';
 import { useThemePalette } from '../../../hooks/useThemePalette';
-import { addCategoryToRecentlyViewed } from '../../../api/medicinesApi';
+import { useAddToRecentlyViewedCategory } from '../../../hooks/useRecentlyViewed';
 
 interface Category {
   _id: string;
@@ -67,14 +67,15 @@ const CategoriesSection: React.FC<{ visible?: boolean; onReady?: () => void }> =
   }, [isLoading, onReady]);
 
   const navigation = useNavigation<any>();
+  const addToRecentlyViewed = useAddToRecentlyViewedCategory();
 
-  const handleSelectCategory = useCallback(async (categoryId: string, categoryName: string) => {
-    try {
-      await addCategoryToRecentlyViewed(categoryId);
-    } catch { }
-
+  const handleSelectCategory = useCallback((categoryId: string, categoryName: string) => {
+    // Navigate immediately - O(1) instant navigation
     navigation.navigate('CategoryProducts', { categoryId, categoryName });
-  }, [navigation]);
+    
+    // Trigger mutation for real-time update - invalidates & refetches automatically
+    addToRecentlyViewed.mutate(categoryId);
+  }, [navigation, addToRecentlyViewed]);
 
   const gradientColors = useMemo(() => (isDark ? ['#2A2D35', '#181A20'] : ['#F3F4F6', '#FFFFFF']), [isDark]);
 
