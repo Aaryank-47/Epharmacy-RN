@@ -28,7 +28,7 @@ import {
 } from '../../api/medicinesApi';
 
 // Components
-import SearchComposite from './search/SearchComposite';
+import { SearchComposite } from './search/SearchComponents';
 import RecentSearches from './search/RecentSearches';
 import Tabs from './Tab';
 

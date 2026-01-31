@@ -17,7 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import { getItemsByCategory } from '../../api/medicinesApi';
 import type { Medicine, SearchFilters } from '../../api/types';
-import SearchHeader from '../commonPage/search/SearchHeader';
+import { SearchHeader } from '../commonPage/search/SearchComponents';
 import FilterModal from '../commonPage/search/FilterModal';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
