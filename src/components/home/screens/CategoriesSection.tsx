@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, memo, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Animated, Image, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
