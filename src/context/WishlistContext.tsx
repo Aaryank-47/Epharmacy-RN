@@ -36,7 +36,7 @@ export const useWishlist = () => {
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [_isLoading, setIsLoading] = useState(false);
 
     const loadWishlist = useCallback(async () => {
         try {
