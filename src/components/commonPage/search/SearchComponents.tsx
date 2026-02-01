@@ -86,7 +86,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                 style={{
                     backgroundColor: isDark ? '#1E2028' : '#F3F4F6',
                     borderWidth: 1,
-                    borderColor: isDark ? '#2D3038' : 'transparent'
+                    borderColor: isDark ? '#2D3038' : '#E5E7EB'
                 }}
                 activeOpacity={editable ? 1 : 0.7}
                 onPress={!editable ? onSearchPress : undefined}

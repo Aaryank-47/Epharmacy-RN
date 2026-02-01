@@ -30,7 +30,7 @@ import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
 import HistoryPage from "./src/components/commonPage/HistoryPage";
 import WishlistScreen from "./src/components/pages/WishlistScreen";
 import NotificationsScreen from "./src/components/pages/NotificationsScreen";
-import CategoryProductsScreen from "./src/components/pages/CategoryProductsScreen";
+import CategoryProductsScreen from "./src/components/pages/category/CategoryProductsScreen";
 
 export type RootStackParamList = {
   HomeTabs: undefined;

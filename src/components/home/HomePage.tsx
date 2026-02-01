@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useMemo, useRef } from 'react';
-import { View, Animated, StyleSheet, ListRenderItem } from 'react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { View, Animated, StyleSheet, ListRenderItem, BackHandler, ToastAndroid, Platform } from 'react-native';
+import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 
 import type { RootStackParamList } from '../../../AppNavigator';
@@ -78,6 +78,33 @@ const Home: React.FC = () => {
   // --- Local State ---
   const [isRefreshingState, setIsRefreshingState] = useState(false);
   const lastTapRef = useRef<number>(0);
+
+  // --- Double Back Press Logic ---
+  const lastBackPressedRef = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (Platform.OS !== 'android') return false;
+
+        const now = Date.now();
+        const DOUBLE_PRESS_DELAY = 2000;
+
+        if (now - lastBackPressedRef.current < DOUBLE_PRESS_DELAY) {
+          BackHandler.exitApp();
+          return true;
+        }
+
+        lastBackPressedRef.current = now;
+        ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [])
+  );
 
   // --- Handlers ---
   const handleNavigate = useCallback((screenName: string) => {
