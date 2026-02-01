@@ -7,8 +7,10 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 
+const logo2 = require('../../../assets/images/logo3.png');
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const LOGO_LETTERS = ['M', 'E', 'D', 'I', 'C', 'A', 'R', 'E', '+'] as const;
+const LOGO_LETTERS = ['M', 'E', 'D', 'I', 'C', 'A', 'R', 'E',] as const;
 const SEARCH_ICONS = ['magnify', 'text-search'] as const;
 
 type RootStackParamList = { Home: undefined; CheckoutPage: undefined; Search: undefined; SignIn: undefined; SignUp: undefined; ForgotPassword: undefined; Profile: undefined; Notifications: undefined };
@@ -29,6 +31,7 @@ const HeaderScreen: React.FC = () => {
   const { isDark } = useThemePalette();
   const insets = useSafeAreaInsets();
   const [searchIconIndex, setSearchIconIndex] = useState(0);
+  const [logoError, setLogoError] = useState(false);
 
   const logoAnimations = useRef(Array.from({ length: LOGO_LETTERS.length }, () => new Animated.Value(-100))).current;
   const leftLogoAnim = useRef(new Animated.Value(-50)).current;
@@ -38,8 +41,6 @@ const HeaderScreen: React.FC = () => {
   const headerHeight = useMemo(() => statusBarHeight + 28, [statusBarHeight]);
 
   useEffect(() => {
-    // Delay animation to allow Navigation transition to complete first
-    // This removes "jank" on initial mount
     const timer = setTimeout(() => {
       const animations = [
         ...logoAnimations.map((anim, i) => Animated.timing(anim, { toValue: 0, duration: 400, delay: i * 80, useNativeDriver: true })), // Reduced delay between letters
@@ -68,7 +69,13 @@ const HeaderScreen: React.FC = () => {
   return (
     <LinearGradient colors={gradientColors} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ paddingTop: statusBarHeight, height: headerHeight, minHeight: headerHeight, paddingHorizontal: 12, paddingVertical: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <Animated.View style={{ transform: [{ translateX: leftLogoAnim }, { translateY: -4 }], justifyContent: 'center' }}>
-        <Image source={{ uri: 'https://vucvdpamtrjkzmubwlts.supabase.co/storage/v1/object/public/users/user_2rQ1QHrJyxpmWMHhqhANzWMc64n/avatar.png' }} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: isDark ? '#374151' : '#E5E7EB', transform: [{ translateY: -10 }] }} resizeMode="cover" accessibilityLabel="User profile" />
+        <Image 
+          source={logoError ? logo2:{ uri: 'https://vucvdpamtrjkzmubwlts.supabase.co/storage/v1/object/public/users/user_2rQ1QHrJyxpmWMHhqhANzWMc64n/avatar.png' } } 
+          onError={() => setLogoError(true)}
+          style={{ width: 36, height: 36, borderRadius: 18,  borderColor: isDark ? '#374151' : '#E5E7EB', transform: [{ translateY: -10 }] }} 
+          resizeMode="cover" 
+          accessibilityLabel="App logo" 
+        />
       </Animated.View>
       <View style={{ flex: 1, marginLeft: 8, justifyContent: 'center', alignItems: 'flex-start', transform: [{ translateY: -16 }] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>

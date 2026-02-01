@@ -3,11 +3,12 @@ import { View, Text, FlatList, Image, TouchableOpacity, Dimensions, Animated } f
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRecentlyViewedCategories } from '../../../hooks/useRecentlyViewed';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../../../AppNavigator';
+import { useRecentlyViewedCategories, useAddToRecentlyViewedCategory } from '../../../hooks/useRecentlyViewed';
 import useThemePalette from '../../../hooks/useThemePalette';
 import { useSocketEvent } from '../../../hooks/useSocketEvent';
 import { SOCKET_EVENTS } from '../../../services/socketEvents.types';
-import { addCategoryToRecentlyViewed } from '../../../api/medicinesApi';
 
 const { width } = Dimensions.get('window');
 
@@ -21,12 +22,12 @@ const FULL_ITEM_WIDTH = ITEM_WIDTH + ITEM_MARGIN_RIGHT; // For getItemLayout
 interface CategoryItemProps {
     item: any;
     isDark: boolean;
-    onPress: (categoryId: string) => void;
+    onPress: (categoryId: string, categoryName: string) => void;
 }
 
 const CategoryItem = memo<CategoryItemProps>(({ item, isDark, onPress }) => (
     <TouchableOpacity
-        onPress={() => onPress(item._id)}
+        onPress={() => onPress(item._id, item.name)}
         style={{ width: ITEM_WIDTH, marginRight: ITEM_MARGIN_RIGHT }}
         className="items-center justify-start"
         activeOpacity={0.7}
@@ -128,21 +129,14 @@ const RecentlyViewedCategory = ({ transparentBackground = false }: RecentlyViewe
 
     const queryClient = useQueryClient();
 
-    // Real-time updates - Category specific events
-    useSocketEvent(SOCKET_EVENTS.CATEGORY_VIEWED_UPDATE, () => {
-        console.log('[RecentlyViewedCategory] CATEGORY_VIEWED_UPDATE event received');
+    // Real-time updates - Optimized with single callback O(1)
+    const invalidateCategories = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
-    });
+    }, [queryClient]);
 
-    useSocketEvent(SOCKET_EVENTS.CATEGORY_PRODUCT_UPDATED, () => {
-        console.log('[RecentlyViewedCategory] CATEGORY_PRODUCT_UPDATED event received');
-        queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
-    });
-
-    useSocketEvent(SOCKET_EVENTS.CATEGORY_PRODUCT_DELETED, () => {
-        console.log('[RecentlyViewedCategory] CATEGORY_PRODUCT_DELETED event received');
-        queryClient.invalidateQueries({ queryKey: ['recentlyViewedCategories'] });
-    });
+    useSocketEvent(SOCKET_EVENTS.CATEGORY_VIEWED_UPDATE, invalidateCategories);
+    useSocketEvent(SOCKET_EVENTS.CATEGORY_PRODUCT_UPDATED, invalidateCategories);
+    useSocketEvent(SOCKET_EVENTS.CATEGORY_PRODUCT_DELETED, invalidateCategories);
 
     // Algorithmic Optimization: O(N) deduplication using Set vs O(N^2) filter/findIndex
     const categories = useMemo(() => {
@@ -163,15 +157,16 @@ const RecentlyViewedCategory = ({ transparentBackground = false }: RecentlyViewe
         return uniqueData.reverse();
     }, [apiResponse]);
 
-    const handlePress = useCallback(async (categoryId: string) => {
-        console.log('[RecentlyViewedCategory] Category clicked:', categoryId);
-        try {
-            await addCategoryToRecentlyViewed(categoryId);
-            console.log('[RecentlyViewedCategory] API call successful');
-        } catch (error) {
-            console.error('[RecentlyViewedCategory] Failed to add category to recently viewed:', error);
-        }
-    }, []);
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+    const addToRecentlyViewed = useAddToRecentlyViewedCategory();
+
+    const handlePress = useCallback((categoryId: string, categoryName: string) => {
+        // Navigate immediately for instant UX - O(1) operation
+        navigation.navigate('CategoryProducts', { categoryId, categoryName });
+        
+        // Trigger mutation - automatically invalidates & refetches for real-time UI update
+        addToRecentlyViewed.mutate(categoryId);
+    }, [navigation, addToRecentlyViewed]);
 
     const renderItem = useCallback(({ item }: { item: any }) => (
         <CategoryItem

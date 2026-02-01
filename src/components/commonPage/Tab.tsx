@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { View, Text, TouchableOpacity, Image, useWindowDimensions, Animated, StyleSheet, Keyboard, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -81,7 +80,7 @@ const TabBar = memo<{
   const cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
   const bottomInset = insets.bottom;
   const isGestureNav = bottomInset > 45;
-  const tabContentHeight = isGestureNav ? 20 : 69;
+  const tabContentHeight = isGestureNav ? 20 : 55;
   const effectiveBottomPadding = isGestureNav ? bottomInset : 4;
   const tabBarHeight = tabContentHeight + effectiveBottomPadding;
   const borderColor = isDark ? '#374151' : '#E5E7EB';
