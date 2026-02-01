@@ -1,97 +1,140 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 🏥 E-Pharmacy RN
 
-# Getting Started
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![React Native](https://img.shields.io/badge/React_Native-v0.76+-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-v5.0+-blue) ![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-Enabled-purple)
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+A production-grade, feature-rich **E-Commerce Pharmacy Application** built with **React Native** and **TypeScript**. This project demonstrates modern mobile development practices, including advanced animations, state management, and seamless native integration.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## ✨ Key Features
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### 🛍️ Product Discovery & Shopping
+-   **Dynamic Category Listings**: Filterable and sortable product grids with smooth layout animations.
+-   **Smart Search**: Real-time search with animated filter bars and recent search tracking.
+-   **Advanced Filtering**: 
+    -   Combined Horizontal Filter Bar (Sort, Free Delivery, Discounts).
+    -   **Price Range Slider** (`₹2 - ₹10,000`) using dual-thumb gesture controls.
+    -   Top Stores quick-access carousel.
+-   **Product Details**: High-performance image carousel, detailed descriptions, and rating breakdowns.
+-   **Wishlist & Cart**: Persistent local management of user favorites and shopping bag.
 
-```sh
-# Using npm
-npm start
+### 🚀 Social & Sharing
+-   **One-Tap Sharing**: Share product images *and* professionally formatted text details directly to WhatsApp, Instagram, Telegram, and more.
+-   **Smart Fallbacks**: Automaticaly handles image download failures by switching to text-only mode.
+-   **Interactive Share Overlay**: Custom animated overlay UI for platform selection.
 
-# OR using Yarn
-yarn start
+### 🔐 Authentication & Profile
+-   **Secure Auth Flow**: Sign Up/Login with validation.
+-   **Profile Management**: Edit profile details, manage addresses.
+
+### 🎨 UI/UX Excellence
+-   **NativeWind (TailwindCSS)**: modern, utility-first styling for rapid UI development.
+-   **Dark Mode Support**: Fully theme-aware components (Light/Dark auto-detection).
+-   **Smooth Animations**: Powered by `react-native-reanimated` and `LayoutAnimation`.
+-   **Gesture Handling**: Smooth modal dismissals (`PanResponder`) and swipe actions.
+
+---
+
+## 🛠️ Tech Stack
+
+### Core
+-   **Framework**: [React Native](https://reactnative.dev/) (v0.82+)
+-   **Language**: [TypeScript](https://www.typescriptlang.org/)
+-   **Navigation**: [React Navigation v7](https://reactnavigation.org/) (Stack & Native Stack)
+-   **State Management**: [Redux Toolkit](https://redux-toolkit.js.org/) + Context API
+
+### Styling & UI
+-   **Styling**: [NativeWind](https://www.nativewind.dev/) (TailwindCSS for RN)
+-   **Icons**: [React Native Vector Icons](https://github.com/oblador/react-native-vector-icons) (Ionicons)
+-   **Animations**: `react-native-reanimated` & `LayoutAnimation`
+-   **Components**: Custom modular components (`ProductCard`, `FilterModal`, `FilterBar`, `SearchHeader`)
+
+### Native Modules & Integration
+-   **Sharing**: [`react-native-share`](https://github.com/react-native-share/react-native-share)
+-   **File System**: [`react-native-fs`](https://github.com/itinance/react-native-fs) (Image downloading for share)
+-   **Sliders**: `@ptomasroos/react-native-multi-slider`
+-   **Safe Area**: `react-native-safe-area-context`
+
+---
+
+## 📂 Project Structure
+
+```bash
+src/
+├── api/             # API definition and Types (Axios)
+├── authentication/  # Auth Screens (Login, SignUp)
+├── components/      # Reusable UI Components
+│   ├── commonPage/  # Shared widgets (Search, Cards, Modals)
+│   ├── home/        # Home screen widgets
+│   ├── pages/       # Full screen views (CategoryProducts, Wishlist)
+│   └── modals/      # Global modals
+├── context/         # React Context (Cart, Wishlist)
+├── hooks/           # Custom Hooks (useProductShare, useThemePalette)
+├── navigation/      # AppNavigator and Route definitions
+└── redux/           # Global Store config
 ```
 
-## Step 2: Build and run your app
+---
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## 🚀 Getting Started
 
-### Android
+### Prerequisites
+-   Node.js (>= 18)
+-   JDK 17
+-   Android Studio (for Android) or Xcode (for iOS)
+-   React Native CLI
 
-```sh
-# Using npm
+### Installation
+
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/Aaryank-47/Epharmacy-RN.git
+    cd Epharmacy-RN
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
+
+3.  **iOS Setup (Mac Only)**
+    ```bash
+    cd ios
+    pod install
+    cd ..
+    ```
+
+### Running the App
+
+**Android:**
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+**iOS:**
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+**Start Metro Bundler (if not started automatically):**
+```bash
+npm start
+```
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
+## 🤝 Contributing
 
-Now that you have successfully run the app, let's make changes!
+Contributions are welcome! Please follow "Industry Standard" coding practices:
+1.  **Modular Components**: Keep components small and focused (e.g., `ProductCard.tsx` vs `ProductList.tsx`).
+2.  **Hooks**: Extract logic into custom hooks (e.g., `useProductShare`).
+3.  **Types**: Always define interfaces for Props and State.
+4.  **Styling**: Use NativeWind classes for consistency.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+---
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## 📄 License
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+This project is licensed under the MIT License.
