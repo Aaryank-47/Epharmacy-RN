@@ -197,7 +197,7 @@ const CategoryProductsScreen: React.FC = () => {
                 activeOpacity={0.9}
             >
                 {/* Image Section */}
-                <View className="h-48 rounded-xl bg-gray-100 border border-gray-200 relative dark:bg-gray-800 dark:border-gray-700">
+                <View className="h-48 rounded-xl bg-gray-500 border border-gray-100 relative dark:bg-gray-800 dark:border-gray-700">
                     {imageUri ? (
                         <Image
                             source={{ uri: imageUri }}
@@ -284,6 +284,9 @@ const CategoryProductsScreen: React.FC = () => {
                             width: 32,
                             height: 32,
                             backgroundColor: itemInCart ? '#10B981' : accentColor,
+                            borderWidth: 1.5,
+                            borderColor: '#FFFFFF',
+                            elevation: 3,
                         }}
                         onPress={() => handleAddToCart(item)}
                         activeOpacity={0.8}
