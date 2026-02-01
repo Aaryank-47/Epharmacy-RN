@@ -156,7 +156,10 @@ const ItemCard = memo<ItemCardProps>(({ item, isDark, accentColor, onPress, onAd
 
                 <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={() => onToggleWishlist(item)}
+                    onPress={(e) => {
+                        e?.stopPropagation?.();
+                        onToggleWishlist(item);
+                    }}
                     style={{
                         position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 16,
                         alignItems: 'center', justifyContent: 'center', zIndex: 10,

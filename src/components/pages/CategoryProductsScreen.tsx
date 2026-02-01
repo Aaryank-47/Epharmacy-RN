@@ -17,7 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import { getItemsByCategory } from '../../api/medicinesApi';
 import type { Medicine, SearchFilters } from '../../api/types';
-import SearchHeader from '../commonPage/search/SearchHeader';
+import { SearchHeader } from '../commonPage/search/SearchComponents';
 import FilterModal from '../commonPage/search/FilterModal';
 import TopStores from '../commonPage/TopStores';
 import { useCart } from '../../context/CartContext';
@@ -218,7 +218,10 @@ const CategoryProductsScreen: React.FC = () => {
                     {/* Wishlist Button */}
                     <TouchableOpacity
                         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 justify-center items-center"
-                        onPress={() => handleToggleWishlist(item)}
+                        onPress={(e) => {
+                            e?.stopPropagation?.();
+                            handleToggleWishlist(item);
+                        }}
                     >
                         <Icon
                             name={itemInWishlist ? "heart" : "heart-outline"}

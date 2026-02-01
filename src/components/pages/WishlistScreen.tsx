@@ -1,19 +1,16 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StatusBar, Dimensions } from 'react-native';
+import React, { useCallback, useState, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
-import LinearGradient from 'react-native-linear-gradient';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Tabs from '../commonPage/Tab';
 
-const { width } = Dimensions.get('window');
-
 const WishlistScreen = () => {
     const navigation = useNavigation<any>();
-    const { isDark, accentColor } = useThemePalette();
+    const { isDark} = useThemePalette();
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
 
@@ -70,26 +67,26 @@ const WishlistScreen = () => {
         setToastVisible(false);
     }, []);
 
-    const renderRightActions = (progress: any, dragX: any, item: any) => {
-        return (
-            <TouchableOpacity
-                onPress={() => handleDelete(item)}
-                className="justify-center items-center mb-5 bg-red-600 rounded-r-[24px]"
-                style={{ width: 90 }}
-            >
-                <View className="items-center">
-                    <Ionicons name="trash-outline" size={26} color="white" />
-                    <Text className="text-white text-[10px] font-bold mt-1">Remove</Text>
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
     const renderItem = useCallback(({ item }: { item: any }) => {
         if (deletedItem?.item._id === item._id) return null; // Optimistically hide
 
         // Mock color options for visual fidelity as per reference image
         const colors = ['#FCA5A5', '#FCD34D', '#111827'];
+
+        const renderRightActions = (progress: any, dragX: any, item: any) => {
+            return (
+                <TouchableOpacity
+                    onPress={() => handleDelete(item)}
+                    className="justify-center items-center mb-5 bg-red-600 rounded-r-[24px]"
+                    style={{ width: 90 }}
+                >
+                    <View className="items-center">
+                        <Ionicons name="trash-outline" size={26} color="white" />
+                        <Text className="text-white text-[10px] font-bold mt-1">Remove</Text>
+                    </View>
+                </TouchableOpacity>
+            );
+        };
 
         return (
             <GestureHandlerRootView>
@@ -250,7 +247,7 @@ const WishlistScreen = () => {
                     )}
                 </View>
 
-                {/* Custom Undo Toast */}
+
                 {/* Custom Undo Toast */}
                 {toastVisible && (
                     <View

@@ -226,7 +226,10 @@ const TrendingProductCard = memo<TrendingProductCardProps>(
                 {/* Wishlist Icon */}
                 <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={() => onToggleWishlist(item)}
+                    onPress={(e) => {
+                        e?.stopPropagation?.();
+                        onToggleWishlist(item);
+                    }}
                     style={{
                         position: 'absolute',
                         top: 8,

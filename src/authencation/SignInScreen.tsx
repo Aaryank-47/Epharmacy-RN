@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -14,10 +13,9 @@ import {
   View,
 } from 'react-native';
 import type { NavigationProp } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LottieView from 'lottie-react-native';
 import { useMutation } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
@@ -29,7 +27,7 @@ import { toHumanReadableError, mapApiError } from '../utils/errorHandler';
 import useThemePalette from '../hooks/useThemePalette';
 import { useAuth } from '../context/AuthContext';
 
-const { width: screenWidth } = Dimensions.get('window');
+
 const INPUT_HEIGHT = 56;
 
 // ============================================================================
@@ -74,7 +72,7 @@ const WelcomeSection = memo(({ theme }: { theme: any }) => (
   </View>
 ));
 
-const SocialLogin = memo(({ isGoogleSigningIn, onGoogle, theme }: any) => (
+const SocialLogin = memo(({ isGoogleSigningIn, onGoogle }: any) => (
   <View className="mt-8 flex-row justify-center gap-4">
     <TouchableOpacity
       activeOpacity={0.9}
@@ -184,7 +182,6 @@ const LoginForm = memo(({
 const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   const { login: persistSession } = useAuth();
   const theme = useThemePalette();
-  const insets = useSafeAreaInsets();
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   const [email, setEmail] = useState('');
