@@ -118,6 +118,7 @@ const CategoryProductsScreen: React.FC = () => {
         });
         ToastAndroid.show('Item has been added to the cart', ToastAndroid.SHORT);
     }, [isInCart, addToCart]);
+    
     const fetchProducts = useCallback(async () => {
         if (!categoryId) return;
 
@@ -141,7 +142,6 @@ const CategoryProductsScreen: React.FC = () => {
         }
     }, [categoryId, filters, limit]);
 
-    // Animate padding when showStores changes
     // Animate padding when showStores changes
     useEffect(() => {
         Animated.timing(contentPaddingTop, {
