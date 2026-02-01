@@ -1,4 +1,4 @@
-# 🏥 E-Pharmacy RN
+#  E-Pharmacy RN
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![React Native](https://img.shields.io/badge/React_Native-v0.76+-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-v5.0+-blue) ![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-Enabled-purple)
 
@@ -6,9 +6,9 @@ A production-grade, feature-rich **E-Commerce Pharmacy Application** built with 
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-### 🛍️ Product Discovery & Shopping
+###  Product Discovery & Shopping
 -   **Dynamic Category Listings**: Filterable and sortable product grids with smooth layout animations.
 -   **Smart Search**: Real-time search with animated filter bars and recent search tracking.
 -   **Advanced Filtering**: 
@@ -23,11 +23,11 @@ A production-grade, feature-rich **E-Commerce Pharmacy Application** built with 
 -   **Smart Fallbacks**: Automaticaly handles image download failures by switching to text-only mode.
 -   **Interactive Share Overlay**: Custom animated overlay UI for platform selection.
 
-### 🔐 Authentication & Profile
+###  Authentication & Profile
 -   **Secure Auth Flow**: Sign Up/Login with validation.
 -   **Profile Management**: Edit profile details, manage addresses.
 
-### 🎨 UI/UX Excellence
+###  UI/UX Excellence
 -   **NativeWind (TailwindCSS)**: modern, utility-first styling for rapid UI development.
 -   **Dark Mode Support**: Fully theme-aware components (Light/Dark auto-detection).
 -   **Smooth Animations**: Powered by `react-native-reanimated` and `LayoutAnimation`.
@@ -35,7 +35,7 @@ A production-grade, feature-rich **E-Commerce Pharmacy Application** built with 
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Core
 -   **Framework**: [React Native](https://reactnative.dev/) (v0.82+)
@@ -76,7 +76,7 @@ src/
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 -   Node.js (>= 18)
@@ -125,7 +125,7 @@ npm start
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please follow "Industry Standard" coding practices:
 1.  **Modular Components**: Keep components small and focused (e.g., `ProductCard.tsx` vs `ProductList.tsx`).
