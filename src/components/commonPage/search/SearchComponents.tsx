@@ -24,6 +24,7 @@ interface SearchHeaderProps {
     editable?: boolean;
     onSearchPress?: () => void;
     onFilterPress?: () => void;
+    activeFilterCount?: number;
 }
 
 export const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -38,7 +39,8 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
     placeholderColor,
     editable = true,
     onSearchPress,
-    onFilterPress
+    onFilterPress,
+    activeFilterCount = 0
 }) => {
     const handleDefaultCameraPress = async () => {
         try {
@@ -126,10 +128,17 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
             {onFilterPress && (
                 <TouchableOpacity
                     onPress={onFilterPress}
-                    className="p-2 ml-1 -mr-1 rounded-full"
+                    className="p-2 ml-1 -mr-1 rounded-full relative"
                     activeOpacity={0.7}
                 >
                     <Icon name="options-outline" size={24} color={textColor} />
+                    {activeFilterCount > 0 && (
+                        <View className="absolute top-1 right-1 bg-red-500 w-4 h-4 rounded-full justify-center items-center border border-white dark:border-gray-900">
+                            <Text className="text-[10px] text-white font-bold">
+                                {activeFilterCount}
+                            </Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             )}
         </View>
