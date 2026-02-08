@@ -31,6 +31,10 @@ import HistoryPage from "./src/components/commonPage/HistoryPage";
 import WishlistScreen from "./src/components/pages/WishlistScreen";
 import NotificationsScreen from "./src/components/pages/NotificationsScreen";
 import CategoryProductsScreen from "./src/components/pages/category/CategoryProductsScreen";
+import EventDetailScreen from "./src/components/pages/EventDetailScreen";
+import OfferDetailScreen from "./src/components/pages/OfferDetailScreen";
+import BrandDetailScreen from "./src/components/pages/BrandDetailScreen";
+import type { Advertisement } from "./src/api/types";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -69,6 +73,9 @@ export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
+  EventDetail: { event: Advertisement };
+  OfferDetail: { offer: Advertisement };
+  BrandDetail: { brand: Advertisement };
 };
 
 type ScreenConfig = {
@@ -94,6 +101,9 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "QRScannerScreen", component: QRScannerScreen },
   { name: "OfferBannerSection", component: OfferBannerSection },
   { name: "Notifications", component: NotificationsScreen },
+  { name: "EventDetail", component: EventDetailScreen },
+  { name: "OfferDetail", component: OfferDetailScreen },
+  { name: "BrandDetail", component: BrandDetailScreen },
 ];
 
 const PUBLIC_SCREENS: ScreenConfig[] = [

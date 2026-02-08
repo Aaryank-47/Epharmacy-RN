@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useUserProfile, USER_PROFILE_KEY } from './useUserProfile';
 import { RECENTLY_VIEWED_ITEMS_KEY, RECENTLY_VIEWED_CATEGORIES_KEY } from './useRecentlyViewed';

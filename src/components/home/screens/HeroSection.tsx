@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, Dimensions, Easing, FlatList, Animated, ActivityIndicator, Platform, ToastAndroid } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, Dimensions, Easing, FlatList, Animated, Platform } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import LocationService from '../../../services/LocationService';
 import LinearGradient from 'react-native-linear-gradient';
@@ -7,9 +7,10 @@ import { useThemePalette } from '../../../hooks/useThemePalette';
 import { trackAdvertisementClick, updateUserProfile, getFeaturedMedicines, getRunningAdvertisements } from '../../../api/medicinesApi';
 import { getUserProfile } from '../../../api/authApi';
 import type { Medicine as APIMedicine } from '../../../api/types';
+import { useFeature } from '../../../hooks/useFeature';
 
 interface Medicine { _id: string; title: string; imageUrl: string; price?: number; originalPrice?: number; discount?: number }
-interface Advertisement { _id: string; title: string; description: string; imageUrl: string; startDate: string; endDate: string; offerText?: string }
+interface Advertisement { _id: string; title: string; description: string; imageUrl: string; startDate: string; endDate: string; offerText?: string; type?: string; itemId?: string }
 interface LocationData { latitude: number; longitude: number; address?: string; city?: string; state?: string }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -39,14 +40,14 @@ const HeroSectionSkeleton = memo<{ isDark: boolean }>(({ isDark }) => (
   </LinearGradient>
 ));
 
-const AdvertisementCard = memo<{ ad: Advertisement; isDark: boolean; accentColor: string; onPress: (id: string, title: string) => void }>(({ ad, isDark, onPress }) => (
-  <TouchableOpacity activeOpacity={0.9} onPress={() => onPress(ad._id, ad.title)}>
+const AdvertisementCard = memo<{ ad: Advertisement; isDark: boolean; accentColor: string; onPress: (ad: Advertisement) => void }>(({ ad, isDark, onPress }) => (
+  <TouchableOpacity activeOpacity={0.9} onPress={() => onPress(ad)}>
     <LinearGradient colors={isDark ? ['#1E2026', '#2A2D35'] : ['#FFFFFF', '#F9FAFB']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ width: '100%', borderRadius: 24, padding: getResponsiveSize(16), marginVertical: getResponsiveSize(6), flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0,0,0,0.05)', shadowOffset: { width: 0, height: 4 }, shadowOpacity: isDark ? 0.4 : 0.1, shadowRadius: 12, elevation: isDark ? 4 : 1 }}>
       <View style={{ flex: 1, paddingRight: 10 }}>
         <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>{ad.title}</Text>
         <Text style={{ fontSize: 28, fontWeight: '900', color: isDark ? '#FFFFFF' : '#111827', letterSpacing: -0.5, lineHeight: 34 }}>{ad.offerText || '50'}% OFF</Text>
         <Text style={{ marginTop: 6, fontSize: 14, color: isDark ? '#D1D5DB' : '#4B5563', opacity: 0.9, fontWeight: '500' }}>{new Date(ad.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
-        <TouchableOpacity style={{ marginTop: 18, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 30, backgroundColor: '#22C55E', alignSelf: 'flex-start', shadowColor: '#22C55E', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 2 }} onPress={() => onPress(ad._id, ad.title)}><Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Get Now</Text></TouchableOpacity>
+        <TouchableOpacity style={{ marginTop: 18, paddingVertical: 10, paddingHorizontal: 24, borderRadius: 30, backgroundColor: '#22C55E', alignSelf: 'flex-start', shadowColor: '#22C55E', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 2 }} onPress={() => onPress(ad)}><Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Get Now</Text></TouchableOpacity>
       </View>
       <View style={{ width: 140, height: 130, borderRadius: 15, overflow: 'hidden', backgroundColor: isDark ? '#374151' : '#F3F4F6', borderWidth: 0.4, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}><Image source={{ uri: ad.imageUrl }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} /></View>
     </LinearGradient>
@@ -84,9 +85,12 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
   const flatListRef = useRef<FlatList>(null);
   const scrollIndexRef = useRef(0);
   const [currentOffer, setCurrentOffer] = useState(0);
-  const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
+  const [_currentScrollIndex, setCurrentScrollIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const isPausedRef = useRef(false);
+
+  // Feature flag check
+  const isFeaturedMedicinesEnabled = useFeature('FEATURED_MEDICINES');
 
   const { data: medicinesData, isLoading: medicinesLoading, refetch: medicinesRefetch } = useQuery({
     queryKey: ['featured-medicines'],
@@ -94,6 +98,7 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
       const response = await getFeaturedMedicines();
       return response.data?.data || [];
     },
+    enabled: isFeaturedMedicinesEnabled, // Only fetch if feature is enabled
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 3,
@@ -119,7 +124,7 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
       medicinesRefetch();
       adsRefetch();
     }
-  }, [isRefreshing]);
+  }, [isRefreshing, adsRefetch, medicinesRefetch]);
 
   // Sequential Rendering Trigger
   useEffect(() => {
@@ -225,6 +230,8 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
 
       } catch (error) {
         // Silently fail - user can update location from profile
+        throw new Error(error);
+        
       }
     };
 
@@ -234,7 +241,40 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
 
 
   const handleMedicinePress = useCallback(async (medicine: Medicine) => navigation.navigate('ProductDetail', { productId: medicine._id }), [navigation]);
-  const handleAdvertisementClick = useCallback(async (adId: string) => { try { await trackAdvertisementClick(adId); } catch { } }, []);
+  
+  const handleAdvertisementClick = useCallback(async (ad: Advertisement) => {
+    // Track the advertisement click (silently fail if not authenticated)
+    trackAdvertisementClick(ad._id).catch(() => {
+      // Silently ignore tracking errors (e.g., user not authenticated)
+    });
+    
+    // Navigate based on advertisement type (always navigate regardless of tracking)
+    try {
+      switch (ad.type) {
+        case 'Event':
+          navigation.navigate('EventDetail', { event: ad });
+          break;
+        case 'Offer':
+          navigation.navigate('OfferDetail', { offer: ad });
+          break;
+        case 'Brand':
+          navigation.navigate('BrandDetail', { brand: ad });
+          break;
+        case 'Product':
+          if (ad.itemId) {
+            navigation.navigate('ProductDetail', { productId: ad.itemId });
+          }
+          break;
+        default:
+          // Fallback: If no type is specified, treat as general offer
+          navigation.navigate('OfferDetail', { offer: ad });
+          break;
+      }
+    } catch (error) {
+      // Only log navigation errors
+      console.error('Navigation error:', error);
+    }
+  }, [navigation]);
 
   useEffect(() => {
     if (advertisements.length === 0) return;
@@ -266,32 +306,37 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
   return (
     <LinearGradient colors={isDark ? ['#181A20', '#2A2D35'] : ['#FFFFFF', '#F3F4F6']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1, paddingHorizontal: getResponsiveSize(16) }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }} scrollEventThrottle={16}>
-        <View style={{ marginVertical: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: isDark ? '#FFFFFF' : '#1F2937', letterSpacing: 0.5 }} numberOfLines={1} ellipsizeMode="tail">
-                {userLocation ? userLocation.address : 'Featured Medicines'}
-              </Text>
-              {userLocation && <Text style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280' }}>Current Location</Text>}
+        {(userLocation || isFeaturedMedicinesEnabled) && (
+          <View style={{ marginVertical: 16 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: isDark ? '#FFFFFF' : '#1F2937', letterSpacing: 0.5 }} numberOfLines={1} ellipsizeMode="tail">
+                  {userLocation ? userLocation.address : 'Featured Medicines'}
+                </Text>
+                {userLocation && <Text style={{ fontSize: 12, color: isDark ? '#9CA3AF' : '#6B7280' }}>Current Location</Text>}
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
 
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }} contentContainerStyle={{ paddingHorizontal: 2 }}>
-          {medicines.map((medicine) => (
-            <TouchableOpacity key={medicine._id} style={{ alignItems: 'center', width: (screenWidth - 32) / 4 }} activeOpacity={0.7} onPress={() => handleMedicinePress(medicine)}>
-              <View style={{ width: 65, height: 65, alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
-                <RotatingBorder isDark={isDark} />
-                <View style={{ width: 61, height: 61, borderRadius: 30.5, backgroundColor: isDark ? '#3A3A3A' : '#F0F0F0', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-                  <Image source={{ uri: medicine.imageUrl }} style={{ width: 61, height: 61, borderRadius: 30.5 }} resizeMode="cover" />
+        {/* Featured Medicines Section - Only show if feature flag is enabled */}
+        {isFeaturedMedicinesEnabled && medicines.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }} contentContainerStyle={{ paddingHorizontal: 2 }}>
+            {medicines.map((medicine) => (
+              <TouchableOpacity key={medicine._id} style={{ alignItems: 'center', width: (screenWidth - 32) / 4 }} activeOpacity={0.7} onPress={() => handleMedicinePress(medicine)}>
+                <View style={{ width: 65, height: 65, alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+                  <RotatingBorder isDark={isDark} />
+                  <View style={{ width: 61, height: 61, borderRadius: 30.5, backgroundColor: isDark ? '#3A3A3A' : '#F0F0F0', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                    <Image source={{ uri: medicine.imageUrl }} style={{ width: 61, height: 61, borderRadius: 30.5 }} resizeMode="cover" />
+                  </View>
                 </View>
-              </View>
-              <Text style={{ marginTop: 8, fontSize: 11, fontWeight: '600', color: isDark ? '#E5E7EB' : '#4B5563', textAlign: 'center' }} numberOfLines={1}>{medicine.title.split(' ')[0]}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text style={{ marginTop: 8, fontSize: 11, fontWeight: '600', color: isDark ? '#E5E7EB' : '#4B5563', textAlign: 'center' }} numberOfLines={1}>{medicine.title.split(' ')[0]}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {advertisements.length > 0 ? (
           <View style={{ marginHorizontal: -getResponsiveSize(16) }}>
