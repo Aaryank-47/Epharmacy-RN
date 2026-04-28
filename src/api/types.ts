@@ -347,3 +347,88 @@ export interface UploadedFilePayload {
   type: string;
   uri: string;
 }
+
+// ============================================================================
+// STORE TYPES
+// ============================================================================
+
+export interface Store {
+  id: string;
+  name: string;
+  description: string;
+  rating: number;
+  reviewsCount: string;
+  freeDelivery: boolean;
+  distance: string;
+  deliveryTime: string;
+  isOpen: boolean;
+  imageUrl: string;
+  discountBadge?: string;
+  isFavorite: boolean;
+}
+
+export interface StoreProduct {
+  id: string;
+  name: string;
+  brand?: string;
+  price: number;
+  originalPrice?: number;
+  discountBadge?: string;
+  inStock: boolean;
+  imageUrl: string;
+}
+
+export interface StoreReviewStats {
+  totalReviews: number;
+  averageRating: number;
+  reviewDistribution?: {
+    5: number;
+    4: number;
+    3: number;
+    2: number;
+    1: number;
+  };
+}
+
+export interface StoreItemsResponse {
+  items: StoreProduct[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage?: number;
+  };
+}
+
+export interface StoreReview {
+  _id?: string;
+  id?: string;
+  userId: string;
+  userName?: string;
+  userAvatar?: string;
+  rating: number;
+  comment: string;
+  timestamp?: string;
+  createdAt?: string;
+  isVerifiedPurchase?: boolean;
+}
+
+export interface StoreDetailsExtended extends Store {
+  _id?: string;
+  address?: string;
+  contactPhone?: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  licenseNumber?: string;
+  openingHours?: {
+    open: string;
+    close: string;
+  };
+  closedDays?: string[];
+  reviews?: StoreReview[];
+  totalReviews?: number;
+  averageRating?: number;
+  verificationStatus?: 'verified' | 'pending' | 'rejected';
+  createdAt?: string;
+  updatedAt?: string;
+}

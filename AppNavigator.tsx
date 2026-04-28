@@ -25,12 +25,18 @@ import ProductDetail from "./src/components/pages/ProductDetail";
 import ShoppingBagScreen from "./src/components/pages/ShoppingBagScreen";
 import CheckoutPage from "./src/components/pages/CheckoutPage";
 import PaymentScreen from "./src/components/commonPage/PaymentScreen";
-import QRScannerScreen from "./src/components/qr/QRScannerScreen";
 import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
+import OCRHistoryScreen from "./src/components/qr/OCRHistoryScreen";
 import HistoryPage from "./src/components/commonPage/HistoryPage";
 import WishlistScreen from "./src/components/pages/WishlistScreen";
 import NotificationsScreen from "./src/components/pages/NotificationsScreen";
-import CategoryProductsScreen from "./src/components/pages/CategoryProductsScreen";
+import CategoryProductsScreen from "./src/components/pages/category/CategoryProductsScreen";
+import EventDetailScreen from "./src/components/pages/EventDetailScreen";
+import OfferDetailScreen from "./src/components/pages/OfferDetailScreen";
+import BrandDetailScreen from "./src/components/pages/BrandDetailScreen";
+import StorePage from "./src/components/pages/store/StorePage";
+import StoreDetailScreen from "./src/components/pages/store/StoreDetailScreen";
+import type { Advertisement } from "./src/api/types";
 
 export type RootStackParamList = {
   HomeTabs: undefined;
@@ -58,9 +64,9 @@ export type RootStackParamList = {
   ShoppingBagScreen: undefined;
   CheckoutPage: undefined;
   PaymentScreen: undefined;
-  QRScannerScreen: undefined;
   OfferBannerSection: undefined;
   PDFUploadScreen: undefined;
+  OCRHistoryScreen: undefined;
   HistoryPage: undefined;
   Wishlist: undefined;
   Notifications: undefined;
@@ -69,6 +75,11 @@ export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
+  EventDetail: { event: Advertisement };
+  OfferDetail: { offer: Advertisement };
+  BrandDetail: { brand: Advertisement };
+  StorePage: undefined;
+  StoreDetailScreen: { storeId: string };
 };
 
 type ScreenConfig = {
@@ -89,11 +100,16 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "CheckoutPage", component: CheckoutPage },
   { name: "PaymentScreen", component: PaymentScreen },
   { name: "PDFUploadScreen", component: PDFUploadScreen },
+  { name: "OCRHistoryScreen", component: OCRHistoryScreen },
   { name: "HistoryPage", component: HistoryPage },
   { name: "Wishlist", component: WishlistScreen },
-  { name: "QRScannerScreen", component: QRScannerScreen },
   { name: "OfferBannerSection", component: OfferBannerSection },
   { name: "Notifications", component: NotificationsScreen },
+  { name: "EventDetail", component: EventDetailScreen },
+  { name: "OfferDetail", component: OfferDetailScreen },
+  { name: "BrandDetail", component: BrandDetailScreen },
+  { name: "StorePage", component: StorePage },
+  { name: "StoreDetailScreen", component: StoreDetailScreen },
 ];
 
 const PUBLIC_SCREENS: ScreenConfig[] = [

@@ -25,7 +25,7 @@ export const uploadPrescription = async (file: UploadedFilePayload): Promise<Ocr
         headers: {
             'Content-Type': 'multipart/form-data',
         },
-        transformRequest: (data, headers) => {
+        transformRequest: (data) => {
             // Axios handles FormData transformation automatically, 
             // but we need to ensure it doesn't try to stringify it if we passed it as data
             return data;

@@ -146,7 +146,7 @@ const Tabs = memo<{
     { name: 'Home', screenName: 'HomeTabs', icon: 'home', iconOutline: 'home-outline' },
     { name: 'Cart', screenName: 'ShoppingBagScreen', icon: 'cart', iconOutline: 'cart-outline' },
     { name: 'Explore', screenName: 'ExplorePage', icon: 'compass', iconOutline: 'compass-outline' },
-    { name: 'Store', screenName: 'HomeTabs', icon: 'storefront', iconOutline: 'storefront-outline' },
+    { name: 'Store', screenName: 'StorePage', icon: 'storefront', iconOutline: 'storefront-outline' },
     { name: 'Profile', screenName: 'ProfilePage', icon: 'person', iconOutline: 'person-outline', isProfile: true },
   ],
   currentActiveTab = 'Home', onNavigate = () => { }, onTabReselect, onError = () => { }, translateY, scrollY, onScrollToTop }) => {
@@ -254,9 +254,9 @@ const Tabs = memo<{
       <QROptionsBottomSheet
         visible={showQRSheet}
         onClose={() => setShowQRSheet(false)}
-        onScanQR={() => {
+        onOpenOcrHistory={() => {
           setShowQRSheet(false);
-          (navigation as any).navigate('QRScannerScreen');
+          (navigation as any).navigate('OCRHistoryScreen');
         }}
         onTakePhoto={() => {
           setShowQRSheet(false);

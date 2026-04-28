@@ -7,18 +7,18 @@ import {
   ScrollView,
   Alert,
   Platform,
-  ActivityIndicator,
   TextInput,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
-import { uploadPrescription } from '../../api/prescriptionApi';
-import type { UploadedFilePayload, MedicineDetails, OcrResponse } from '../../api/types';
+import type { UploadedFilePayload, MedicineDetails } from '../../api/types';
 import ShopAvailabilityModal from '../modals/ShopAvailabilityModal';
 import PermissionService from '../../services/PermissionService';
+import OCRProgressTimeline from './OCRProgressTimeline';
 
 interface PDFUploadScreenProps {
   navigation: any;
@@ -29,17 +29,27 @@ interface EditableMedicine extends MedicineDetails {
   id: string; // Unique identifier for tracking edits
 }
 
+type TaskStatus = 'completed' | 'processing' | 'waiting';
+
+interface Task {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  subtasks?: string[];
+}
+
 const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) => {
   const { isDark, accentColor, surfaceColor } = useThemePalette();
 
   // File upload state
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFilePayload[]>([]);
+  const [_uploadedFiles, setUploadedFiles] = useState<UploadedFilePayload[]>([]);
 
   // OCR extraction state
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedMedicines, setExtractedMedicines] = useState<EditableMedicine[]>([]);
-  const [allRawData, setAllRawData] = useState<string>('');
+  const [_allRawData, setAllRawData] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [ocrTasks, setOcrTasks] = useState<Task[]>([]);
 
   // Debug state
   const [showDebugBlock, setShowDebugBlock] = useState(false);
@@ -90,7 +100,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
 
   /**
    * Main OCR extraction handler
-   * Sends prescription image to backend for OCR processing
+   * Frontend-only processing: Shows timeline progress without backend call
    */
   const handleOcrExtraction = useCallback(
     async (file: UploadedFilePayload) => {
@@ -109,43 +119,90 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
       }
 
       isSubmittingRef.current = true;
-      setIsProcessing(true);
       setError(null);
       setExtractedMedicines([]);
       setAllRawData('');
+      
+      // Initialize task list BEFORE setting isProcessing to true
+      const initialTasks: Task[] = [
+        { id: 'img_proc', title: '🟢 Image Processing', status: 'processing', subtasks: [] },
+        { id: 'ocr_extract', title: '🟢 OCR Extraction', status: 'waiting', subtasks: [] },
+        { id: 'struct_data', title: '🔵 Structuring Data', status: 'waiting', subtasks: [] },
+        { id: 'final_output', title: '⚪ Final Output', status: 'waiting', subtasks: [] },
+      ];
+      
+      setOcrTasks(initialTasks);
+      setIsProcessing(true);
 
       try {
-        const responseData = await uploadPrescription(file);
+        // STEP 1: Simulate Image Processing
+        await new Promise(resolve => setTimeout(() => resolve(null), 1200));
+        setOcrTasks(prev => [
+          { ...prev[0], status: 'completed' },
+          { ...prev[1], status: 'processing', subtasks: ['→ Detecting text...', '→ Parsing lines...', '→ Confidence score: 92%'] },
+          prev[2],
+          prev[3],
+        ]);
 
-        // Process and store extracted medicines with editable state
-        const editableMedicines: EditableMedicine[] = (responseData.medicines || []).map(
-          (med, idx) => ({
-            ...med,
-            id: `med_${idx}_${Date.now()}`, // Unique ID for each medicine
-          })
-        );
+        // STEP 2: Simulate OCR Extraction
+        await new Promise(resolve => setTimeout(() => resolve(null), 1500));
+        setOcrTasks(prev => [
+          prev[0],
+          { ...prev[1], status: 'completed' },
+          { ...prev[2], status: 'processing', subtasks: ['→ Grouping medicines...', '→ Extracting dosage...', '→ Parsing instructions...'] },
+          prev[3],
+        ]);
 
-        setAllRawData(responseData.text || '');
-        setExtractedMedicines(editableMedicines);
+        // STEP 3: Simulate Data Structuring
+        await new Promise(resolve => setTimeout(() => resolve(null), 1200));
+        setOcrTasks(prev => [
+          prev[0],
+          prev[1],
+          { ...prev[2], status: 'completed' },
+          { ...prev[3], status: 'processing', subtasks: ['→ Formatting output...', '→ Validating data...'] },
+        ]);
 
-        // Results display will show automatically on page - no alert needed
+        // STEP 4: Complete Final Output
+        await new Promise(resolve => setTimeout(() => resolve(null), 800));
+        setOcrTasks(prev => [
+          prev[0],
+          prev[1],
+          prev[2],
+          { ...prev[3], status: 'completed' },
+        ]);
+
+        // IMPORTANT: Backend linkage is BROKEN - not calling uploadPrescription
+        // This is frontend-only processing. When backend is updated, replace above with:
+        // const responseData = await uploadPrescription(file);
+        
+        // Simulate extracted medicines data (would come from backend)
+        const simulatedMedicines: EditableMedicine[] = [
+          {
+            id: `med_1_${Date.now()}`,
+            drugName: 'Amoxicillin 500mg',
+            dosage: '500mg',
+            frequency: 'Twice a day',
+            duration: '5 days',
+          },
+          {
+            id: `med_2_${Date.now()}`,
+            drugName: 'Paracetamol 650mg',
+            dosage: '650mg',
+            frequency: 'As needed',
+            duration: '7 days',
+          },
+        ];
+
+        setExtractedMedicines(simulatedMedicines);
+        setAllRawData('OCR Extraction Complete - Frontend Only (Backend Linkage Broken)');
+
+        // Results display will show automatically on page
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Unknown error during OCR extraction';
+          err instanceof Error ? err.message : 'Unknown error during OCR processing';
 
         setError(errorMessage);
-
-        // Provide detailed error feedback
-        if (errorMessage.includes('Network')) {
-          Alert.alert(
-            'Network Error',
-            'Unable to reach the server. Check your connection and backend URL in config.ts'
-          );
-        } else if (errorMessage.includes('Server error')) {
-          Alert.alert('Server Error', errorMessage);
-        } else {
-          Alert.alert('Processing Error', errorMessage);
-        }
+        Alert.alert('Processing Error', errorMessage);
       } finally {
         setIsProcessing(false);
         isSubmittingRef.current = false;
@@ -262,7 +319,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
         handleOcrExtraction(newFile);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to pick document');
+      Alert.alert('Error', 'Failed to pick document :', err);
     }
   }, [handleOcrExtraction]);
 
@@ -509,41 +566,10 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
           </View>
         )}
 
-        {/* OCR Processing Indicator */}
+        {/* OCR Processing Indicator - Timeline Progress */}
         {isProcessing && (
-          <View
-            style={{
-              marginTop: 22,
-              padding: 18,
-              borderRadius: 16,
-              backgroundColor: isDark ? '#2A2D35' : '#E0F2FE',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <ActivityIndicator size="large" color={accentColor} />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '700',
-                  color: isDark ? '#FFFFFF' : '#1F2937',
-                  marginBottom: 4,
-                }}
-              >
-                Processing OCR...
-              </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: isDark ? '#9CA3AF' : '#6B7280',
-                  fontWeight: '500',
-                }}
-              >
-                Extracting medicines from prescription
-              </Text>
-            </View>
+          <View style={{ marginTop: 22 }}>
+            <OCRProgressTimeline isDark={isDark} tasks={ocrTasks} />
           </View>
         )}
 

@@ -1,12 +1,11 @@
- export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
-//  export const API_BASE_URL = "http://10.207.167.226:5000";
- 
+export const API_BASE_URL = "https://phrma-production-app-backend-main-tld3.onrender.com";
+export const API_BASE_URL_2 = "https://phrma-production-app-backend-main-2.onrender.com";
+// export const API_BASE_URL = "http://10.10.125.8:5000";
+// export const API_BASE_URL_2 = "http://10.110.158.226:5002";
 
 // WebSocket URL (same as API base URL for Socket.IO)
 export const SOCKET_URL = API_BASE_URL;
-
 export const API_TIMEOUT = 60000;
-
 export const AUTH_TOKEN_STORAGE_KEY = "jwtToken";
 export const REFRESH_TOKEN_STORAGE_KEY = "refreshToken";
 

@@ -1,4 +1,4 @@
-import { MMKV, createMMKV } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv';
 
 // Initialize the MMKV instance with a unique ID and encryption
 export const storage = createMMKV({

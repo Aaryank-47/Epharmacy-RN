@@ -17,6 +17,6 @@ module.exports = function (api) {
 
   return {
     presets: ['module:@react-native/babel-preset'],
-    plugins: filteredPlugins,
+    plugins: [...filteredPlugins, 'react-native-reanimated/plugin'],
   };
 };

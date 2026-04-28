@@ -225,10 +225,14 @@ const HeroSection: React.FC<{ navigation?: any; onReady?: () => void; isRefreshi
 
       } catch (error) {
         // Silently fail - user can update location from profile
+        // Don't re-throw, just log for debugging
+        console.debug('[HeroSection] Location fetch failed:', error instanceof Error ? error.message : String(error));
       }
     };
 
-    autoFetchLocation();
+    autoFetchLocation().catch(() => {
+      // Silently ignore location errors
+    });
   }, []);
 
 
