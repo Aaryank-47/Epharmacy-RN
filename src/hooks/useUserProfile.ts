@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserProfile, updateUserProfile } from '../api/authApi';
-import { UserProfilePayload, UpdateProfilePayload } from '../api/types';
+import { UpdateProfilePayload } from '../api/types';
 
 export const USER_PROFILE_KEY = ['userProfile'];
 

@@ -12,6 +12,7 @@ import QueryProvider from "./src/providers/QueryProvider";
 import { store } from "./src/store";
 import { WishlistProvider } from "./src/context/WishlistContext";
 import { SocketProvider } from "./src/context/SocketContext";
+import { FeatureFlagsProvider } from "./src/context/FeatureFlagsContext";
 
 import AppNavigator from "./AppNavigator";
 import loadIconFonts from "./src/utils/loadIconFonts";
@@ -72,26 +73,28 @@ export default function App() {
             <QueryProvider>
               <CartProvider>
                 <AuthProvider>
-                  <NotificationSetup />
+                  <FeatureFlagsProvider>
+                    <NotificationSetup />
 
-                  <WishlistProvider>
-                    <SocketProvider>
-                      <NetworkStatusMonitor>
-                        <NavigationContainer
-                          linking={{
-                            prefixes: ['epharmacy://', 'https://epharmacy.app'],
-                            config: {
-                              screens: {
-                                ProductDetail: 'product/:productId',
+                    <WishlistProvider>
+                      <SocketProvider>
+                        <NetworkStatusMonitor>
+                          <NavigationContainer
+                            linking={{
+                              prefixes: ['epharmacy://', 'https://epharmacy.app'],
+                              config: {
+                                screens: {
+                                  ProductDetail: 'product/:productId',
+                                },
                               },
-                            },
-                          }}
-                        >
+                            }}
+                          >
                           <AppNavigator />
                         </NavigationContainer>
                       </NetworkStatusMonitor>
                     </SocketProvider>
                   </WishlistProvider>
+                  </FeatureFlagsProvider>
                 </AuthProvider>
               </CartProvider>
             </QueryProvider>

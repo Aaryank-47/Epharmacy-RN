@@ -173,6 +173,25 @@ export interface Advertisement {
   endDate: string;
   offerText?: string;
   link?: string;
+  type: 'Product' | 'Brand' | 'Offer' | 'Event';
+  itemId?: string;
+  eventDetails?: {
+    fee?: number;
+    location?: string;
+    venue?: string;
+    organizer?: string;
+  };
+  offerDetails?: {
+    couponCode?: string;
+    discountPercentage?: number;
+    bankOffers?: string[];
+    termsAndConditions?: string[];
+  };
+  brandDetails?: {
+    brandId?: string;
+    brandName?: string;
+    brandDescription?: string;
+  };
 }
 
 export interface Medicine {

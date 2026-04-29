@@ -34,8 +34,6 @@ import CategoryProductsScreen from "./src/components/pages/category/CategoryProd
 import EventDetailScreen from "./src/components/pages/EventDetailScreen";
 import OfferDetailScreen from "./src/components/pages/OfferDetailScreen";
 import BrandDetailScreen from "./src/components/pages/BrandDetailScreen";
-import StorePage from "./src/components/pages/store/StorePage";
-import StoreDetailScreen from "./src/components/pages/store/StoreDetailScreen";
 import type { Advertisement } from "./src/api/types";
 
 export type RootStackParamList = {
@@ -78,8 +76,6 @@ export type RootStackParamList = {
   EventDetail: { event: Advertisement };
   OfferDetail: { offer: Advertisement };
   BrandDetail: { brand: Advertisement };
-  StorePage: undefined;
-  StoreDetailScreen: { storeId: string };
 };
 
 type ScreenConfig = {
@@ -108,8 +104,6 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "EventDetail", component: EventDetailScreen },
   { name: "OfferDetail", component: OfferDetailScreen },
   { name: "BrandDetail", component: BrandDetailScreen },
-  { name: "StorePage", component: StorePage },
-  { name: "StoreDetailScreen", component: StoreDetailScreen },
 ];
 
 const PUBLIC_SCREENS: ScreenConfig[] = [

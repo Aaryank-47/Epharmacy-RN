@@ -106,7 +106,12 @@ const TopStores: React.FC<TopStoresProps> = ({ loading = false }) => {
                     return (
                         <TouchableOpacity
                             key={store.id}
-                            style={{ width: itemWidth, alignItems: 'center', justifyContent: 'flex-start' }}
+                            style={{
+                                width: itemWidth,
+                                alignItems: 'center',
+                                justifyContent: 'flex-start',
+                                zIndex: 1, // Added z-index
+                            }}
                             activeOpacity={0.7}
                         >
                             <LinearGradient
@@ -118,8 +123,14 @@ const TopStores: React.FC<TopStoresProps> = ({ loading = false }) => {
                                     justifyContent: 'center',
                                     alignItems: 'center',
                                     overflow: 'hidden',
-                                    borderWidth: 1.5,
+                                    borderWidth: 0.2,
                                     borderColor: isDark ? '#3D4451' : '#E5E7EB',
+                                    // Added shadow properties
+                                    elevation: 5,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.2,
+                                    shadowRadius: 3,
                                 }}
                             >
                                 <Image

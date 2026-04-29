@@ -7,14 +7,13 @@
 
 import axios, {
   AxiosHeaders,
-  InternalAxiosRequestConfig,
-  AxiosResponse, // Added for deduplication response typing
+  InternalAxiosRequestConfig
 } from 'axios';
 // import AsyncStorage from '@react-native-async-storage/async-storage'; // Migrated to MMKV
 import { secureStorage } from '../utils/storage';
 
 import { API_BASE_URL, API_TIMEOUT } from './config';
-import { mapApiError, NormalizedError } from '../utils/errorHandler';
+import { mapApiError } from '../utils/errorHandler';
 
 // ============================================================================
 // TYPES
@@ -95,7 +94,7 @@ class LRUCache<K, V> {
 // Global Cache Instance
 const apiCache = new LRUCache<string, { data: any; timestamp: number }>(MAX_CACHE_SIZE);
 
-const pendingRequests = new Map<string, Promise<any>>();
+// const pendingRequests = new Map<string, Promise<any>>();
 
 // ============================================================================
 // IN-MEMORY TOKEN CACHE

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Switch, Animated, PanResponder, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import type { SearchFilters } from '../../../api/types';
@@ -33,6 +34,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
     // Animation / Gestures
     const DRAWER_HEIGHT = SCREEN_HEIGHT * 0.85; // Slightly taller
+
     const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
     const backdropOpacityProp = translateY.interpolate({
@@ -41,14 +43,26 @@ const FilterModal: React.FC<FilterModalProps> = ({
         extrapolate: 'clamp',
     });
 
+    // Track scroll position to allow pull-to-dismiss only when at top
+    const scrollY = useRef(0);
+
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponder: () => false, // Let ScrollView handle taps
             onMoveShouldSetPanResponder: (evt, gestureState) => {
-                return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && gestureState.dy > 5;
+                // Determine if it's a downward swipe and we are at the top
+                const isScrollingDown = gestureState.dy > 0;
+                const isVerticalSwipe = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+                const isAtTop = scrollY.current <= 0;
+
+                // Only steal gesture if dragging DOWN, VERTICALLY, and AT TOP
+                return isVerticalSwipe && isScrollingDown && isAtTop && Math.abs(gestureState.dy) > 10;
             },
             onPanResponderMove: (evt, gestureState) => {
-                if (gestureState.dy > 0) translateY.setValue(gestureState.dy);
+                if (gestureState.dy > 0) {
+                    // Add resistance if needed, or 1:1 movement
+                    translateY.setValue(gestureState.dy);
+                }
             },
             onPanResponderRelease: (evt, gestureState) => {
                 if (gestureState.dy > 120 || (gestureState.vy > 0.5 && gestureState.dy > 0)) {
@@ -67,6 +81,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
     useEffect(() => {
         if (visible) {
+            scrollY.current = 0; // Reset on open
             setMinPrice(initialFilters.minPrice ? initialFilters.minPrice.toString() : '');
             setMaxPrice(initialFilters.maxPrice ? initialFilters.maxPrice.toString() : '');
             setMinRating(initialFilters.minRating);
@@ -177,11 +192,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         transform: [{ translateY }],
                         backgroundColor: isDark ? '#181A20' : '#FFFFFF',
                     }}
+                    {...panResponder.panHandlers}
                 >
                     {/* Header */}
                     <View
                         className="items-center pb-2 pt-3 bg-transparent z-10"
-                        {...panResponder.panHandlers}
                     >
                         {/* Drag Handle */}
                         <View className="w-12 h-1.5 rounded-full mb-2 bg-gray-300 dark:bg-gray-700 opacity-50" />
@@ -206,44 +221,65 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         className="flex-1 px-6"
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
+                        onScroll={(e) => {
+                            scrollY.current = e.nativeEvent.contentOffset.y;
+                        }}
+                        scrollEventThrottle={16}
                     >
-                        {/* Price Range Section */}
+                        {/* Price Range Slider */}
                         {renderSectionHeader('Price Range', 'cash-outline')}
-                        <View className="flex-row items-center space-x-4">
-                            <View className="flex-1">
-                                <Text className="text-xs mb-2 ml-1 text-gray-500 font-medium">Minimum</Text>
-                                <View
-                                    className="flex-row items-center px-4 h-12 rounded-xl border bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
-                                >
-                                    <Text className="text-gray-400 mr-1">₹</Text>
-                                    <TextInput
-                                        className="flex-1 font-semibold text-base"
-                                        style={{ color: textColor }}
-                                        placeholder="0"
-                                        placeholderTextColor={placeholderColor}
-                                        keyboardType="numeric"
-                                        value={minPrice}
-                                        onChangeText={setMinPrice}
-                                    />
-                                </View>
+                        <View className="mb-2">
+                            <View className="flex-row justify-between mb-4 px-2">
+                                <Text className="font-bold text-base" style={{ color: textColor }}>₹{minPrice || '2'}</Text>
+                                <Text className="font-bold text-base" style={{ color: textColor }}>₹{maxPrice || '10000'}</Text>
                             </View>
-                            <View className="w-4 h-[2px] bg-gray-300 dark:bg-gray-700 mt-6" />
-                            <View className="flex-1">
-                                <Text className="text-xs mb-2 ml-1 text-gray-500 font-medium">Maximum</Text>
-                                <View
-                                    className="flex-row items-center px-4 h-12 rounded-xl border bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
-                                >
-                                    <Text className="text-gray-400 mr-1">₹</Text>
-                                    <TextInput
-                                        className="flex-1 font-semibold text-base"
-                                        style={{ color: textColor }}
-                                        placeholder="10000"
-                                        placeholderTextColor={placeholderColor}
-                                        keyboardType="numeric"
-                                        value={maxPrice}
-                                        onChangeText={setMaxPrice}
-                                    />
-                                </View>
+                            <View className="items-center">
+                                <MultiSlider
+                                    values={[Number(minPrice) || 2, Number(maxPrice) || 10000]}
+                                    sliderLength={Dimensions.get('window').width - 80}
+                                    onValuesChange={(values) => {
+                                        setMinPrice(values[0].toString());
+                                        setMaxPrice(values[1].toString());
+                                    }}
+                                    min={2}
+                                    max={10000}
+                                    step={10}
+                                    allowOverlap={false}
+                                    snapped
+                                    selectedStyle={{
+                                        backgroundColor: accentColor,
+                                    }}
+                                    unselectedStyle={{
+                                        backgroundColor: isDark ? '#2D3038' : '#E5E7EB',
+                                    }}
+                                    containerStyle={{
+                                        height: 40,
+                                    }}
+                                    trackStyle={{
+                                        height: 4,
+                                        borderRadius: 2,
+                                    }}
+                                    markerStyle={{
+                                        backgroundColor: isDark ? '#FFFFFF' : '#FFFFFF',
+                                        height: 24,
+                                        width: 24,
+                                        borderRadius: 12,
+                                        borderWidth: 2,
+                                        borderColor: accentColor,
+                                        shadowColor: "#000",
+                                        shadowOffset: {
+                                            width: 0,
+                                            height: 2,
+                                        },
+                                        shadowOpacity: 0.25,
+                                        shadowRadius: 3.84,
+                                        elevation: 5,
+                                    }}
+                                    pressedMarkerStyle={{
+                                        height: 28,
+                                        width: 28,
+                                    }}
+                                />
                             </View>
                         </View>
 

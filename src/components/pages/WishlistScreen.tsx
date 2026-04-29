@@ -10,7 +10,7 @@ import Tabs from '../commonPage/Tab';
 
 const WishlistScreen = () => {
     const navigation = useNavigation<any>();
-    const { isDark} = useThemePalette();
+    const { isDark } = useThemePalette();
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
 
@@ -251,7 +251,7 @@ const WishlistScreen = () => {
                 {/* Custom Undo Toast */}
                 {toastVisible && (
                     <View
-                        className="absolute bottom-6 left-4 right-4 bg-[#1F2937] dark:bg-[#FAFAFA] rounded-2xl p-4 flex-row justify-between items-center shadow-2xl"
+                        className="absolute bottom-24 left-4 right-4 bg-[#1F2937] dark:bg-[#FAFAFA] rounded-2xl p-4 flex-row justify-between items-center shadow-2xl"
                         style={{
                             elevation: 10,
                             shadowColor: '#000',
