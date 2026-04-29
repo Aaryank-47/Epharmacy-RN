@@ -26,7 +26,8 @@ import ShoppingBagScreen from "./src/components/pages/ShoppingBagScreen";
 import CheckoutPage from "./src/components/pages/CheckoutPage";
 import PaymentScreen from "./src/components/commonPage/PaymentScreen";
 import QRScannerScreen from "./src/components/qr/QRScannerScreen";
-import PDFUploadScreen from "./src/components/qr/PDFUploadScreen";
+import FindMedicinesScreen from "./src/components/pages/FindMedicinesScreen";
+import { OCRProcessingScreen } from "./src/components/pages/find-medicines/OCRProcessingScreen";
 import HistoryPage from "./src/components/commonPage/HistoryPage";
 import WishlistScreen from "./src/components/pages/WishlistScreen";
 import NotificationsScreen from "./src/components/pages/NotificationsScreen";
@@ -64,7 +65,8 @@ export type RootStackParamList = {
   PaymentScreen: undefined;
   QRScannerScreen: undefined;
   OfferBannerSection: undefined;
-  PDFUploadScreen: undefined;
+  FindMedicines: { initialMedicines?: any[]; detectedCount?: number; mode?: string };
+  OCRProcessingScreen: { file: any };
   HistoryPage: undefined;
   Wishlist: undefined;
   Notifications: undefined;
@@ -95,7 +97,8 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "ShoppingBagScreen", component: ShoppingBagScreen },
   { name: "CheckoutPage", component: CheckoutPage },
   { name: "PaymentScreen", component: PaymentScreen },
-  { name: "PDFUploadScreen", component: PDFUploadScreen },
+  { name: "FindMedicines", component: FindMedicinesScreen },
+  { name: "OCRProcessingScreen", component: OCRProcessingScreen },
   { name: "HistoryPage", component: HistoryPage },
   { name: "Wishlist", component: WishlistScreen },
   { name: "QRScannerScreen", component: QRScannerScreen },

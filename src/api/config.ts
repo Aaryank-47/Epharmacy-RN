@@ -69,7 +69,7 @@ export const API_ROUTES = {
     markMultipleAsRead: "/api/v1/notifications/mark-multiple-read",
   },
   prescriptions: {
-    ocrExtract: "/api/v1/prescriptions/upload",
+    uploadStream: "/api/v1/prescriptions/upload-stream",
   },
 } as const;
 

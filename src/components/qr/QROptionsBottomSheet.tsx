@@ -19,7 +19,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 interface QROptionsBottomSheetProps {
   visible: boolean;
   onClose: () => void;
-  onScanQR: () => void;
+  onHistory: () => void;
   onTakePhoto: () => void;
   onUploadGallery: () => void;
 }
@@ -27,7 +27,7 @@ interface QROptionsBottomSheetProps {
 const QROptionsBottomSheet: React.FC<QROptionsBottomSheetProps> = ({
   visible,
   onClose,
-  onScanQR,
+  onHistory,
   onTakePhoto,
   onUploadGallery,
 }) => {
@@ -219,10 +219,10 @@ const QROptionsBottomSheet: React.FC<QROptionsBottomSheetProps> = ({
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 10 }}>
             <OptionItem
-              title="Scan QR"
-              icon="qrcode-scan"
+              title="History"
+              icon="history"
               colors={['#8B5CF6', '#7C3AED']} // Violet
-              onPress={onScanQR}
+              onPress={onHistory}
             />
             <OptionItem
               title="Camera"

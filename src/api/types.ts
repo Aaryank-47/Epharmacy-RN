@@ -360,9 +360,56 @@ export interface OcrResponse {
   };
 }
 
-export interface UploadedFilePayload {
+// ============================================================================
+// PRESCRIPTION STREAM TYPES
+// ============================================================================
+
+export interface PrescriptionMedicine {
+  drugName: string;
+  dosage: string;
+  duration: string;
+  frequency: string;
+  price: number;
+  availability: boolean;
+}
+
+export interface PatientInfo {
   name: string;
-  size: number;
-  type: string;
-  uri: string;
+  nic: string;
+  gender: string;
+  age: string;
+  dob: string;
+  bloodGroup: string;
+  appointment: string;
+}
+
+export interface ClinicalFindings {
+  diagnosis: string;
+  symptoms: string;
+}
+
+export interface VitalSign {
+  parameter: string;
+  value: string;
+  status: string;
+}
+
+export interface DoctorInfo {
+  name: string;
+  license: string;
+  department: string;
+}
+
+export interface FullPrescription {
+  patientInfo: PatientInfo;
+  clinicalFindings: ClinicalFindings;
+  vitalSigns: VitalSign[];
+  medicines: PrescriptionMedicine[];
+  doctorInfo: DoctorInfo;
+}
+
+export interface PrescriptionStreamResult {
+  event: 'medicines_found';
+  prescription: FullPrescription;
+  meta: { detectedCount: number; rawText: string };
 }

@@ -151,6 +151,26 @@ class NotificationService {
   }
 
   // ==========================================================================
+  // TOPICS
+  // ==========================================================================
+
+  async subscribeToTopic(topic: string): Promise<void> {
+    try {
+      await messaging().subscribeToTopic(topic);
+    } catch (error) {
+      // Silent fail
+    }
+  }
+
+  async unsubscribeFromTopic(topic: string): Promise<void> {
+    try {
+      await messaging().unsubscribeFromTopic(topic);
+    } catch (error) {
+      // Silent fail
+    }
+  }
+
+  // ==========================================================================
   // NOTIFICATION DISPLAY
   // ==========================================================================
 
