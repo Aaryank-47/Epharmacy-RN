@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import Stepper, { StepData } from './Stepper';
+import StepLoader, { StepData } from './Stepper';
 import { useThemePalette } from '../../hooks/useThemePalette';
 
 const INITIAL_STEPS: StepData[] = [
   { label: 'Image Processing', status: 'completed' },
   { label: 'OCR Extraction', status: 'completed' },
-  { label: 'Structuring Data', status: 'loading' },
+  { label: 'Structuring Data', status: 'processing' },
   { label: 'Final Output', status: 'pending' },
 ];
 
@@ -23,7 +23,7 @@ const StepperDemo: React.FC = () => {
           { label: 'Image Processing', status: 'completed' },
           { label: 'OCR Extraction', status: 'completed' },
           { label: 'Structuring Data', status: 'completed' },
-          { label: 'Final Output', status: 'loading' },
+          { label: 'Final Output', status: 'processing' },
         ]);
       }, 1800)
     );
@@ -47,10 +47,10 @@ const StepperDemo: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: isDark ? '#111827' : '#FFFFFF' }]}>
           <Text style={[styles.title, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>OCR Processing</Text>
-          <Text style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#64748B' }]}>Vertical stepper loading component with live status changes.</Text>
+          <Text style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#64748B' }]}>Clean processing pipeline with live step transitions.</Text>
 
           <View style={styles.stepperWrap}>
-            <Stepper steps={steps} />
+            <StepLoader steps={steps} />
           </View>
         </View>
       </ScrollView>

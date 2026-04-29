@@ -35,7 +35,6 @@ interface Task {
   id: string;
   title: string;
   status: TaskStatus;
-  subtasks?: string[];
 }
 
 const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) => {
@@ -125,10 +124,10 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
       
       // Initialize task list BEFORE setting isProcessing to true
       const initialTasks: Task[] = [
-        { id: 'img_proc', title: '🟢 Image Processing', status: 'processing', subtasks: [] },
-        { id: 'ocr_extract', title: '🟢 OCR Extraction', status: 'waiting', subtasks: [] },
-        { id: 'struct_data', title: '🔵 Structuring Data', status: 'waiting', subtasks: [] },
-        { id: 'final_output', title: '⚪ Final Output', status: 'waiting', subtasks: [] },
+        { id: 'img_proc', title: 'Image Processing', status: 'processing' },
+        { id: 'ocr_extract', title: 'OCR Extraction', status: 'waiting' },
+        { id: 'struct_data', title: 'Structuring Data', status: 'waiting' },
+        { id: 'final_output', title: 'Final Output', status: 'waiting' },
       ];
       
       setOcrTasks(initialTasks);
@@ -139,7 +138,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
         await new Promise(resolve => setTimeout(() => resolve(null), 1200));
         setOcrTasks(prev => [
           { ...prev[0], status: 'completed' },
-          { ...prev[1], status: 'processing', subtasks: ['→ Detecting text...', '→ Parsing lines...', '→ Confidence score: 92%'] },
+          { ...prev[1], status: 'processing' },
           prev[2],
           prev[3],
         ]);
@@ -149,7 +148,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
         setOcrTasks(prev => [
           prev[0],
           { ...prev[1], status: 'completed' },
-          { ...prev[2], status: 'processing', subtasks: ['→ Grouping medicines...', '→ Extracting dosage...', '→ Parsing instructions...'] },
+          { ...prev[2], status: 'processing' },
           prev[3],
         ]);
 
@@ -159,7 +158,7 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
           prev[0],
           prev[1],
           { ...prev[2], status: 'completed' },
-          { ...prev[3], status: 'processing', subtasks: ['→ Formatting output...', '→ Validating data...'] },
+          { ...prev[3], status: 'processing' },
         ]);
 
         // STEP 4: Complete Final Output
