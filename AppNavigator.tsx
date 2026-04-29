@@ -34,6 +34,7 @@ import CategoryProductsScreen from "./src/components/pages/category/CategoryProd
 import EventDetailScreen from "./src/components/pages/EventDetailScreen";
 import OfferDetailScreen from "./src/components/pages/OfferDetailScreen";
 import BrandDetailScreen from "./src/components/pages/BrandDetailScreen";
+import OCRResultsScreen from "./src/components/pages/OCRResultsScreen";
 import type { Advertisement } from "./src/api/types";
 
 export type RootStackParamList = {
@@ -65,6 +66,7 @@ export type RootStackParamList = {
   OfferBannerSection: undefined;
   PDFUploadScreen: undefined;
   OCRHistoryScreen: undefined;
+  OCRResultsScreen: undefined;
   HistoryPage: undefined;
   Wishlist: undefined;
   Notifications: undefined;
@@ -97,6 +99,7 @@ const AUTHENTICATED_SCREENS: ScreenConfig[] = [
   { name: "PaymentScreen", component: PaymentScreen },
   { name: "PDFUploadScreen", component: PDFUploadScreen },
   { name: "OCRHistoryScreen", component: OCRHistoryScreen },
+  { name: "OCRResultsScreen", component: OCRResultsScreen },
   { name: "HistoryPage", component: HistoryPage },
   { name: "Wishlist", component: WishlistScreen },
   { name: "OfferBannerSection", component: OfferBannerSection },

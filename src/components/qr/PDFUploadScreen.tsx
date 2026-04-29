@@ -195,7 +195,11 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
         setExtractedMedicines(simulatedMedicines);
         setAllRawData('OCR Extraction Complete - Frontend Only (Backend Linkage Broken)');
 
-        // Results display will show automatically on page
+        // Navigate to OCR results screen
+        navigation.navigate('OCRResultsScreen', { 
+          medicines: simulatedMedicines,
+          rawText: 'OCR Extraction Preview' 
+        });
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Unknown error during OCR processing';
@@ -251,15 +255,8 @@ const PDFUploadScreen: React.FC<PDFUploadScreenProps> = ({ navigation, route }) 
    * Handle Proceed to Checkout / Cart
    */
   const handleProceed = useCallback(() => {
-    // Logic to add to cart or navigate to checkout
-    // For now, navigating to ShoppingBagScreen
-    Alert.alert(
-      "Success",
-      "Medicines added to list. Proceeding to review.",
-      [
-        { text: "OK", onPress: () => navigation.navigate('ShoppingBagScreen') }
-      ]
-    );
+    // Logic to navigate to the advanced results view
+    navigation.navigate('OCRResultsScreen');
   }, [navigation]);
 
 
