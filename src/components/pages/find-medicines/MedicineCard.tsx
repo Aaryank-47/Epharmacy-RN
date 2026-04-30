@@ -1,11 +1,22 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import type { PrescriptionMedicine } from '../../../api/types';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -18,15 +29,23 @@ interface Props {
   onAddToBucket?: () => void;
 }
 
-const GENERIC_ALTERNATIVES: Record<string, { name: string; savings: number }> = {
-  Paracetamol: { name: 'Calpol 500', savings: 12 },
-  Ibuprofen: { name: 'Mox 400', savings: 17 },
-  Cetirizine: { name: 'Zyrtec 10mg', savings: 8 },
-  Amoxicillin: { name: 'Mox 500', savings: 22 },
-  'Cough Syrup': { name: 'Benadryl', savings: 15 },
-};
+const GENERIC_ALTERNATIVES: Record<string, { name: string; savings: number }> =
+  {
+    Paracetamol: { name: 'Calpol 500', savings: 12 },
+    Ibuprofen: { name: 'Mox 400', savings: 17 },
+    Cetirizine: { name: 'Zyrtec 10mg', savings: 8 },
+    Amoxicillin: { name: 'Mox 500', savings: 22 },
+    'Cough Syrup': { name: 'Benadryl', savings: 15 },
+  };
 
-export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onToggle, onCompareStores, onAddToBucket }) => {
+export const MedicineCard: React.FC<Props> = ({
+  medicine,
+  index,
+  isExpanded,
+  onToggle,
+  onCompareStores,
+  onAddToBucket,
+}) => {
   const { isDark, accentColor, ctaGradient } = useThemePalette();
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideIn = useRef(new Animated.Value(20)).current;
@@ -89,7 +108,11 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
       }}
     >
       {/* Collapsed header row */}
-      <TouchableOpacity onPress={handleToggle} activeOpacity={0.75} style={{ padding: 14 }}>
+      <TouchableOpacity
+        onPress={handleToggle}
+        activeOpacity={0.75}
+        style={{ padding: 14 }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           {/* Pill icon container */}
           <View
@@ -104,50 +127,79 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
               borderColor: iconBorder,
             }}
           >
-            <Icon name="pill" size={22} color={iconColor} />
+            <Icon name="link-variant" size={22} color={iconColor} />
           </View>
 
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: textColor, flex: 1 }} numberOfLines={1}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 3,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: '700',
+                  color: textColor,
+                  flex: 1,
+                }}
+                numberOfLines={1}
+              >
                 {medicine.drugName}
               </Text>
-              {/* Rx badge — blue, like Figma */}
-              <View
-                style={{
-                  backgroundColor: '#3B82F620',
-                  paddingHorizontal: 7,
-                  paddingVertical: 2,
-                  borderRadius: 6,
-                  borderWidth: 1,
-                  borderColor: '#3B82F640',
-                }}
-              >
-                <Text style={{ fontSize: 9, fontWeight: '800', color: '#3B82F6', letterSpacing: 0.5 }}>Rx</Text>
-              </View>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 4,
+              }}
+            >
               <Text style={{ fontSize: 12, color: subText }}>
-                {medicine.dosage !== 'Not specified' ? medicine.dosage : 'Tablet'}
+                {medicine.dosage !== 'Not specified'
+                  ? medicine.dosage
+                  : 'Capsule'}
               </Text>
               <Text style={{ color: subText, fontSize: 12 }}>·</Text>
+              <Text style={{ fontSize: 12, color: subText }}>10 caps</Text>
+              <Text style={{ color: subText, fontSize: 12 }}>·</Text>
               <Text style={{ fontSize: 12, color: subText }}>
-                In {storesCount} stores
+                In <Text style={{ fontWeight: '700' }}>{storesCount}</Text> stores
               </Text>
               {!inStock && (
                 <>
                   <Text style={{ color: subText, fontSize: 12 }}>·</Text>
-                  <Text style={{ fontSize: 11, color: '#F97316', fontWeight: '600' }}>Low stock</Text>
+                  <Icon name="lightning-bolt" size={11} color="#F59E0B" />
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: '#F59E0B',
+                      fontWeight: '600',
+                    }}
+                  >
+                    Low stock
+                  </Text>
                 </>
               )}
             </View>
           </View>
 
           {/* Price + chevron */}
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: accentColor }}>
+          <View style={{ alignItems: 'flex-end', gap: 2 }}>
+            <Text
+              style={{ fontSize: 16, fontWeight: '800', color: accentColor }}
+            >
               ₹{medicine.price}
+            </Text>
+            <Text
+              style={{ fontSize: 10, fontWeight: '700', color: '#EF4444' }}
+            >
+              13% OFF
             </Text>
             <Icon
               name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -160,13 +212,92 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
 
       {/* Expanded details */}
       {isExpanded && (
-        <View style={{ backgroundColor: detailBg, borderTopWidth: 1, borderTopColor: divider }}>
+        <View
+          style={{
+            backgroundColor: detailBg,
+            borderTopWidth: 1,
+            borderTopColor: divider,
+          }}
+        >
           <View style={{ padding: 14, gap: 12 }}>
+            {/* Status badges row: R PRESCRIBED + GENERIC AVAILABLE */}
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: '#8B5CF618',
+                  borderWidth: 1,
+                  borderColor: '#8B5CF640',
+                  paddingHorizontal: 9,
+                  paddingVertical: 4,
+                  borderRadius: 6,
+                }}
+              >
+                <Icon name="prescription" size={11} color="#8B5CF6" />
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '800',
+                    color: '#8B5CF6',
+                    letterSpacing: 0.6,
+                  }}
+                >
+                  PRESCRIBED
+                </Text>
+              </View>
+              {generic && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: '#10B98118',
+                    borderWidth: 1,
+                    borderColor: '#10B98140',
+                    paddingHorizontal: 9,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                  }}
+                >
+                  <Icon name="leaf" size={11} color="#10B981" />
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: '800',
+                      color: '#10B981',
+                      letterSpacing: 0.6,
+                    }}
+                  >
+                    GENERIC AVAILABLE
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {/* Detail chips row */}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <DetailChip label="Dosage" value={medicine.dosage !== 'Not specified' ? medicine.dosage : '—'} accentColor={accentColor} isDark={isDark} />
-              <DetailChip label="Duration" value={medicine.duration} accentColor={accentColor} isDark={isDark} />
-              <DetailChip label="Frequency" value={medicine.frequency} accentColor={accentColor} isDark={isDark} />
+              <DetailChip
+                label="Dosage"
+                value={
+                  medicine.dosage !== 'Not specified' ? medicine.dosage : '—'
+                }
+                accentColor={accentColor}
+                isDark={isDark}
+              />
+              <DetailChip
+                label="Duration"
+                value={medicine.duration}
+                accentColor={accentColor}
+                isDark={isDark}
+              />
+              <DetailChip
+                label="Frequency"
+                value={medicine.frequency}
+                accentColor={accentColor}
+                isDark={isDark}
+              />
             </View>
 
             {/* Generic alternative banner */}
@@ -208,9 +339,21 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
                   >
                     Generic Alternative
                   </Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#D1FAE5' : '#065F46' }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '700',
+                      color: isDark ? '#D1FAE5' : '#065F46',
+                    }}
+                  >
                     {generic.name}{' '}
-                    <Text style={{ fontSize: 12, color: '#10B981', fontWeight: '600' }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: '#10B981',
+                        fontWeight: '600',
+                      }}
+                    >
                       save ₹{generic.savings}
                     </Text>
                   </Text>
@@ -223,7 +366,11 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
                     borderRadius: 20,
                   }}
                 >
-                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>Swap</Text>
+                  <Text
+                    style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}
+                  >
+                    Swap
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -246,7 +393,11 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
                 }}
               >
                 <Icon name="store-outline" size={15} color={subText} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: textColor }}>Compare stores</Text>
+                <Text
+                  style={{ fontSize: 12, fontWeight: '700', color: textColor }}
+                >
+                  Compare stores
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -266,7 +417,11 @@ export const MedicineCard: React.FC<Props> = ({ medicine, index, isExpanded, onT
                   }}
                 >
                   <Icon name="basket-plus-outline" size={15} color="#FFF" />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFF' }}>Add to Bucket</Text>
+                  <Text
+                    style={{ fontSize: 12, fontWeight: '700', color: '#FFF' }}
+                  >
+                    Add to Bucket
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>

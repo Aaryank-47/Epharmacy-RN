@@ -57,9 +57,20 @@ const UploadPrompt: React.FC<{
             marginBottom: 14,
           }}
         >
-          <Icon name="file-document-scan-outline" size={36} color={accentColor} />
+          <Icon
+            name="file-document-scan-outline"
+            size={36}
+            color={accentColor}
+          />
         </View>
-        <Text style={{ fontSize: 22, fontWeight: '800', color: textColor, marginBottom: 6 }}>
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: '800',
+            color: textColor,
+            marginBottom: 6,
+          }}
+        >
           Upload Prescription
         </Text>
         <Text
@@ -71,7 +82,8 @@ const UploadPrompt: React.FC<{
             paddingHorizontal: 20,
           }}
         >
-          Capture or upload your prescription — we'll extract all medicines instantly
+          Capture or upload your prescription — we'll extract all medicines
+          instantly
         </Text>
       </View>
 
@@ -109,10 +121,23 @@ const UploadPrompt: React.FC<{
           >
             <Icon name="image-multiple-outline" size={26} color="#FFF" />
           </View>
-          <Text style={{ fontSize: 17, fontWeight: '800', color: '#FFF', marginBottom: 4 }}>
+          <Text
+            style={{
+              fontSize: 17,
+              fontWeight: '800',
+              color: '#FFF',
+              marginBottom: 4,
+            }}
+          >
             Choose from Gallery
           </Text>
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 14 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.8)',
+              marginBottom: 14,
+            }}
+          >
             Select a saved prescription photo
           </Text>
           <View
@@ -127,7 +152,9 @@ const UploadPrompt: React.FC<{
             }}
           >
             <Icon name="folder-open-outline" size={15} color="#FFF" />
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>Browse Files</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>
+              Browse Files
+            </Text>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -165,10 +192,23 @@ const UploadPrompt: React.FC<{
           >
             <Icon name="camera-outline" size={26} color="#FFF" />
           </View>
-          <Text style={{ fontSize: 17, fontWeight: '800', color: '#FFF', marginBottom: 4 }}>
+          <Text
+            style={{
+              fontSize: 17,
+              fontWeight: '800',
+              color: '#FFF',
+              marginBottom: 4,
+            }}
+          >
             Take a Photo
           </Text>
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 14 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.8)',
+              marginBottom: 14,
+            }}
+          >
             Capture prescription directly with camera
           </Text>
           <View
@@ -183,7 +223,9 @@ const UploadPrompt: React.FC<{
             }}
           >
             <Icon name="camera" size={15} color="#FFF" />
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>Open Camera</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>
+              Open Camera
+            </Text>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -202,10 +244,20 @@ const UploadPrompt: React.FC<{
           borderColor: isDark ? '#2A2D35' : '#E5E7EB',
         }}
       >
-        <Icon name="lightbulb-outline" size={16} color="#FBBF24" style={{ marginTop: 1 }} />
+        <Icon
+          name="lightbulb-outline"
+          size={16}
+          color="#FBBF24"
+          style={{ marginTop: 1 }}
+        />
         <Text style={{ flex: 1, fontSize: 12, color: subText, lineHeight: 18 }}>
-          <Text style={{ fontWeight: '700', color: isDark ? '#E5E7EB' : '#374151' }}>Tip: </Text>
-          Ensure the prescription is well-lit, flat, and all text is clearly visible. Max 6MB (JPEG/PNG).
+          <Text
+            style={{ fontWeight: '700', color: isDark ? '#E5E7EB' : '#374151' }}
+          >
+            Tip:{' '}
+          </Text>
+          Ensure the prescription is well-lit, flat, and all text is clearly
+          visible. Max 6MB (JPEG/PNG).
         </Text>
       </View>
     </ScrollView>
@@ -234,45 +286,81 @@ const ProcessingView: React.FC<{
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(val, { toValue: 1, duration: 2000, useNativeDriver: true }),
-          Animated.timing(val, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.timing(val, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(val, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
         ]),
       );
 
     const scanAnim = Animated.loop(
       Animated.sequence([
-        Animated.timing(scanLine, { toValue: 1, duration: 1800, useNativeDriver: true }),
-        Animated.timing(scanLine, { toValue: 0, duration: 1800, useNativeDriver: true }),
+        Animated.timing(scanLine, {
+          toValue: 1,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLine, {
+          toValue: 0,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
       ]),
     );
 
     const pulseAnim = Animated.loop(
       Animated.sequence([
-        Animated.timing(iconScale, { toValue: 1.08, duration: 900, useNativeDriver: true }),
-        Animated.timing(iconScale, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(iconScale, {
+          toValue: 1.08,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconScale, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
       ]),
     );
 
     const r1 = makeRing(ring1, 0);
     const r2 = makeRing(ring2, 650);
     const r3 = makeRing(ring3, 1300);
-    r1.start(); r2.start(); r3.start();
+    r1.start();
+    r2.start();
+    r3.start();
     scanAnim.start();
     pulseAnim.start();
 
     return () => {
-      r1.stop(); r2.stop(); r3.stop();
+      r1.stop();
+      r2.stop();
+      r3.stop();
       scanAnim.stop();
       pulseAnim.stop();
     };
   }, []);
 
   const ringStyle = (val: Animated.Value) => ({
-    transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) }],
-    opacity: val.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0.5, 0.2, 0] }),
+    transform: [
+      { scale: val.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) },
+    ],
+    opacity: val.interpolate({
+      inputRange: [0, 0.3, 1],
+      outputRange: [0.5, 0.2, 0],
+    }),
   });
 
-  const scanTranslate = scanLine.interpolate({ inputRange: [0, 1], outputRange: [0, 88] });
+  const scanTranslate = scanLine.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 88],
+  });
 
   return (
     <ScrollView
@@ -281,7 +369,13 @@ const ProcessingView: React.FC<{
     >
       <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 28 }}>
         <View
-          style={{ width: 120, height: 120, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}
+          style={{
+            width: 120,
+            height: 120,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 18,
+          }}
         >
           {[ring1, ring2, ring3].map((r, i) => (
             <Animated.View
@@ -333,12 +427,21 @@ const ProcessingView: React.FC<{
           </Animated.View>
         </View>
 
-        <Text style={{ fontSize: 20, fontWeight: '800', color: textColor, marginBottom: 5 }}>
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: '800',
+            color: textColor,
+            marginBottom: 5,
+          }}
+        >
           Analyzing Prescription
         </Text>
         <Text style={{ fontSize: 13, color: subText, textAlign: 'center' }}>
           {detectedCount > 0
-            ? `${detectedCount} medicine${detectedCount > 1 ? 's' : ''} detected so far...`
+            ? `${detectedCount} medicine${
+                detectedCount > 1 ? 's' : ''
+              } detected so far...`
             : 'Reading prescription text...'}
         </Text>
       </View>
@@ -358,10 +461,29 @@ const ProcessingView: React.FC<{
             Detected Medicines
           </Text>
           {streamingMedicines.map((med, i) => (
-            <StreamingRow key={`${med.drugName}_${i}`} medicine={med} isDark={isDark} accentColor={accentColor} />
+            <StreamingRow
+              key={`${med.drugName}_${i}`}
+              medicine={med}
+              isDark={isDark}
+              accentColor={accentColor}
+            />
           ))}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: accentColor }} />
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingVertical: 10,
+            }}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: accentColor,
+              }}
+            />
             <Text style={{ fontSize: 12, color: subText, fontStyle: 'italic' }}>
               Looking for more...
             </Text>
@@ -382,8 +504,16 @@ const StreamingRow: React.FC<{
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 380, useNativeDriver: true }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 380,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
@@ -421,12 +551,18 @@ const StreamingRow: React.FC<{
         <Icon name="check-circle" size={18} color="#10B981" />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: textColor }}>{medicine.drugName}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: textColor }}>
+          {medicine.drugName}
+        </Text>
         {medicine.dosage && medicine.dosage !== 'Not specified' && (
-          <Text style={{ fontSize: 11, color: subText }}>{medicine.dosage}</Text>
+          <Text style={{ fontSize: 11, color: subText }}>
+            {medicine.dosage}
+          </Text>
         )}
       </View>
-      <Text style={{ fontSize: 14, fontWeight: '800', color: accentColor }}>₹{medicine.price}</Text>
+      <Text style={{ fontSize: 14, fontWeight: '800', color: accentColor }}>
+        ₹{medicine.price}
+      </Text>
     </Animated.View>
   );
 };
@@ -439,7 +575,14 @@ const ErrorView: React.FC<{
   isDark: boolean;
   accentColor: string;
 }> = ({ error, onRetry, isDark, accentColor }) => (
-  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }}>
+  <View
+    style={{
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 30,
+    }}
+  >
     <View
       style={{
         width: 72,
@@ -454,7 +597,12 @@ const ErrorView: React.FC<{
       <Icon name="alert-circle-outline" size={36} color="#EF4444" />
     </View>
     <Text
-      style={{ fontSize: 18, fontWeight: '800', color: isDark ? '#FFF' : '#1F2937', marginBottom: 8 }}
+      style={{
+        fontSize: 18,
+        fontWeight: '800',
+        color: isDark ? '#FFF' : '#1F2937',
+        marginBottom: 8,
+      }}
     >
       Processing Failed
     </Text>
@@ -482,7 +630,9 @@ const ErrorView: React.FC<{
       }}
     >
       <Icon name="refresh" size={18} color="#FFF" />
-      <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>Try Again</Text>
+      <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>
+        Try Again
+      </Text>
     </TouchableOpacity>
   </View>
 );
@@ -496,7 +646,14 @@ const MedicineListView: React.FC<{
   onReset: () => void;
   isDark: boolean;
   accentColor: string;
-}> = ({ medicines, onAddToBucket, onCompareStores, onReset, isDark, accentColor }) => {
+}> = ({
+  medicines,
+  onAddToBucket,
+  onCompareStores,
+  onReset,
+  isDark,
+  accentColor,
+}) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const textColor = isDark ? '#FFFFFF' : '#1F2937';
   const subText = isDark ? '#9CA3AF' : '#6B7280';
@@ -515,24 +672,42 @@ const MedicineListView: React.FC<{
           paddingHorizontal: 16,
           paddingVertical: 12,
           borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#252830' : '#F0F0F0',
+          borderBottomColor: isDark ? '#2A2D35' : '#F0F0F0',
         }}
       >
-        <Text style={{ fontSize: 13, color: subText, fontWeight: '500' }}>
-          <Text style={{ color: textColor, fontWeight: '700' }}>{medicines.length} medicines</Text>
-          {' '}from your prescription
+        <Text style={{ fontSize: 11, color: subText }}>
+          <Text style={{ color: textColor, fontWeight: '700' }}>
+            {medicines.length} medicines
+          </Text>{' '}
+          · from your Rx
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Solid badge matching Figma */}
           <View
             style={{
-              backgroundColor: allAvailable ? '#10B981' : '#FF9800',
-              paddingHorizontal: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: allAvailable ? '#10B98115' : '#F59E0B15',
+              borderWidth: 1,
+              borderColor: allAvailable ? '#10B98130' : '#F59E0B30',
+              paddingHorizontal: 8,
               paddingVertical: 4,
-              borderRadius: 20,
+              borderRadius: 12,
             }}
           >
-            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFF', letterSpacing: 0.5 }}>
+            <Icon
+              name={allAvailable ? 'check' : 'alert-outline'}
+              size={11}
+              color={allAvailable ? '#10B981' : '#F59E0B'}
+            />
+            <Text
+              style={{
+                fontSize: 9,
+                fontWeight: '800',
+                color: allAvailable ? '#10B981' : '#F59E0B',
+                letterSpacing: 0.5,
+              }}
+            >
               {allAvailable ? 'ALL FOUND' : 'PARTIAL'}
             </Text>
           </View>
@@ -554,7 +729,11 @@ const MedicineListView: React.FC<{
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 12, paddingBottom: 40 }}
+        contentContainerStyle={{
+          paddingHorizontal: 14,
+          paddingTop: 12,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {medicines.map((medicine, index) => (
@@ -563,7 +742,9 @@ const MedicineListView: React.FC<{
             medicine={medicine}
             index={index}
             isExpanded={expandedIndex === index}
-            onToggle={() => setExpandedIndex(expandedIndex === index ? null : index)}
+            onToggle={() =>
+              setExpandedIndex(expandedIndex === index ? null : index)
+            }
             onCompareStores={onCompareStores}
             onAddToBucket={() => onAddToBucket([medicine])}
           />
@@ -598,7 +779,11 @@ export const MedicinesView: React.FC<Props> = ({
       if (result.didCancel || !result.assets?.length) return;
       const asset = result.assets[0];
       if (!asset.uri) return;
-      onUpload({ uri: asset.uri, name: asset.fileName || 'prescription.jpg', type: asset.type || 'image/jpeg' });
+      onUpload({
+        uri: asset.uri,
+        name: asset.fileName || 'prescription.jpg',
+        type: asset.type || 'image/jpeg',
+      });
     } catch {
       Alert.alert('Error', 'Failed to open gallery');
     }
@@ -608,21 +793,39 @@ export const MedicinesView: React.FC<Props> = ({
     try {
       const hasPermission = await PermissionService.requestCameraPermission();
       if (!hasPermission) {
-        Alert.alert('Camera Permission Required', 'Please enable camera access in device settings.');
+        Alert.alert(
+          'Camera Permission Required',
+          'Please enable camera access in device settings.',
+        );
         return;
       }
-      const result = await launchCamera({ mediaType: 'photo', quality: 0.8, saveToPhotos: false });
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 0.8,
+        saveToPhotos: false,
+      });
       if (result.didCancel || !result.assets?.length) return;
       const asset = result.assets[0];
       if (!asset.uri) return;
-      onUpload({ uri: asset.uri, name: asset.fileName || 'prescription.jpg', type: asset.type || 'image/jpeg' });
+      onUpload({
+        uri: asset.uri,
+        name: asset.fileName || 'prescription.jpg',
+        type: asset.type || 'image/jpeg',
+      });
     } catch {
       Alert.alert('Error', 'Failed to open camera');
     }
   }, [onUpload]);
 
   if (status === 'error' && error) {
-    return <ErrorView error={error} onRetry={onReset} isDark={isDark} accentColor={accentColor} />;
+    return (
+      <ErrorView
+        error={error}
+        onRetry={onReset}
+        isDark={isDark}
+        accentColor={accentColor}
+      />
+    );
   }
 
   if (status === 'processing') {

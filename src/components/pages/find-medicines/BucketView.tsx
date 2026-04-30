@@ -14,7 +14,7 @@ interface Props {
   bucketTotal: number;
 }
 
-const MEDICINE_COLORS = ['#6C63FF', '#E91E63', '#FF9800', '#00BCD4', '#4CAF50', '#9C27B0'];
+const MEDICINE_ICON_COLOR = '#8B5CF6';
 
 export const BucketView: React.FC<Props> = ({
   bucketItems,
@@ -26,7 +26,10 @@ export const BucketView: React.FC<Props> = ({
   bucketTotal,
 }) => {
   const { isDark, accentColor } = useThemePalette();
-  const nearestShop = useMemo(() => ({ name: 'LifeCare Pharmacy', distance: 1.2 }), []);
+  const nearestShop = useMemo(
+    () => ({ name: 'LifeCare Pharmacy', distance: 1.2 }),
+    [],
+  );
 
   const textColor = isDark ? '#FFFFFF' : '#1F2937';
   const subText = isDark ? '#9CA3AF' : '#6B7280';
@@ -37,7 +40,14 @@ export const BucketView: React.FC<Props> = ({
 
   if (bucketItems.length === 0) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 30,
+        }}
+      >
         <View
           style={{
             width: 72,
@@ -51,11 +61,23 @@ export const BucketView: React.FC<Props> = ({
         >
           <Icon name="basket-outline" size={34} color={accentColor} />
         </View>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: textColor, marginBottom: 8 }}>
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: '700',
+            color: textColor,
+            marginBottom: 8,
+          }}
+        >
           Bucket is Empty
         </Text>
         <Text
-          style={{ fontSize: 13, color: subText, textAlign: 'center', lineHeight: 20 }}
+          style={{
+            fontSize: 13,
+            color: subText,
+            textAlign: 'center',
+            lineHeight: 20,
+          }}
         >
           Add medicines from the Medicines tab to proceed to checkout
         </Text>
@@ -63,12 +85,13 @@ export const BucketView: React.FC<Props> = ({
     );
   }
 
-  const shopInitials = nearestShop?.name
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0])
-    .join('')
-    .toUpperCase() ?? 'LC';
+  const shopInitials =
+    nearestShop?.name
+      .split(' ')
+      .slice(0, 2)
+      .map(w => w[0])
+      .join('')
+      .toUpperCase() ?? 'LC';
 
   const estMinutes = nearestShop ? Math.ceil(nearestShop.distance * 5 + 3) : 8;
 
@@ -102,26 +125,40 @@ export const BucketView: React.FC<Props> = ({
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>{shopInitials}</Text>
+            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>
+              {shopInitials}
+            </Text>
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: textColor, marginBottom: 3 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: textColor,
+                marginBottom: 3,
+              }}
+            >
               {nearestShop?.name ?? 'LifeCare Pharmacy'}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            >
               <Icon name="map-marker-outline" size={12} color={subText} />
               <Text style={{ fontSize: 12, color: subText }}>
-                {nearestShop?.distance.toFixed(1) ?? '1.2'} km · ready in {estMinutes} min
+                {nearestShop?.distance.toFixed(1) ?? '1.2'} km · ready in{' '}
+                {estMinutes} min
               </Text>
             </View>
           </View>
 
           <TouchableOpacity
             onPress={() =>
-              Alert.alert('Change Pharmacy', 'Switch to a different pharmacy?', [
-                { text: 'Cancel', style: 'cancel' },
-              ])
+              Alert.alert(
+                'Change Pharmacy',
+                'Switch to a different pharmacy?',
+                [{ text: 'Cancel', style: 'cancel' }],
+              )
             }
             style={{
               width: 34,
@@ -138,7 +175,7 @@ export const BucketView: React.FC<Props> = ({
 
         {/* Medicine items */}
         {bucketItems.map((item, index) => {
-          const color = MEDICINE_COLORS[index % MEDICINE_COLORS.length];
+          const color = MEDICINE_ICON_COLOR;
           return (
             <View
               key={`bucket_${item.medicine.drugName}_${index}`}
@@ -179,9 +216,13 @@ export const BucketView: React.FC<Props> = ({
                 >
                   {item.medicine.drugName}
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                >
                   {item.medicine.dosage !== 'Not specified' && (
-                    <Text style={{ fontSize: 11, color: subText }}>{item.medicine.dosage}</Text>
+                    <Text style={{ fontSize: 11, color: subText }}>
+                      {item.medicine.dosage}
+                    </Text>
                   )}
                   <View
                     style={{
@@ -207,7 +248,13 @@ export const BucketView: React.FC<Props> = ({
 
               {/* Qty controls */}
               <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                <Text style={{ fontSize: 14, fontWeight: '800', color: accentColor }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '800',
+                    color: accentColor,
+                  }}
+                >
                   ₹{item.medicine.price * item.quantity}
                 </Text>
                 <View
@@ -270,7 +317,7 @@ export const BucketView: React.FC<Props> = ({
               marginBottom: 10,
             }}
           >
-            Delivery Method
+            Delivery
           </Text>
 
           <TouchableOpacity
@@ -279,9 +326,7 @@ export const BucketView: React.FC<Props> = ({
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor:
-                selectedDelivery === 'pickup'
-                  ? accentColor + '15'
-                  : cardBg,
+                selectedDelivery === 'pickup' ? accentColor + '15' : cardBg,
               borderRadius: 14,
               borderWidth: 1.5,
               borderColor:
@@ -299,7 +344,9 @@ export const BucketView: React.FC<Props> = ({
                 backgroundColor:
                   selectedDelivery === 'pickup'
                     ? accentColor + '20'
-                    : (isDark ? '#2A2D35' : '#F3F4F6'),
+                    : isDark
+                    ? '#2A2D35'
+                    : '#F3F4F6',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -319,7 +366,7 @@ export const BucketView: React.FC<Props> = ({
                   marginBottom: 2,
                 }}
               >
-                Self pickup
+                Pickup
               </Text>
               <Text style={{ fontSize: 12, color: subText }}>
                 Ready in {estMinutes} min
@@ -351,9 +398,7 @@ export const BucketView: React.FC<Props> = ({
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor:
-                selectedDelivery === 'delivery'
-                  ? accentColor + '15'
-                  : cardBg,
+                selectedDelivery === 'delivery' ? accentColor + '15' : cardBg,
               borderRadius: 14,
               borderWidth: 1.5,
               borderColor:
@@ -370,7 +415,9 @@ export const BucketView: React.FC<Props> = ({
                 backgroundColor:
                   selectedDelivery === 'delivery'
                     ? accentColor + '20'
-                    : (isDark ? '#2A2D35' : '#F3F4F6'),
+                    : isDark
+                    ? '#2A2D35'
+                    : '#F3F4F6',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -390,7 +437,7 @@ export const BucketView: React.FC<Props> = ({
                   marginBottom: 2,
                 }}
               >
-                Standard delivery
+                Standard
               </Text>
               <Text style={{ fontSize: 12, color: subText }}>In 45 min</Text>
             </View>
@@ -402,7 +449,11 @@ export const BucketView: React.FC<Props> = ({
                 borderRadius: 8,
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}>FREE</Text>
+              <Text
+                style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}
+              >
+                FREE
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -440,14 +491,13 @@ export const BucketView: React.FC<Props> = ({
         >
           <Text
             style={{
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: '800',
               color: '#FFF',
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
+              letterSpacing: 0.5,
             }}
           >
-            Proceed to Order
+            Proceed to order · ₹{bucketTotal}
           </Text>
           <Icon name="chevron-right" size={20} color="#FFF" />
         </TouchableOpacity>
