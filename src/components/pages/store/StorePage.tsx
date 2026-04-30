@@ -280,8 +280,10 @@ const StorePage: React.FC = () => {
     );
   }, []);
 
-  const themeBgColor = isDark ? '#1A1A1A' : '#F8F9FA';
-  const themeBgClass = isDark ? 'bg-[#1A1A1A]' : 'bg-[#F8F9FA]';
+  const themeBgColor = '#08090D';
+  const themeBgClass = 'bg-[#08090D]';
+  const cardBgClass = 'bg-[#14161C]';
+  const pinkAccent = '#F472B6';
 
   return (
     <Tabs currentActiveTab="Store">
@@ -289,90 +291,61 @@ const StorePage: React.FC = () => {
         <StatusBar backgroundColor={themeBgColor} barStyle={statusBarStyle} />
 
         {/* HEADER SECTION */}
-        <View
-          className={`px-4 pb-4 border-b ${
-            isDark
-              ? 'bg-[#1A1A1A] border-[#3A3A3A]'
-              : 'bg-white border-[#E5E7EB]'
-          } ${Platform.OS === 'android' ? 'pt-2.5' : 'pt-0'}`}
-        >
+        <View className="px-4 pb-4 pt-2">
           {/* Location Row */}
           <View className="flex-row items-center justify-between mb-4 mt-2">
             <View className="flex-row items-center flex-1">
-              <MaterialCommunityIcons name="map-marker" size={24} color="#10B981" />
+              <MaterialCommunityIcons name="map-marker" size={24} color={pinkAccent} />
               <View className="ml-2 flex-1">
-                <Text
-                  className={`text-xs font-medium ${
-                    isDark ? 'text-[#9CA3AF]' : 'text-[#6B7280]'
-                  }`}
-                >
+                <Text className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">
                   Delivering to
                 </Text>
-                <View className="flex-row items-center">
-                  <Text
-                    numberOfLines={1}
-                    style={{ fontFamily: serifFontFamily }}
-                    className={`text-base font-bold ${
-                      isDark ? 'text-white' : 'text-[#1F2937]'
-                    }`}
-                  >
+                <View className="flex-row items-center mt-0.5">
+                  <Text numberOfLines={1} className="text-base font-bold text-white">
                     Home - 411014, Pune
                   </Text>
-                  <MaterialCommunityIcons
-                    name="chevron-down"
-                    size={20}
-                    color={isDark ? '#FFFFFF' : '#1F2937'}
-                  />
+                  <MaterialCommunityIcons name="chevron-down" size={20} color="#FFFFFF" className="ml-1" />
                 </View>
               </View>
             </View>
 
-            <TouchableOpacity
-              className={`w-10 h-10 rounded-full items-center justify-center ${
-                isDark ? 'bg-[#2A2A2A]' : 'bg-[#F3F4F6]'
-              }`}
-            >
-              <MaterialCommunityIcons
-                name="bell-outline"
-                size={22}
-                color={isDark ? '#FFFFFF' : '#1F2937'}
-              />
+            <TouchableOpacity className="w-10 h-10 rounded-full items-center justify-center bg-white/5 border border-white/10">
+              <MaterialCommunityIcons name="bell-outline" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
           {/* Search Bar Row */}
           <View className="flex-row items-center">
-            <View
-              className={`flex-1 flex-row items-center rounded-xl px-3 h-12 ${
-                isDark ? 'bg-[#2A2A2A]' : 'bg-[#F3F4F6]'
-              }`}
-            >
-              <MaterialCommunityIcons name="magnify" size={24} color="#9CA3AF" />
+            <View className={`flex-1 flex-row items-center rounded-full px-4 py-3.5 border border-white/5 ${cardBgClass}`}>
+              <MaterialCommunityIcons name="magnify" size={18} color="#9CA3AF" />
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearch}
                 placeholder="Search stores..."
                 placeholderTextColor="#9CA3AF"
-                className={`flex-1 ml-2 text-[15px] ${
-                  isDark ? 'text-white' : 'text-[#1F2937]'
-                }`}
+                className="flex-1 ml-2 text-sm text-white"
+                style={{ paddingVertical: 0 }}
               />
               {searchQuery && (
                 <TouchableOpacity onPress={() => handleSearch('')}>
-                  <MaterialCommunityIcons
-                    name="close-circle"
-                    size={20}
-                    color="#9CA3AF"
-                  />
+                  <MaterialCommunityIcons name="close-circle" size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               )}
             </View>
 
             <TouchableOpacity
               activeOpacity={0.7}
-              className="w-12 h-12 rounded-xl bg-[#10B981] items-center justify-center ml-3"
+              className="ml-3 p-3.5 rounded-2xl items-center justify-center"
+              style={{ 
+                backgroundColor: pinkAccent, 
+                shadowColor: pinkAccent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
             >
-              <MaterialCommunityIcons name="tune-variant" size={22} color="#FFFFFF" />
+              <MaterialCommunityIcons name="tune-variant" size={22} color="#000" />
             </TouchableOpacity>
           </View>
         </View>

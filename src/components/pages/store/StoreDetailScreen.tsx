@@ -53,7 +53,9 @@ const StoreDetailScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [reviewStats, setReviewStats] = useState<any>(null);
 
-  const themeBgColor = isDark ? '#1A1A1A' : '#F8F9FA';
+  const themeBgColor = '#08090D';
+  const cardBgClass = 'bg-[#14161C]';
+  const pinkAccent = '#F472B6';
 
   // ============================================================================
   // API CALLS
@@ -148,9 +150,7 @@ const StoreDetailScreen: React.FC = () => {
   const ProductCard = useCallback(({ item }: { item: StoreProduct }) => (
     <View
       style={{ width: (width - 48) / 2 }}
-      className={`rounded-2xl p-3 mb-4 border shadow-sm elevation-2 ${
-        isDark ? 'bg-[#2A2A2A] border-[#3A3A3A] shadow-black/10' : 'bg-white border-[#E5E7EB] shadow-black/5'
-      }`}
+      className={`rounded-2xl p-3 mb-4 border border-white/5 shadow-sm elevation-2 ${cardBgClass}`}
     >
       <View className="h-24 mb-3 relative">
         <Image
@@ -159,8 +159,8 @@ const StoreDetailScreen: React.FC = () => {
           resizeMode="cover"
         />
         {item.discountBadge && (
-          <View className="absolute top-1 left-1 bg-[#EF4444] px-1.5 py-0.5 rounded-md">
-            <Text className="text-white text-[10px] font-bold">{item.discountBadge}</Text>
+          <View className="absolute top-1 left-1 bg-pink-500 px-1.5 py-0.5 rounded-md">
+            <Text className="text-black text-[10px] font-bold">{item.discountBadge}</Text>
           </View>
         )}
       </View>
@@ -206,7 +206,7 @@ const StoreDetailScreen: React.FC = () => {
 
       <Text
         className={`text-[11px] font-semibold mb-2.5 ${
-          item.inStock ? 'text-[#10B981]' : 'text-[#EF4444]'
+          item.inStock ? 'text-green-400' : 'text-red-400'
         }`}
       >
         {item.inStock ? 'In Stock' : 'Out of Stock'}
@@ -222,19 +222,19 @@ const StoreDetailScreen: React.FC = () => {
           }
         }}
         className={`py-2 rounded-lg items-center ${
-          item.inStock ? 'bg-[#10B981]' : isDark ? 'bg-[#3A3A3A]' : 'bg-[#F3F4F6]'
+          item.inStock ? 'bg-pink-400' : 'bg-white/5 border border-white/10'
         }`}
       >
         <Text
           className={`text-[13px] font-bold ${
-            item.inStock ? 'text-white' : 'text-[#9CA3AF]'
+            item.inStock ? 'text-black' : 'text-gray-500'
           }`}
         >
           {item.inStock ? 'ADD' : 'UNAVAILABLE'}
         </Text>
       </TouchableOpacity>
     </View>
-  ), [isDark, serifFontFamily]);
+  ), [serifFontFamily]);
 
   const ListHeader = useMemo(() => (
     <View className="pb-4">
@@ -269,13 +269,7 @@ const StoreDetailScreen: React.FC = () => {
       </View>
 
       {/* 2. Store Details Area */}
-      <View
-        className={`p-4 border-b mb-4 ${
-          isDark
-            ? 'bg-[#2A2A2A] border-[#3A3A3A]'
-            : 'bg-white border-[#E5E7EB]'
-        }`}
-      >
+      <View className={`p-4 border-b border-white/5 mb-4 ${cardBgClass}`}>
         <View className="flex-row items-center mb-3">
           <MaterialCommunityIcons name="star" size={16} color="#F59E0B" />
           <Text
@@ -325,15 +319,11 @@ const StoreDetailScreen: React.FC = () => {
             size={18}
             color={isDark ? '#9CA3AF' : '#6B7280'}
           />
-          <Text
-            className={`text-sm ml-2 ${
-              isDark ? 'text-white' : 'text-[#1F2937]'
-            }`}
-          >
+          <Text className={`text-sm ml-2 text-white`}>
             Open Mon-Sun: 8:00 AM - 11:00 PM
           </Text>
-          <View className="ml-3 bg-[#10B981] px-1.5 py-0.5 rounded">
-            <Text className="text-white text-[10px] font-bold">OPEN NOW</Text>
+          <View className="ml-3 bg-green-500/20 px-1.5 py-0.5 rounded border border-green-500/30">
+            <Text className="text-green-400 text-[10px] font-bold">OPEN NOW</Text>
           </View>
         </View>
 
@@ -355,13 +345,7 @@ const StoreDetailScreen: React.FC = () => {
 
       {/* 3. Search Bar */}
       <View className="px-4 pb-4">
-        <View
-          className={`flex-row items-center rounded-xl px-3 h-12 border ${
-            isDark
-              ? 'bg-[#2A2A2A] border-[#3A3A3A]'
-              : 'bg-white border-[#E5E7EB]'
-          }`}
-        >
+        <View className={`flex-row items-center rounded-xl px-3 h-12 border border-white/5 ${cardBgClass}`}>
           <MaterialCommunityIcons name="magnify" size={24} color="#9CA3AF" />
           <TextInput
             value={searchQuery}
@@ -396,21 +380,17 @@ const StoreDetailScreen: React.FC = () => {
           return (
             <TouchableOpacity
               onPress={() => setActiveCategory(item)}
-              className={`px-4 py-2 rounded-full border ${
+              className={`px-4 py-2 rounded-full border border-white/5 ${
                 isActive
-                  ? 'bg-[#10B981] border-[#10B981]'
-                  : isDark
-                  ? 'bg-[#2A2A2A] border-[#3A3A3A]'
-                  : 'bg-white border-[#E5E7EB]'
+                  ? 'bg-pink-400'
+                  : cardBgClass
               }`}
             >
               <Text
                 className={`text-[13px] ${
                   isActive
-                    ? 'text-white font-bold'
-                    : isDark
-                    ? 'text-white font-medium'
-                    : 'text-[#1F2937] font-medium'
+                    ? 'text-black font-bold'
+                    : 'text-gray-400 font-medium'
                 }`}
               >
                 {item}
@@ -536,7 +516,7 @@ const StoreDetailScreen: React.FC = () => {
   // ============================================================================
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-[#1A1A1A]' : 'bg-[#F8F9FA]'}`}>
+    <View className="flex-1 bg-[#08090D]">
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
       {/* MAIN CONTENT */}
@@ -586,21 +566,21 @@ const StoreDetailScreen: React.FC = () => {
       {/* Sticky Cart Bar */}
       {cartCount > 0 && (
         <View
-          className={`absolute left-4 right-4 bg-[#10B981] rounded-xl p-4 flex-row justify-between items-center shadow-lg elevation-6 ${
+          className={`absolute left-4 right-4 bg-[#F472B6] rounded-2xl p-4 flex-row justify-between items-center shadow-lg elevation-6 ${
             Platform.OS === 'ios' ? 'bottom-8' : 'bottom-4'
           }`}
         >
           <View>
-            <Text className="text-white text-[13px] font-semibold">
+            <Text className="text-black text-[13px] font-semibold uppercase tracking-widest">
               {cartCount} Items
             </Text>
-            <Text className="text-white text-base font-bold">
+            <Text className="text-black text-xl font-black mt-1">
               Total: ₹{cartTotal}
             </Text>
           </View>
-          <TouchableOpacity className="flex-row items-center">
-            <Text className="text-white text-base font-bold mr-1">View Cart</Text>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#FFF" />
+          <TouchableOpacity className="flex-row items-center bg-black/10 px-4 py-2 rounded-xl">
+            <Text className="text-black text-base font-bold mr-1 uppercase">Checkout</Text>
+            <MaterialCommunityIcons name="chevron-right" size={20} color="#000" />
           </TouchableOpacity>
         </View>
       )}

@@ -23,7 +23,11 @@ interface FilterModalProps {
 }
 
 const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) => {
-  const { isDark, accentColor, surfaceColor, textColor, placeholderColor, inputBg } = useThemePalette();
+  const pinkAccent = '#F472B6';
+  const cardBgColor = '#14161C';
+  const textColor = '#FFFFFF';
+  const placeholderColor = '#9CA3AF';
+  const inputBg = 'rgba(255, 255, 255, 0.05)';
 
   const [priceRange, setPriceRange] = useState([0, 2000]);
   const [distance, setDistance] = useState([0, 10]);
@@ -62,10 +66,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
       transparent={true}
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(8, 9, 13, 0.9)' }}>
         <View 
-          className="rounded-t-[40px] p-6" 
-          style={{ backgroundColor: surfaceColor, maxHeight: '85%' }}
+          className="rounded-t-[32px] p-6 border-t border-white/5" 
+          style={{ backgroundColor: cardBgColor, maxHeight: '85%' }}
         >
           {/* Header */}
           <View className="flex-row justify-between items-center mb-6">
@@ -80,7 +84,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
             <View className="mb-8">
               <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-lg font-bold" style={{ color: textColor }}>Price Range</Text>
-                <Text className="font-black" style={{ color: accentColor }}>₹{priceRange[0]} - ₹{priceRange[1]}</Text>
+                <Text className="font-black" style={{ color: pinkAccent }}>₹{priceRange[0]} - ₹{priceRange[1]}</Text>
               </View>
               <View className="items-center">
                 <MultiSlider
@@ -92,15 +96,15 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
                   step={50}
                   allowOverlap={false}
                   snapped
-                  selectedStyle={{ backgroundColor: accentColor }}
-                  unselectedStyle={{ backgroundColor: isDark ? '#3D4048' : '#E5E7EB' }}
+                  selectedStyle={{ backgroundColor: pinkAccent }}
+                  unselectedStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
                   markerStyle={{ 
-                    backgroundColor: '#FFF', 
+                    backgroundColor: '#14161C', 
                     height: 24, 
                     width: 24, 
                     borderRadius: 12,
                     borderWidth: 2,
-                    borderColor: accentColor,
+                    borderColor: pinkAccent,
                     elevation: 3
                   }}
                 />
@@ -119,13 +123,13 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
                       onPress={() => toggleBrand(brand)}
                       className="px-4 py-2 rounded-full mr-2 mb-2 border"
                       style={{ 
-                        backgroundColor: isSelected ? accentColor : 'transparent',
-                        borderColor: isSelected ? accentColor : (isDark ? '#3D4048' : '#E5E7EB')
+                        backgroundColor: isSelected ? pinkAccent : 'transparent',
+                        borderColor: isSelected ? pinkAccent : 'rgba(255, 255, 255, 0.1)'
                       }}
                     >
                       <Text 
                         className="font-bold text-xs" 
-                        style={{ color: isSelected ? '#FFF' : placeholderColor }}
+                        style={{ color: isSelected ? '#000' : placeholderColor }}
                       >
                         {brand}
                       </Text>
@@ -139,7 +143,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
             <View className="mb-8">
               <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-lg font-bold" style={{ color: textColor }}>Distance</Text>
-                <Text className="font-black" style={{ color: accentColor }}>Up to {distance[1]} km</Text>
+                <Text className="font-black" style={{ color: pinkAccent }}>Up to {distance[1]} km</Text>
               </View>
               <View className="items-center">
                 <MultiSlider
@@ -149,15 +153,15 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
                   min={0}
                   max={50}
                   step={1}
-                  selectedStyle={{ backgroundColor: accentColor }}
-                  unselectedStyle={{ backgroundColor: isDark ? '#3D4048' : '#E5E7EB' }}
+                  selectedStyle={{ backgroundColor: pinkAccent }}
+                  unselectedStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
                   markerStyle={{ 
-                    backgroundColor: '#FFF', 
+                    backgroundColor: '#14161C', 
                     height: 24, 
                     width: 24, 
                     borderRadius: 12,
                     borderWidth: 2,
-                    borderColor: accentColor,
+                    borderColor: pinkAccent,
                     elevation: 3
                   }}
                 />
@@ -167,20 +171,20 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
             {/* Availability */}
             <View className="mb-8">
               <Text className="text-lg font-bold mb-4" style={{ color: textColor }}>Availability</Text>
-              <View className="flex-row bg-gray-100 p-1 rounded-2xl" style={{ backgroundColor: inputBg }}>
+              <View className="flex-row p-1 rounded-2xl" style={{ backgroundColor: inputBg }}>
                 <TouchableOpacity 
                   onPress={() => setAvailability('all')}
                   className="flex-1 py-3 rounded-xl items-center"
-                  style={{ backgroundColor: availability === 'all' ? accentColor : 'transparent' }}
+                  style={{ backgroundColor: availability === 'all' ? pinkAccent : 'transparent' }}
                 >
-                  <Text className="font-bold" style={{ color: availability === 'all' ? '#FFF' : placeholderColor }}>All</Text>
+                  <Text className="font-bold" style={{ color: availability === 'all' ? '#000' : placeholderColor }}>All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => setAvailability('in-stock')}
                   className="flex-1 py-3 rounded-xl items-center"
-                  style={{ backgroundColor: availability === 'in-stock' ? accentColor : 'transparent' }}
+                  style={{ backgroundColor: availability === 'in-stock' ? pinkAccent : 'transparent' }}
                 >
-                  <Text className="font-bold" style={{ color: availability === 'in-stock' ? '#FFF' : placeholderColor }}>In Stock Only</Text>
+                  <Text className="font-bold" style={{ color: availability === 'in-stock' ? '#000' : placeholderColor }}>In Stock Only</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -190,17 +194,16 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApply }) 
           <View className="flex-row gap-4 mt-4">
             <TouchableOpacity 
               onPress={resetFilters}
-              className="flex-1 py-4 rounded-2xl items-center border border-gray-200"
-              style={{ borderColor: isDark ? '#3D4048' : '#E5E7EB' }}
+              className="flex-1 py-4 rounded-2xl items-center border border-white/10"
             >
-              <Text className="font-bold" style={{ color: placeholderColor }}>Reset</Text>
+              <Text className="font-bold text-white">Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={handleApply}
               className="flex-2 py-4 rounded-2xl items-center"
-              style={{ backgroundColor: accentColor, flex: 2 }}
+              style={{ backgroundColor: pinkAccent, flex: 2 }}
             >
-              <Text className="text-white font-bold text-lg">Apply Filters</Text>
+              <Text className="text-black font-bold text-lg">Apply Filters</Text>
             </TouchableOpacity>
           </View>
         </View>

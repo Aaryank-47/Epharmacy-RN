@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import useThemePalette from '../../hooks/useThemePalette';
 import { Store } from '../../api/types';
 
 interface StoreCardProps {
@@ -11,117 +10,52 @@ interface StoreCardProps {
 }
 
 const StoreCard: React.FC<StoreCardProps> = ({ store, onPress, onToggleFavorite }) => {
-  const { isDark, serifFontFamily } = useThemePalette(); // success #10B981
+  const cardBgClass = 'bg-[#14161C]';
+  const pinkAccent = '#F472B6';
   
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => onPress(store)}
-      className={`rounded-2xl mb-4 border overflow-hidden shadow-md elevation-3 ${
-        isDark ? 'bg-[#2A2A2A] border-[#3A3A3A]' : 'bg-white border-[#F3F4F6] shadow-black/5'
-      }`}
-    >
-      {/* 1. Top Image */}
-      <View className="h-40 relative">
-        <Image 
-          source={{ uri: store.imageUrl }} 
-          className="w-full h-full"
-          resizeMode="cover"
-        />
-        
-        {/* Discount Badge */}
-        {store.discountBadge && (
-          <View className="absolute top-3 right-3 bg-[#EF4444] px-2.5 py-1 rounded-lg">
-            <Text className="text-white text-xs font-bold">
-              {store.discountBadge}
-            </Text>
-          </View>
-        )}
+  // Extract initials for the avatar if needed, or just use an icon.
+  const avatarText = store.name.substring(0, 2).toUpperCase();
 
-        {/* Favorite Icon */}
-        <TouchableOpacity
-          activeOpacity={0.7}
+  return (
+    <View className="mb-4 rounded-3xl overflow-hidden border border-white/5" style={{ backgroundColor: '#14161C' }}>
+      <TouchableOpacity 
+        activeOpacity={0.8}
+        onPress={() => onPress(store)}
+        className="p-5 flex-row items-center"
+      >
+        <View className="w-12 h-12 rounded-2xl items-center justify-center relative bg-indigo-900/40 border border-indigo-500/20">
+          <MaterialCommunityIcons name="storefront-outline" size={24} color="#818CF8" />
+          <View className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black ${store.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
+        </View>
+        <View className="flex-1 ml-4">
+          <View className="flex-row items-center">
+            <Text className="text-base font-bold text-white" numberOfLines={1}>{store.name}</Text>
+            {/* Assume true for isVerified for now, or you can add to type */}
+            <MaterialCommunityIcons name="check-decagram" size={14} color="#3B82F6" className="ml-1" />
+          </View>
+          <View className="flex-row items-center mt-1">
+            <MaterialCommunityIcons name="walk" size={12} color="#9CA3AF" />
+            <Text className="text-xs ml-1 text-gray-400">{store.distance || '1.5 km'}</Text>
+            <Text className="text-xs mx-1.5 text-gray-400">•</Text>
+            <MaterialCommunityIcons name="clock-outline" size={12} color="#9CA3AF" />
+            <Text className="text-xs ml-1 text-gray-400">{store.deliveryTime || '15 min'}</Text>
+            <Text className="text-xs mx-1.5 text-gray-400">•</Text>
+            <MaterialCommunityIcons name="star" size={12} color="#FBBF24" />
+            <Text className="text-xs ml-1 font-bold text-yellow-400">{store.rating || '4.5'}</Text>
+          </View>
+        </View>
+        <TouchableOpacity 
+          className="items-center justify-center bg-white/5 w-8 h-8 rounded-full ml-2"
           onPress={() => onToggleFavorite(store.id)}
-          className="absolute top-3 left-3 bg-white/90 p-1.5 rounded-full"
         >
           <MaterialCommunityIcons 
             name={store.isFavorite ? "heart" : "heart-outline"} 
-            size={20} 
-            color={store.isFavorite ? "#EF4444" : "#6B7280"} 
+            size={16} 
+            color={store.isFavorite ? pinkAccent : "#FFFFFF"} 
           />
         </TouchableOpacity>
-      </View>
-
-      {/* Content Container */}
-      <View className="p-3.5">
-        
-        {/* 2. Store Info & 5. Status Indicator */}
-        <View className="flex-row items-center justify-between mb-1">
-          <Text 
-            numberOfLines={1}
-            style={{ fontFamily: serifFontFamily }}
-            className={`text-lg font-bold flex-1 mr-2 ${isDark ? 'text-white' : 'text-[#1F2937]'}`}
-          >
-            {store.name}
-          </Text>
-          <View className="flex-row items-center">
-            <View className={`w-2 h-2 rounded-full mr-1 ${store.isOpen ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
-            <Text className={`text-xs font-semibold ${store.isOpen ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-              {store.isOpen ? 'Open Now' : 'Closed'}
-            </Text>
-          </View>
-        </View>  
-
-        <Text 
-          numberOfLines={1}
-          className={`text-sm mb-3 ${isDark ? 'text-[#9CA3AF]' : 'text-[#6B7280]'}`}
-        >
-          {store.description}
-        </Text>
-
-        {/* 3. Meta Info Row */}
-        <View className="flex-row items-center mb-3">
-          <View className="flex-row items-center bg-orange-100 px-2 py-0.5 rounded mr-3">
-            <MaterialCommunityIcons name="star" size={14} color="#F59E0B" />
-            <Text className="text-[#D97706] text-[13px] font-bold ml-1">
-              {typeof store.rating === 'number' ? store.rating.toFixed(1) : '4.5'}
-            </Text>
-          </View>
-          <Text className={`text-[13px] mr-2.5 ${isDark ? 'text-[#9CA3AF]' : 'text-[#6B7280]'}`}>
-            {store.reviewsCount || '0'} Reviews
-          </Text>
-
-          {store.freeDelivery && (
-            <View className="flex-row items-center">
-              <View className="w-1 h-1 rounded-full bg-[#D1D5DB] mr-2.5" />
-              <MaterialCommunityIcons name="truck-fast" size={16} color="#10B981" className="mr-1" />
-              <Text className="text-[#10B981] text-xs font-semibold">Free Delivery</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Divider */}
-        <View className={`h-px mb-3 ${isDark ? 'bg-[#3A3A3A]' : 'bg-[#F3F4F6]'}`} />
-
-        {/* 4. Bottom Info Row */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <MaterialCommunityIcons name="map-marker-outline" size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
-            <Text className={`text-[13px] ml-1 font-medium ${isDark ? 'text-[#D1D5DB]' : 'text-[#4B5563]'}`}>
-              {store.distance}
-            </Text>
-          </View>
-          
-          <View className="flex-row items-center">
-            <MaterialCommunityIcons name="clock-outline" size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
-            <Text className={`text-[13px] ml-1 font-medium ${isDark ? 'text-[#D1D5DB]' : 'text-[#4B5563]'}`}>
-              {store.deliveryTime}
-            </Text>
-          </View>
-        </View>
-
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 

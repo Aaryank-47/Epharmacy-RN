@@ -41,10 +41,13 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
   const [availableShops, setAvailableShops] = useState<Shop[]>([]);
   const [expandedShopId, setExpandedShopId] = useState<string | null>(null);
 
+  const pinkAccent = '#F472B6';
+  const cardBgColor = '#14161C';
+
   // Define text and border colors based on theme
-  const textColor = isDark ? '#FFFFFF' : '#1F2937';
-  const secondaryTextColor = isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = isDark ? '#374151' : '#E5E7EB';
+  const textColor = '#FFFFFF';
+  const secondaryTextColor = '#9CA3AF';
+  const borderColor = 'rgba(255,255,255,0.05)';
 
   React.useEffect(() => {
     if (visible && medicineName) {
@@ -90,18 +93,20 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
       <View
         style={{
           flex: 1,
-          backgroundColor: isDark ? '#000a' : '#0001',
+          backgroundColor: 'rgba(8, 9, 13, 0.9)',
           justifyContent: 'flex-end',
         }}
       >
         <View
           style={{
-            backgroundColor: surfaceColor,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
+            backgroundColor: cardBgColor,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
             maxHeight: '90%',
-            paddingTop: 20,
+            paddingTop: 24,
             flex: 1,
+            borderTopWidth: 1,
+            borderColor: 'rgba(255,255,255,0.05)'
           }}
         >
           {/* Header */}
@@ -139,7 +144,7 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
           {/* Shop List - Show immediately */}
           {availableShops.length === 0 ? (
             <View style={{ flex: 1, padding: 40, justifyContent: 'center', alignItems: 'center' }}>
-              <Icon name="alert-circle" size={50} color={accentColor} />
+              <Icon name="alert-circle" size={50} color={pinkAccent} />
               <Text style={{ color: textColor, marginTop: 15, fontSize: 18, fontWeight: '700' }}>
                 No Shops Found
               </Text>
@@ -172,7 +177,7 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                       style={{
                         paddingHorizontal: 20,
                         paddingVertical: 15,
-                        backgroundColor: isDark ? '#1a1a1a' : '#f9f9f9',
+                        backgroundColor: isExpanded ? 'rgba(244, 114, 182, 0.05)' : 'transparent',
                       }}
                     >
                       {/* Shop Name & Price Header */}
@@ -247,7 +252,7 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                         style={{
                           paddingHorizontal: 20,
                           paddingBottom: 20,
-                          backgroundColor: isDark ? '#1a1a1a' : '#f9f9f9',
+                          backgroundColor: 'rgba(244, 114, 182, 0.05)',
                         }}
                       >
                         <View
@@ -262,11 +267,11 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                             marginBottom: 10,
                           }}
                         >
-                          <Icon name="map-marker" size={12} color={accentColor} />
+                          <Icon name="map-marker" size={12} color={pinkAccent} />
                           <Text
                             style={{
                               fontSize: 11,
-                              color: accentColor,
+                              color: pinkAccent,
                               fontWeight: '600',
                               marginLeft: 4,
                             }}
@@ -276,7 +281,7 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                         </View>
                         {/* Address */}
                         <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                          <Icon name="home-outline" size={14} color={accentColor} />
+                          <Icon name="home-outline" size={14} color={pinkAccent} />
                           <Text
                             style={{
                               fontSize: 12,
@@ -292,7 +297,7 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
 
                         {/* Timings */}
                         <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                          <Icon name="clock-outline" size={14} color={accentColor} />
+                          <Icon name="clock-outline" size={14} color={pinkAccent} />
                           <Text
                             style={{
                               fontSize: 12,
@@ -307,11 +312,11 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
 
                         {/* Contact Details */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                          <Icon name="phone-outline" size={14} color={accentColor} />
+                          <Icon name="phone-outline" size={14} color={pinkAccent} />
                           <Text
                             style={{
                               fontSize: 12,
-                              color: accentColor,
+                              color: pinkAccent,
                               marginLeft: 8,
                               fontWeight: '600',
                             }}
@@ -323,25 +328,25 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                         {/* Available Medicines Count */}
                         <View
                           style={{
-                            backgroundColor: accentColor + '15',
+                            backgroundColor: pinkAccent + '15',
                             paddingHorizontal: 10,
                             paddingVertical: 8,
                             borderRadius: 8,
                             marginBottom: 12,
                           }}
                         >
-                          <Text style={{ fontSize: 11, color: accentColor, fontWeight: '600' }}>
+                          <Text style={{ fontSize: 11, color: pinkAccent, fontWeight: '600' }}>
                             📦 {shop.availableMedicines.length} medicines available
                           </Text>
                         </View>
 
                         {/* Email */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                          <Icon name="email-outline" size={14} color={accentColor} />
+                          <Icon name="email-outline" size={14} color={pinkAccent} />
                           <Text
                             style={{
                               fontSize: 12,
-                              color: accentColor,
+                              color: pinkAccent,
                               marginLeft: 8,
                               fontWeight: '600',
                             }}
@@ -365,14 +370,14 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                               flexDirection: 'row',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              backgroundColor: accentColor,
+                              backgroundColor: pinkAccent,
                               paddingVertical: 10,
                               borderRadius: 8,
                               gap: 6,
                             }}
                           >
-                            <Icon name="phone" size={14} color="#fff" />
-                            <Text style={{ fontSize: 12, color: '#fff', fontWeight: '600' }}>
+                            <Icon name="phone" size={14} color="#000" />
+                            <Text style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>
                               Call
                             </Text>
                           </TouchableOpacity>
@@ -384,16 +389,16 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                               flexDirection: 'row',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              backgroundColor: accentColor + '30',
+                              backgroundColor: 'transparent',
                               paddingVertical: 10,
                               borderRadius: 8,
                               gap: 6,
                               borderWidth: 1,
-                              borderColor: accentColor,
+                              borderColor: pinkAccent,
                             }}
                           >
-                            <Icon name="directions" size={14} color={accentColor} />
-                            <Text style={{ fontSize: 12, color: accentColor, fontWeight: '600' }}>
+                            <Icon name="directions" size={14} color={pinkAccent} />
+                            <Text style={{ fontSize: 12, color: pinkAccent, fontWeight: 'bold' }}>
                               Map
                             </Text>
                           </TouchableOpacity>
@@ -405,14 +410,14 @@ const ShopAvailabilityModal: React.FC<ShopAvailabilityModalProps> = ({
                               flexDirection: 'row',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              backgroundColor: accentColor + '20',
+                              backgroundColor: 'rgba(255,255,255,0.05)',
                               paddingVertical: 10,
                               borderRadius: 8,
                               gap: 6,
                             }}
                           >
-                            <Icon name="email-outline" size={14} color={accentColor} />
-                            <Text style={{ fontSize: 12, color: accentColor, fontWeight: '600' }}>
+                            <Icon name="email-outline" size={14} color={pinkAccent} />
+                            <Text style={{ fontSize: 12, color: pinkAccent, fontWeight: 'bold' }}>
                               Email
                             </Text>
                           </TouchableOpacity>
