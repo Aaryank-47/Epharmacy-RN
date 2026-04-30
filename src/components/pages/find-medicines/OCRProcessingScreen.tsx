@@ -29,6 +29,9 @@ export const OCRProcessingScreen: React.FC<Props> = ({ navigation, route }) => {
   // Animations
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current; // For icon popping
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     if (!file) {
@@ -61,6 +64,37 @@ export const OCRProcessingScreen: React.FC<Props> = ({ navigation, route }) => {
       ])
     );
     pulseLoop.start();
+
+    // Timeline Progress Simulation
+    const triggerPop = () => {
+      scaleAnim.setValue(0.8);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 50,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const t1 = setTimeout(() => {
+      setCurrentStep(1);
+      triggerPop();
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 3500, // Slower progress
+        useNativeDriver: false,
+      }).start();
+    }, 1500); // Start moving after 1.5s
+
+    const t2 = setTimeout(() => {
+      setCurrentStep(2);
+      triggerPop();
+      Animated.timing(progressAnim, {
+        toValue: 2,
+        duration: 4000, // Slower progress
+        useNativeDriver: false,
+      }).start();
+    }, 5000); // Final step begins around 5s mark
 
     // Call API
     const controller = new AbortController();
@@ -106,11 +140,15 @@ export const OCRProcessingScreen: React.FC<Props> = ({ navigation, route }) => {
       controller.abort();
       scannerLoop.stop();
       pulseLoop.stop();
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [file]);
 
   const textColor = isDark ? '#FFF' : '#1F2937';
+  const subText = isDark ? '#9CA3AF' : '#6B7280';
   const bgColor = isDark ? '#000' : '#F3F4F6';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const translateY = scanLineAnim.interpolate({
     inputRange: [0, 1],
@@ -161,21 +199,27 @@ export const OCRProcessingScreen: React.FC<Props> = ({ navigation, route }) => {
               }}
             >
               <LinearGradient
-                colors={[
-                  `${accentColor.substring(0, 7)}00`,
-                  `${accentColor.substring(0, 7)}80`,
-                  accentColor,
-                ]}
+                colors={['rgba(34, 197, 94, 0)', 'rgba(34, 197, 94, 0.4)', '#22C55E']}
                 style={{ flex: 1 }}
               />
-              <View style={{ height: 2, backgroundColor: '#FFF', shadowColor: accentColor, shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } }} />
+              <View
+                style={{
+                  height: 3,
+                  backgroundColor: '#FFF',
+                  shadowColor: '#22C55E',
+                  shadowOpacity: 1,
+                  shadowRadius: 15,
+                  shadowOffset: { width: 0, height: 0 },
+                  elevation: 10,
+                }}
+              />
             </Animated.View>
 
             {/* Corner Bracket Overlays for "Scanning" look */}
-            <View style={[styles.corner, styles.topLeft, { borderColor: accentColor }]} />
-            <View style={[styles.corner, styles.topRight, { borderColor: accentColor }]} />
-            <View style={[styles.corner, styles.bottomLeft, { borderColor: accentColor }]} />
-            <View style={[styles.corner, styles.bottomRight, { borderColor: accentColor }]} />
+            <View style={[styles.corner, styles.topLeft, { borderColor: '#22C55E' }]} />
+            <View style={[styles.corner, styles.topRight, { borderColor: '#22C55E' }]} />
+            <View style={[styles.corner, styles.bottomLeft, { borderColor: '#22C55E' }]} />
+            <View style={[styles.corner, styles.bottomRight, { borderColor: '#22C55E' }]} />
           </View>
         ) : (
           <View style={{ alignItems: 'center' }}>
@@ -198,17 +242,91 @@ export const OCRProcessingScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         )}
 
-        {/* Processing Text */}
+        {/* Processing Timeline */}
         {!error && (
-          <Animated.View style={{ opacity: pulseAnim, marginTop: 40, alignItems: 'center' }}>
-            <Icon name="brain" size={32} color={accentColor} />
-            <Text style={{ color: textColor, fontSize: 16, fontWeight: '600', marginTop: 12 }}>
-              Extracting medicines using AI...
-            </Text>
-            <Text style={{ color: isDark ? '#9CA3AF' : '#6B7280', fontSize: 13, marginTop: 4 }}>
-              This usually takes a few seconds
-            </Text>
-          </Animated.View>
+          <View style={{ marginTop: 40, width: '100%', paddingHorizontal: 30 }}>
+            <View style={{ position: 'relative' }}>
+              {/* Background Line */}
+              <View style={{ position: 'absolute', top: 14, left: 40, right: 40, height: 4, backgroundColor: isDark ? '#374151' : '#E5E7EB', borderRadius: 2 }} />
+              
+              {/* Active Animated Line */}
+              <View style={{ position: 'absolute', top: 14, left: 40, right: 40, height: 4, borderRadius: 2, overflow: 'hidden' }}>
+                <Animated.View style={{ 
+                  height: '100%', 
+                  backgroundColor: '#22C55E',
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1, 2],
+                    outputRange: ['0%', '50%', '100%']
+                  }),
+                  shadowColor: '#22C55E',
+                  shadowOpacity: 0.8,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 0 },
+                }} />
+              </View>
+
+              {/* Circles */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                {['Uploading', 'Processing', 'OCR Output'].map((step, idx) => {
+                  const isActive = currentStep >= idx;
+                  const isCurrent = currentStep === idx;
+                  const isCompleted = currentStep > idx;
+                  let iconName = "cloud-upload";
+                  if (idx === 1) iconName = "camera-outline";
+                  if (idx === 2) iconName = "file-document-outline";
+                  if (isCompleted) iconName = "check";
+
+                  return (
+                    <View key={idx} style={{ alignItems: 'center', width: 80 }}>
+                      <Animated.View
+                        style={[
+                          styles.circle,
+                          {
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            backgroundColor: isActive
+                              ? '#22C55E'
+                              : isDark
+                              ? '#1F222B'
+                              : '#F3F4F6',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2,
+                            transform: [{ scale: isCurrent ? scaleAnim : 1 }],
+                            shadowColor: isActive ? '#22C55E' : 'transparent',
+                            shadowOpacity: 0.8,
+                            shadowRadius: 12,
+                            elevation: isActive ? 8 : 0,
+                            borderWidth: 2,
+                            borderColor: isActive ? '#22C55E' : (isDark ? '#374151' : '#E5E7EB'),
+                          },
+                        ]}
+                      >
+                        <Icon
+                          name={isActive ? (isCompleted ? 'check' : iconName) : iconName}
+                          size={18}
+                          color={isActive ? '#FFF' : '#9CA3AF'}
+                        />
+                      </Animated.View>
+                      <Text
+                        style={{
+                          color: isActive ? (isDark ? '#FFF' : '#22C55E') : '#9CA3AF',
+                          fontSize: 11,
+                          fontWeight: isActive ? '700' : '500',
+                          marginTop: 8,
+                          textAlign: 'center',
+                          opacity: isActive ? 1 : 0.6,
+                        }}
+                      >
+                        {step}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -249,5 +367,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderLeftWidth: 0,
     borderBottomRightRadius: 16,
+  },
+  circle: {
+    // Basic circle styles, specific logic handled inline
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
 });

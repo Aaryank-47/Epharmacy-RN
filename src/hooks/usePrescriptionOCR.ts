@@ -3,7 +3,7 @@ import { uploadPrescriptionStream } from '../api/prescriptionApi';
 import type { PrescriptionMedicine, PrescriptionStreamResult } from '../api/types';
 
 export type OCRStatus = 'idle' | 'processing' | 'done' | 'error';
-export type FindTab = 'stores' | 'medicines' | 'ocr' | 'bucket';
+export type FindTab = 'stores' | 'medicines' | 'bucket';
 
 export interface BucketItem {
   medicine: PrescriptionMedicine;
@@ -25,7 +25,7 @@ const INITIAL_STATE: OCRState = {
 };
 
 export const usePrescriptionOCR = (initialMedicines?: PrescriptionMedicine[], initialCount?: number) => {
-  const [activeTab, setActiveTab] = useState<FindTab>(initialMedicines ? 'medicines' : 'stores');
+  const [activeTab, setActiveTab] = useState<FindTab>('stores');
   const [ocrState, setOcrState] = useState<OCRState>(
     initialMedicines
       ? { status: 'done', streamingMedicines: initialMedicines, error: null, detectedCount: initialCount || 0 }

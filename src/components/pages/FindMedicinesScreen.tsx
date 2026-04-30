@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,16 @@ import {
   TextInput,
   SafeAreaView,
   StatusBar,
-  Platform,
   Alert,
-  ScrollView,
   Animated,
+  Dimensions,
+  FlatList,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import LinearGradient from 'react-native-linear-gradient';
 import { useThemePalette } from '../../hooks/useThemePalette';
 import { usePrescriptionOCR } from '../../hooks/usePrescriptionOCR';
 import { StoresView } from './find-medicines/StoresView';
@@ -25,288 +28,6 @@ interface Props {
   navigation: any;
   route?: any;
 }
-
-// ─── OCR Insights Tab View ─────────────────────────────────────────────────
-const OCRInsightsView: React.FC<{
-  isDark: boolean;
-  accentColor: string;
-  onScan: () => void;
-  onRescan: () => void;
-}> = ({ isDark, accentColor, onScan, onRescan }) => {
-  const textColor = isDark ? '#FFFFFF' : '#1F2937';
-  const subText = isDark ? '#9CA3AF' : '#6B7280';
-  const cardBg = isDark ? '#1C1F28' : '#FFFFFF';
-  const borderColor = isDark ? '#2A2D35' : '#EBEBEB';
-  const warnBg = isDark ? '#2A1A0A' : '#FFF7ED';
-  const warnBorder = isDark ? '#92400E40' : '#FED7AA';
-
-  // Mock OCR data to match HTML design
-  const mockData = {
-    doctor: 'Dr. R. Kumar',
-    date: '28 Apr 2026',
-    rx: 'Recent visit',
-    confidence: 94,
-    medicines: [
-      {
-        name: 'Amoxicillin 500mg',
-        detail: 'Tablet · 10 tabs · 1 tab • 3 × 2 days',
-        status: 'PRESCRIBED',
-        statusColor: '#8B5CF6',
-        statusBg: '#8B5CF618',
-        hasWarning: false,
-      },
-      {
-        name: 'Paracetamol 500mg',
-        detail: 'Tablet · 10 tabs · 2 tab • 3×/ Fan Fever',
-        status: 'PRESCRIBED',
-        statusColor: '#8B5CF6',
-        statusBg: '#8B5CF618',
-        hasWarning: false,
-      },
-      {
-        name: 'Cetrizine 10mg',
-        detail: 'Tablet · Low · Cough',
-        status: 'PRESCRIBED',
-        statusColor: '#8B5CF6',
-        statusBg: '#8B5CF618',
-        hasWarning: true,
-        warningText: 'Verify Cetrizine dosage – This dose, our dosage may need confirmation from your doctor.',
-      },
-    ],
-  };
-
-  return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
-    >
-      {/* OCR Header Card */}
-      <View
-        style={{
-          backgroundColor: cardBg,
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor,
-          padding: 14,
-          marginBottom: 12,
-          shadowColor: isDark ? '#000' : '#9CA3AF',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.25 : 0.08,
-          shadowRadius: 8,
-          elevation: 3,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
-          {/* OCR Icon */}
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 13,
-              backgroundColor: accentColor + '20',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: accentColor + '40',
-            }}
-          >
-            <Icon name="file-document-scan-outline" size={22} color={accentColor} />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: textColor, marginBottom: 2 }}>
-              OCR Insights
-            </Text>
-            <Text style={{ fontSize: 11, color: subText }}>Prescription auto-extracted · AI</Text>
-          </View>
-
-          {/* Re-scan button */}
-          <TouchableOpacity
-            onPress={onRescan}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              backgroundColor: accentColor + '18',
-              borderRadius: 20,
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-            }}
-          >
-            <Icon name="refresh" size={13} color={accentColor} />
-            <Text style={{ fontSize: 11, fontWeight: '700', color: accentColor }}>
-              Re-scan
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Doctor info row */}
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 14,
-            borderTopWidth: 1,
-            borderTopColor: isDark ? '#2A2D35' : '#F0F0F0',
-            paddingTop: 12,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', color: subText, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 3 }}>
-              Dr. Doctor
-            </Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: textColor }}>{mockData.doctor}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', color: subText, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 3 }}>
-              Date
-            </Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: textColor }}>{mockData.date}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', color: subText, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 3 }}>
-              Visit
-            </Text>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: textColor }}>{mockData.rx}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Medicine rows */}
-      {mockData.medicines.map((med, idx) => (
-        <View key={idx}>
-          <View
-            style={{
-              backgroundColor: cardBg,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor,
-              padding: 13,
-              marginBottom: med.hasWarning ? 0 : 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 11,
-              borderBottomLeftRadius: med.hasWarning ? 0 : 14,
-              borderBottomRightRadius: med.hasWarning ? 0 : 14,
-            }}
-          >
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 11,
-                backgroundColor: '#8B5CF620',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name="pill" size={18} color="#8B5CF6" />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: textColor, marginBottom: 3 }}>
-                {med.name}
-              </Text>
-              <Text style={{ fontSize: 11, color: subText }}>{med.detail}</Text>
-            </View>
-
-            <View
-              style={{
-                backgroundColor: med.statusBg,
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: 6,
-              }}
-            >
-              <Text style={{ fontSize: 9, fontWeight: '800', color: med.statusColor, letterSpacing: 0.5 }}>
-                {med.status}
-              </Text>
-            </View>
-          </View>
-
-          {/* Warning banner */}
-          {med.hasWarning && (
-            <View
-              style={{
-                backgroundColor: warnBg,
-                borderWidth: 1,
-                borderTopWidth: 0,
-                borderColor: warnBorder,
-                borderBottomLeftRadius: 14,
-                borderBottomRightRadius: 14,
-                padding: 11,
-                marginBottom: 8,
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                gap: 8,
-              }}
-            >
-              <Icon name="alert-outline" size={14} color="#F59E0B" style={{ marginTop: 1 }} />
-              <Text style={{ flex: 1, fontSize: 11, color: isDark ? '#FCD34D' : '#92400E', lineHeight: 16 }}>
-                {med.warningText}
-              </Text>
-            </View>
-          )}
-        </View>
-      ))}
-
-      {/* Confidence bar */}
-      <View
-        style={{
-          backgroundColor: cardBg,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor,
-          padding: 13,
-          marginBottom: 14,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        <Text style={{ fontSize: 12, fontWeight: '700', color: subText, flex: 1 }}>
-          OCR Confidence
-        </Text>
-        <View style={{ flex: 2, height: 6, backgroundColor: isDark ? '#2A2D35' : '#F0F0F0', borderRadius: 3, overflow: 'hidden' }}>
-          <View
-            style={{
-              width: `${mockData.confidence}%`,
-              height: '100%',
-              backgroundColor: '#10B981',
-              borderRadius: 3,
-            }}
-          />
-        </View>
-        <Text style={{ fontSize: 14, fontWeight: '800', color: '#10B981' }}>
-          {mockData.confidence}%
-        </Text>
-      </View>
-
-      {/* Scan new prescription CTA */}
-      <TouchableOpacity
-        onPress={onScan}
-        style={{
-          backgroundColor: accentColor,
-          borderRadius: 16,
-          paddingVertical: 15,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          shadowColor: accentColor,
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.35,
-          shadowRadius: 12,
-          elevation: 6,
-        }}
-      >
-        <Icon name="camera-outline" size={18} color="#FFF" />
-        <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFF' }}>
-          Scan New Prescription
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-};
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
@@ -339,56 +60,7 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
     bucketTotal,
   } = usePrescriptionOCR(initialMedicines, initialCount);
 
-  // Shared upload handler used by both the top-right icon and MedicinesView's onUpload prop
-  const handleUploadPress = () => {
-    Alert.alert(
-      'Upload Prescription',
-      'Choose a method to upload your prescription',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Camera',
-          onPress: async () => {
-            const result = await launchCamera({
-              mediaType: 'photo',
-              quality: 0.8,
-              saveToPhotos: false,
-            });
-            if (result.didCancel || !result.assets?.length) return;
-            const asset = result.assets[0];
-            if (!asset.uri) return;
-            const file = {
-              uri: asset.uri,
-              name: asset.fileName || 'prescription.jpg',
-              type: asset.type || 'image/jpeg',
-            };
-            navigation.navigate('OCRProcessingScreen', { file });
-          },
-        },
-        {
-          text: 'Gallery',
-          onPress: async () => {
-            const result = await launchImageLibrary({
-              mediaType: 'photo',
-              selectionLimit: 1,
-              quality: 0.8,
-            });
-            if (result.didCancel || !result.assets?.length) return;
-            const asset = result.assets[0];
-            if (!asset.uri) return;
-            const file = {
-              uri: asset.uri,
-              name: asset.fileName || 'prescription.jpg',
-              type: asset.type || 'image/jpeg',
-            };
-            navigation.navigate('OCRProcessingScreen', { file });
-          },
-        },
-      ],
-    );
-  };
-
-  const textColor = isDark ? '#FFFFFF' : '#1F2937';
+  const textColor = isDark ? '#FFFFFF' : '#111827';
   const subText = isDark ? '#9CA3AF' : '#6B7280';
   const headerBg = surfaceColor;
   const borderColor = isDark ? '#2A2D35' : '#E5E7EB';
@@ -398,6 +70,13 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
     appliedFilters.brands.length > 0 || appliedFilters.sortBy !== 'nearest';
 
   const handleProceedToOrder = () => {
+    if (bucketCount === 0) {
+      Alert.alert(
+        'Empty Bucket',
+        'Please add some medicines to your bucket first.',
+      );
+      return;
+    }
     Alert.alert(
       'Order Placed',
       `Your order for ₹${bucketTotal} has been placed!\n${
@@ -417,64 +96,238 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
     );
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'stores':
-        return <StoresView onFilterPress={() => setShowFilters(true)} />;
-      case 'medicines':
-        return (
-          <MedicinesView
-            status={ocrState.status}
-            medicines={ocrState.streamingMedicines}
-            streamingMedicines={ocrState.streamingMedicines}
-            detectedCount={ocrState.detectedCount}
-            error={ocrState.error}
-            onUpload={handleUploadPress}
-            onReset={reset}
-            onAddToBucket={addToBucket}
-            onCompareStores={() => setActiveTab('stores')}
-          />
-        );
-      case 'ocr':
-        return (
-          <OCRInsightsView
-            isDark={isDark}
-            accentColor={accentColor}
-            onScan={handleUploadPress}
-            onRescan={handleUploadPress}
-          />
-        );
-      case 'bucket':
-        return (
-          <BucketView
-            bucketItems={bucketItems}
-            selectedDelivery={selectedDelivery}
-            setSelectedDelivery={setSelectedDelivery}
-            onUpdateQuantity={updateQuantity}
-            onRemove={removeFromBucket}
-            onProceed={handleProceedToOrder}
-            bucketTotal={bucketTotal}
-          />
-        );
-      default:
-        return null;
+  const deviceWidth = Dimensions.get('window').width;
+  const pagerRef = useRef<FlatList>(null);
+
+  // Tab config — single source of truth for label, icons
+  const TAB_CONFIG = [
+    {
+      id: 'stores',
+      label: 'Stores',
+      title: 'Pharmacies',
+      subtitle: 'nearby stores',
+      icon: 'storefront-outline',
+      activeIcon: 'storefront',
+    },
+    {
+      id: 'medicines',
+      label: 'Medicines',
+      title: 'Medicines',
+      subtitle: 'from your prescription',
+      icon: 'pill',
+      activeIcon: 'pill',
+    },
+    {
+      id: 'bucket',
+      label: 'Bucket',
+      title: 'My Bucket',
+      subtitle:
+        bucketCount > 0
+          ? `${bucketCount} item${bucketCount > 1 ? 's' : ''}`
+          : 'empty',
+      icon: 'pail-outline',
+      activeIcon: 'basket',
+    },
+  ] as const;
+
+  const tabs = TAB_CONFIG.map(t => t.id);
+  const activeTabConfig =
+    TAB_CONFIG.find(t => t.id === activeTab) || TAB_CONFIG[0];
+
+  const isManualScrolling = useRef(false);
+
+  // Sync pager when activeTab changes (e.g. from button click)
+  useEffect(() => {
+    // If it was a swipe (isManualScrolling is true), don't scroll manually
+    if (isManualScrolling.current) {
+      isManualScrolling.current = false;
+      return;
+    }
+
+    const index = tabs.indexOf(activeTab);
+    if (index !== -1) {
+      pagerRef.current?.scrollToIndex({ index, animated: true });
+    }
+  }, [activeTab]);
+
+  const handleTabPress = (tab: string) => {
+    isManualScrolling.current = false; // It's a click, so we want the effect to scroll
+    setActiveTab(tab as any);
+  };
+
+  // Snappy direction-aware tab bar hide/show (state machine + spring, no jitter)
+  const TAB_BAR_HEIGHT = 64;
+  const tabAnim = useRef(new Animated.Value(0)).current; // 0 = visible, 1 = hidden
+  const tabHiddenRef = useRef(false);
+  const lastScrollY = useRef(0);
+
+  const animateTabBar = useCallback(
+    (toHidden: boolean) => {
+      if (tabHiddenRef.current === toHidden) return;
+      tabHiddenRef.current = toHidden;
+      Animated.spring(tabAnim, {
+        toValue: toHidden ? 1 : 0,
+        useNativeDriver: true,
+        friction: 9,
+        tension: 80,
+      }).start();
+    },
+    [tabAnim],
+  );
+
+  const scrollDiff = useRef(0);
+
+  const handleScroll = useCallback(
+    (e: any) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const dy = y - lastScrollY.current;
+
+      // Ignore momentum bounce at the very top or bottom
+      if (y <= 0 || dy === 0) {
+        lastScrollY.current = y;
+        return;
+      }
+
+      lastScrollY.current = y;
+
+      // At the top, always show
+      if (y < 20) {
+        animateTabBar(false);
+        scrollDiff.current = 0;
+        return;
+      }
+
+      // Accumulate scroll distance
+      scrollDiff.current += dy;
+
+      // Stability: If already hidden and scrolling down, don't accumulate more hide "force"
+      if (tabHiddenRef.current && dy > 0) {
+        scrollDiff.current = 0;
+      }
+      // Stability: If already visible and scrolling up, don't accumulate more show "force"
+      if (!tabHiddenRef.current && dy < 0) {
+        scrollDiff.current = 0;
+      }
+
+      if (scrollDiff.current > 50 && !tabHiddenRef.current && y > 100) {
+        // Significant downward scroll to hide
+        animateTabBar(true);
+        scrollDiff.current = 0;
+      } else if (scrollDiff.current < -35 && tabHiddenRef.current) {
+        // Significant upward scroll to show
+        animateTabBar(false);
+        scrollDiff.current = 0;
+      }
+
+      // Safety cap for accumulated diff
+      if (scrollDiff.current > 100) scrollDiff.current = 100;
+      if (scrollDiff.current < -100) scrollDiff.current = -100;
+    },
+    [animateTabBar],
+  );
+
+  useEffect(() => {
+    // Show tab bar when switching tabs
+    animateTabBar(false);
+    lastScrollY.current = 0;
+  }, [activeTab, animateTabBar]);
+
+  const tabTranslateY = tabAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -TAB_BAR_HEIGHT],
+  });
+  const tabOpacity = tabAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+
+  // Pager scroll → real-time tab change at 50% threshold (avoids late color update)
+  const handlePagerMomentumEnd = (e: any) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const index = Math.round(x / deviceWidth);
+    if (tabs[index] && activeTab !== tabs[index]) {
+      isManualScrolling.current = true;
+      setActiveTab(tabs[index] as any);
     }
   };
 
+  // Shared upload handler used by both the top-right icon and MedicinesView's onUpload prop
+  const handleUploadPress = (file?: {
+    uri: string;
+    name: string;
+    type: string;
+  }) => {
+    if (file) {
+      navigation.navigate('OCRProcessingScreen', { file });
+      return;
+    }
+
+    Alert.alert(
+      'Upload Prescription',
+      'Choose a method to upload your prescription',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Camera',
+          onPress: async () => {
+            const result = await launchCamera({
+              mediaType: 'photo',
+              quality: 0.8,
+              saveToPhotos: false,
+            });
+            if (result.didCancel || !result.assets?.length) return;
+            const asset = result.assets[0];
+            if (!asset.uri) return;
+            const fileData = {
+              uri: asset.uri,
+              name: asset.fileName || 'prescription.jpg',
+              type: asset.type || 'image/jpeg',
+            };
+            navigation.navigate('OCRProcessingScreen', { file: fileData });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: async () => {
+            const result = await launchImageLibrary({
+              mediaType: 'photo',
+              selectionLimit: 1,
+              quality: 0.8,
+            });
+            if (result.didCancel || !result.assets?.length) return;
+            const asset = result.assets[0];
+            if (!asset.uri) return;
+            const fileData = {
+              uri: asset.uri,
+              name: asset.fileName || 'prescription.jpg',
+              type: asset.type || 'image/jpeg',
+            };
+            navigation.navigate('OCRProcessingScreen', { file: fileData });
+          },
+        },
+      ],
+    );
+  };
+
+  // Pager settings and scroll animations...
+  // Swiping content logic handled by FlatList below
+
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#181A20' : '#F5F6FA' }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#08090D' : '#FFF5F8' }}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={headerBg}
       />
 
-      {/* Safe area top + Header */}
-      <View
+      {/* Safe area top + Header — zIndex 10 keeps it above the translating tab bar */}
+      <LinearGradient
+        colors={isDark ? ['#000000', '#08090D'] : ['#FFFFFF', '#FFF5F8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={{
-          backgroundColor: headerBg,
           paddingTop: Platform.OS === 'android' ? 10 : 0,
-          borderBottomWidth: 1,
-          borderBottomColor: borderColor,
+          zIndex: 10,
+          elevation: 10,
         }}
       >
         <SafeAreaView>
@@ -485,7 +338,7 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
               alignItems: 'center',
               paddingHorizontal: 16,
               paddingTop: 2,
-              paddingBottom: 10,
+              paddingBottom: 20,
               gap: 12,
             }}
           >
@@ -506,54 +359,27 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: 10,
-                  fontWeight: '600',
-                  color: accentColor,
-                  letterSpacing: 1.2,
-                  textTransform: 'uppercase',
+                  fontSize: 19,
+                  fontWeight: '800',
+                  color: textColor,
+                  letterSpacing: -0.3,
                 }}
+                numberOfLines={1}
               >
-                MEDICARE
+                {activeTabConfig.title}
               </Text>
               <Text
-                style={{ fontSize: 18, fontWeight: '800', color: textColor }}
+                style={{
+                  fontSize: 11,
+                  fontWeight: '600',
+                  color: subText,
+                  marginTop: 1,
+                }}
+                numberOfLines={1}
               >
-                Find Medicines
+                {activeTabConfig.subtitle}
               </Text>
             </View>
-
-            {/* Header basket badge */}
-            <TouchableOpacity
-              onPress={() => setActiveTab('bucket')}
-              style={{ position: 'relative', padding: 4 }}
-            >
-              <Icon
-                name={activeTab === 'bucket' ? 'basket' : 'basket-outline'}
-                size={26}
-                color={activeTab === 'bucket' ? accentColor : textColor}
-              />
-              {bucketCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    backgroundColor: accentColor,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 2,
-                    borderColor: headerBg,
-                  }}
-                >
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFF' }}>
-                    {bucketCount > 9 ? '9+' : bucketCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
           </View>
 
           {/* Search bar */}
@@ -562,7 +388,7 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
               flexDirection: 'row',
               alignItems: 'center',
               marginHorizontal: 16,
-              marginBottom: 12,
+              marginBottom: 7,
               gap: 10,
             }}
           >
@@ -571,187 +397,327 @@ const FindMedicinesScreen: React.FC<Props> = ({ navigation, route }) => {
                 flex: 1,
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: inputBg,
-                borderRadius: 24,
-                paddingHorizontal: 12,
-                paddingVertical: Platform.OS === 'ios' ? 10 : 15,
-                gap: 8,
+                backgroundColor: isDark ? '#1A1D26' : '#FFFFFF',
+                borderRadius: 16,
+                paddingHorizontal: 14,
+                height: 50,
+                borderWidth: 1,
+                borderColor: isDark ? '#2A2D35' : '#E5E7EB',
+                shadowColor: isDark ? '#000' : '#94A3B8',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: isDark ? 0.32 : 0.1,
+                shadowRadius: 10,
+                elevation: 4,
               }}
             >
-              <Icon name="magnify" size={18} color={subText} />
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  backgroundColor: accentColor + '18',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="magnify" size={16} color={accentColor} />
+              </View>
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholder="Amoxicillin, paracetamol..."
+                placeholder={`Search ${activeTabConfig.label.toLowerCase()}...`}
                 placeholderTextColor={subText}
                 style={{
                   flex: 1,
-                  fontSize: 14,
+                  fontSize: 14.5,
+                  fontWeight: '500',
                   color: textColor,
+                  marginLeft: 10,
                   paddingVertical: 0,
                 }}
               />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Icon name="close-circle" size={16} color={subText} />
+              {searchQuery.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Icon name="close-circle" size={18} color={subText} />
                 </TouchableOpacity>
+              ) : (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 1,
+                      height: 18,
+                      backgroundColor: isDark ? '#2A2D35' : '#E5E7EB',
+                    }}
+                  />
+                  <TouchableOpacity
+                    hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  >
+                    <Icon name="microphone" size={18} color={accentColor} />
+                  </TouchableOpacity>
+                </View>
               )}
-              <TouchableOpacity>
-                <Icon name="microphone-outline" size={18} color={subText} />
-              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
               onPress={() => setShowFilters(true)}
+              activeOpacity={0.85}
               style={{
-                width: 44,
-                height: 44,
+                width: 50,
+                height: 50,
                 borderRadius: 14,
-                backgroundColor: filtersActive ? accentColor : inputBg,
+                backgroundColor: filtersActive
+                  ? accentColor
+                  : isDark
+                  ? accentColor
+                  : '#FFFFFF',
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: filtersActive
+                  ? accentColor
+                  : isDark
+                  ? '#2A2D35'
+                  : '#E5E7EB',
+                shadowColor: filtersActive
+                  ? accentColor
+                  : isDark
+                  ? '#000'
+                  : '#94A3B8',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: filtersActive ? 0.35 : isDark ? 0.32 : 0.1,
+                shadowRadius: 10,
+                elevation: 4,
               }}
             >
               <Icon
                 name="tune-variant"
                 size={20}
-                color={filtersActive ? '#FFF' : subText}
+                color={filtersActive ? '#FFFFFF' : textColor}
               />
-            </TouchableOpacity>
-          </View>
-
-          {/* Tab bar */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: 16,
-              paddingBottom: 10,
-            }}
-          >
-            {/* Left: Stores, Medicines, OCR */}
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              {/* Stores tab */}
-              <TouchableOpacity
-                onPress={() => setActiveTab('stores')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 22,
-                  backgroundColor: activeTab === 'stores' ? accentColor : tabInactiveBg,
-                }}
-              >
-                <Icon
-                  name={activeTab === 'stores' ? 'storefront' : 'storefront-outline'}
-                  size={14}
-                  color={activeTab === 'stores' ? '#FFF' : subText}
-                />
-                <Text
+              {filtersActive && (
+                <View
                   style={{
-                    fontSize: 12,
-                    fontWeight: '700',
-                    color: activeTab === 'stores' ? '#FFF' : textColor,
+                    position: 'absolute',
+                    top: 11,
+                    right: 11,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: '#FF4B4B',
+                    borderWidth: 1.5,
+                    borderColor: accentColor,
                   }}
-                >
-                  Medical Stores
-                </Text>
-              </TouchableOpacity>
-
-              {/* Medicines tab */}
-              <TouchableOpacity
-                onPress={() => setActiveTab('medicines')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 22,
-                  backgroundColor: activeTab === 'medicines' ? accentColor : tabInactiveBg,
-                }}
-              >
-                <Icon
-                  name="pill"
-                  size={14}
-                  color={activeTab === 'medicines' ? '#FFF' : subText}
                 />
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: '700',
-                    color: activeTab === 'medicines' ? '#FFF' : textColor,
-                  }}
-                >
-                  Medicines
-                </Text>
-              </TouchableOpacity>
-
-              {/* OCR Insights tab */}
-              <TouchableOpacity
-                onPress={() => setActiveTab('ocr' as any)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 22,
-                  backgroundColor: activeTab === 'ocr' ? accentColor : tabInactiveBg,
-                }}
-              >
-                <Icon
-                  name="auto-fix"
-                  size={14}
-                  color={activeTab === 'ocr' ? '#FFF' : subText}
-                />
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: '700',
-                    color: activeTab === 'ocr' ? '#FFF' : textColor,
-                  }}
-                >
-                  OCR
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Right: basket tab */}
-            <TouchableOpacity
-              onPress={() => setActiveTab('bucket')}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor:
-                  activeTab === 'bucket' ? accentColor : tabInactiveBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon
-                name={activeTab === 'bucket' ? 'basket' : 'basket-outline'}
-                size={18}
-                color={activeTab === 'bucket' ? '#FFF' : textColor}
-              />
+              )}
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
-      {/* Tab content */}
-      <View style={{ flex: 1 }}>{renderTabContent()}</View>
+      {/* Animated content container (Tab bar + Tab content) */}
+      <View
+        style={{
+          flex: 1,
+          zIndex: 1,
+          backgroundColor: isDark ? '#08090D' : '#FFF5F8',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Tab bar — flex-row, all 3 always fully visible, light-mode safe */}
+        <Animated.View
+          style={{
+            height: TAB_BAR_HEIGHT,
+            paddingHorizontal: 16,
+            paddingTop: 10,
+            opacity: tabOpacity,
+            transform: [{ translateY: tabTranslateY }],
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 5,
+            backgroundColor: isDark ? '#08090D' : '#FFF5F8',
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: 10,
+              backgroundColor: 'transparent',
+            }}
+          >
+            {TAB_CONFIG.map(tab => {
+              const isActive = activeTab === tab.id;
+              const showBadge = tab.id === 'bucket' && bucketCount > 0;
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  onPress={() => handleTabPress(tab.id)}
+                  activeOpacity={0.85}
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    paddingHorizontal: 8,
+                    paddingVertical: 11,
+                    borderRadius: 20,
+                    backgroundColor: isActive
+                      ? accentColor
+                      : isDark
+                      ? '#1C1F28'
+                      : '#FFFFFF',
+                    borderWidth: isActive ? 0 : 1,
+                    borderColor: isDark ? '#2A2D35' : '#ECEEF2',
+                    shadowColor: isActive
+                      ? accentColor
+                      : isDark
+                      ? '#000'
+                      : '#94A3B8',
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: isActive ? 0.35 : isDark ? 0.3 : 0.08,
+                    shadowRadius: 6,
+                    elevation: isActive ? 4 : 2,
+                  }}
+                >
+                  <Icon
+                    name={isActive ? tab.activeIcon : tab.icon}
+                    size={16}
+                    color={
+                      isActive ? '#FFFFFF' : isDark ? '#9CA3AF' : '#64748B'
+                    }
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: 13.5,
+                      fontWeight: isActive ? '800' : '600',
+                      color: isActive
+                        ? '#FFFFFF'
+                        : isDark
+                        ? '#E5E7EB'
+                        : '#0F172A',
+                      letterSpacing: -0.1,
+                    }}
+                  >
+                    {tab.label}
+                  </Text>
+                  {showBadge && (
+                    <View
+                      style={{
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 9,
+                        backgroundColor: isActive ? '#FFFFFF' : '#EF4444',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: 5,
+                        marginLeft: 2,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: '800',
+                          color: isActive ? accentColor : '#FFFFFF',
+                        }}
+                      >
+                        {bucketCount}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Animated.View>
+
+        {/* Swipeable Tab content — Coordinated NATIVE animation for maximum smoothness */}
+        <Animated.View
+          style={{
+            flex: 1,
+            paddingTop: TAB_BAR_HEIGHT,
+            transform: [{ translateY: tabTranslateY }],
+            marginBottom: -TAB_BAR_HEIGHT, // Extends view to avoid gap at bottom
+          }}
+        >
+          <FlatList
+            ref={pagerRef}
+            data={tabs}
+            horizontal
+            pagingEnabled
+            decelerationRate="fast"
+            disableIntervalMomentum
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={item => item}
+            onScroll={handlePagerMomentumEnd}
+            onMomentumScrollEnd={handlePagerMomentumEnd}
+            scrollEventThrottle={16}
+            getItemLayout={(_, index) => ({
+              length: deviceWidth,
+              offset: deviceWidth * index,
+              index,
+            })}
+            renderItem={({ item }) => (
+              <View style={{ width: deviceWidth, flex: 1 }}>
+                {item === 'stores' && (
+                  <StoresView
+                    onFilterPress={() => setShowFilters(true)}
+                    onScroll={handleScroll}
+                  />
+                )}
+                {item === 'medicines' && (
+                  <MedicinesView
+                    status={ocrState.status}
+                    medicines={ocrState.streamingMedicines}
+                    streamingMedicines={ocrState.streamingMedicines}
+                    detectedCount={ocrState.detectedCount}
+                    error={ocrState.error}
+                    onUpload={handleUploadPress}
+                    onReset={reset}
+                    onAddToBucket={addToBucket}
+                    onCompareStores={() => setActiveTab('stores')}
+                    onScroll={handleScroll}
+                  />
+                )}
+                {/* Removed OCR Insights Tab View */}
+                {item === 'bucket' && (
+                  <BucketView
+                    bucketItems={bucketItems}
+                    selectedDelivery={selectedDelivery}
+                    setSelectedDelivery={setSelectedDelivery}
+                    onUpdateQuantity={updateQuantity}
+                    onRemove={removeFromBucket}
+                    onProceed={handleProceedToOrder}
+                    bucketTotal={bucketTotal}
+                    onScroll={handleScroll}
+                  />
+                )}
+              </View>
+            )}
+          />
+        </Animated.View>
+      </View>
 
       {/* Filters sheet */}
       <FiltersSheet
         visible={showFilters}
         onClose={() => setShowFilters(false)}
-        onApply={setAppliedFilters}
         initialFilters={appliedFilters}
+        onApply={filters => {
+          setAppliedFilters(filters);
+          setShowFilters(false);
+        }}
       />
     </View>
   );

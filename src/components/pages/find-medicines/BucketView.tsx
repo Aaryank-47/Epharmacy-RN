@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useThemePalette } from '../../../hooks/useThemePalette';
 import type { BucketItem } from '../../../hooks/usePrescriptionOCR';
@@ -12,6 +12,7 @@ interface Props {
   onRemove: (index: number) => void;
   onProceed: () => void;
   bucketTotal: number;
+  onScroll?: (event: any) => void;
 }
 
 const MEDICINE_ICON_COLOR = '#8B5CF6';
@@ -24,6 +25,7 @@ export const BucketView: React.FC<Props> = ({
   onRemove,
   onProceed,
   bucketTotal,
+  onScroll,
 }) => {
   const { isDark, accentColor } = useThemePalette();
   const nearestShop = useMemo(
@@ -59,7 +61,7 @@ export const BucketView: React.FC<Props> = ({
             marginBottom: 16,
           }}
         >
-          <Icon name="basket-outline" size={34} color={accentColor} />
+          <Icon name="pail-outline" size={38} color={accentColor} />
         </View>
         <Text
           style={{
@@ -97,9 +99,11 @@ export const BucketView: React.FC<Props> = ({
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={1}
       >
         {/* Selected pharmacy */}
         <View
@@ -457,7 +461,7 @@ export const BucketView: React.FC<Props> = ({
             </View>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Sticky CTA */}
       <View
